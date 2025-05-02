@@ -1,46 +1,105 @@
-# Getting Started with Create React App
+# Killer Sudoku
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Ein interaktives Killer Sudoku-Spiel, entwickelt mit React, TypeScript und Chakra UI als Progressive Web App (PWA).
 
-## Available Scripts
+![Killer Sudoku Screenshot](./src/assets/screenshot.png)
 
-In the project directory, you can run:
+## 🎮 Über das Projekt
 
-### `npm start`
+Killer Sudoku ist eine anspruchsvolle Variante des klassischen Sudoku. Zusätzlich zu den normalen Sudoku-Regeln (jede Zahl von 1-9 genau einmal in jeder Zeile, Spalte und 3x3-Block) gibt es "Käfige" - Gruppen von Zellen, deren Summe einem vorgegebenen Wert entsprechen muss und innerhalb derer keine Ziffer wiederholt werden darf.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Diese Anwendung bietet:
+- Ein vollständig interaktives 9x9 Spielfeld
+- Farblich markierte Käfige mit Summenvorgaben
+- Echtzeit-Validierung der eingegebenen Zahlen
+- Mehrere Schwierigkeitsstufen (Einfach, Mittel, Schwer, Experte)
+- Hinweissystem zur Unterstützung
+- Vollständige Offline-Funktionalität als PWA
+- Undo/Redo-Funktionalität und automatisches Speichern
+- Responsives Design für alle Gerätetypen
+- Dunkle/Helle Themen und Barrierefreiheit-Features
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+## 🚀 Installation und Start
 
-### `npm test`
+```bash
+# Repository klonen
+git clone https://github.com/yourusername/killersudoku.git
+cd killersudoku
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+# Abhängigkeiten installieren
+npm install
 
-### `npm run build`
+# Anwendung starten
+npm start
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Die Anwendung ist dann unter [http://localhost:3000](http://localhost:3000) verfügbar.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🧩 Spielanleitung
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+1. Klicke auf eine Zelle oder ziehe mit der Maus, um mehrere Zellen auszuwählen
+2. Verwende das Nummernpad, um eine Zahl einzugeben
+3. Beachte die Summen in den farbigen Käfigen
+4. Erfülle die klassischen Sudoku-Regeln UND stelle sicher, dass die Summen in den Käfigen korrekt sind
+5. Nutze die Hinweisfunktion für Hilfestellung (begrenzte Anzahl)
+6. Das Spiel ist gewonnen, wenn alle Regeln erfüllt sind und das gesamte Brett korrekt ausgefüllt ist
 
-### `npm run eject`
+## 📚 Spielfunktionen
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+- **Mehrere Eingabemethoden**: Unterstützung für Touch, Tastatur und Maus
+- **Schwierigkeitsgrade**: Vier Stufen mit zunehmender Komplexität
+- **Hinweissystem**: Hilfestellung für knifflige Situationen
+- **Speichersystem**: Automatisches Speichern und mehrere Speicherplätze
+- **Undo/Redo**: Schritte zurücknehmen oder wiederholen
+- **Anpassbare UI**: Hell-/Dunkel-Modus und Kontrast-Einstellungen
+- **Offline-Modus**: Volle Funktionalität ohne Internetverbindung
+- **Tutorial**: Interaktive Einführung für neue Spieler
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🛠️ Technologien
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- React 18+
+- TypeScript 5+
+- Chakra UI für das responsive Design
+- React Hooks für State Management
+- Service Workers für PWA-Funktionalität 
+- Web Storage API für lokale Datenspeicherung
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## 🔄 Projektstruktur
 
-## Learn More
+```
+src/
+  ├── components/       # React UI-Komponenten
+  ├── hooks/           # Benutzerdefinierte React Hooks
+  ├── contexts/        # React Context Provider
+  ├── services/        # Spiellogik, Rätselgenerierung, Validierung
+  ├── utils/           # Hilfsfunktionen und Utilities
+  ├── types/           # TypeScript-Typdefinitionen
+  ├── styles/          # CSS/SCSS-Stylesheets
+  └── assets/          # Bilder, Icons und andere Medien
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 📝 Entwicklungsstatus
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+Die Anwendung befindet sich in aktiver Entwicklung. Die aktuell implementierten Funktionen sind:
+- ✅ Projekt-Setup mit TypeScript und React
+- ✅ Chakra UI-Integration
+- ✅ PWA-Funktionalität mit Service Workers
+- ✅ Lokale Speicherung mit Web Storage API
+
+Weitere Funktionen werden kontinuierlich hinzugefügt gemäß der [Projektplanungsdokumentation](./TODO.md).
+
+## 🤝 Beitragen
+
+Beiträge sind willkommen! Für größere Änderungen bitte zuerst ein Issue eröffnen, um die gewünschte Änderung zu diskutieren.
+
+## 📝 Lizenz
+
+MIT
+
+## 📧 Kontakt
+
+Projektlink: [https://github.com/yourusername/killersudoku](https://github.com/yourusername/killersudoku)
+
+---
+
+Erstellt mit ❤️ und [Create React App](https://github.com/facebook/create-react-app).
