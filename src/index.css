@@ -1,0 +1,78 @@
+/* Basiseinstellungen für Responsive Typografie */
+:root {
+  /* Basis-Schriftgröße für rem-Berechnungen */
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Optimale Lesbarkeit */
+  line-height: 1.6;
+  color: #333;
+  font-size: 1rem;
+}
+
+/* Responsive Typography für verschiedene Viewports */
+@media screen and (max-width: 768px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  :root {
+    font-size: 18px;
+  }
+}
+
+/* Container mit optimaler Textbreite für Lesbarkeit (50-75 Zeichen) */
+.text-container {
+  max-width: 38rem; /* ca. 65 Zeichen bei 16px Schriftgröße */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1rem;
+}
+
+p {
+  margin-bottom: 1.5rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 2.5rem;
+}
+
+h2 {
+  font-size: 2rem;
+}
+
+h3 {
+  font-size: 1.75rem;
+}
+
+h4 {
+  font-size: 1.5rem;
+}
+
+h5 {
+  font-size: 1.25rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}

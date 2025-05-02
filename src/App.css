@@ -1,0 +1,74 @@
+.App {
+  text-align: center;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(1rem + 1vmin); /* Nutzt rem als Basis für responsives Verhalten */
+  color: white;
+}
+
+/* Container für optimale Textbreite */
+.content-container {
+  max-width: 40em; /* Optimale Zeilenlänge für Lesbarkeit */
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Textabschnitte mit optimaler Lesbarkeit */
+.readable-text {
+  font-size: 1rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* Sudoku UI Verbesserungen */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 2rem;
+}
+
+@media (min-width: 768px) {
+  .game-container {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2rem;
+  }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 576px) {
+  .content-container {
+    width: 100%;
+    padding: 0 0.75rem;
+  }
+}
+
+/* Grundlegende Abstände */
+.container {
+  margin-top: 2rem;
+  max-width: 65ch; /* Optimale Zeilenlänge (ca. 65 Zeichen) */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.card {
+  margin-top: 1rem;
+}
+
+/* Zusätzliche Utility-Klassen */
+.mt-1 {
+  margin-top: 1rem;
+}
+
+.mb-1 {
+  margin-bottom: 1rem;
+}
