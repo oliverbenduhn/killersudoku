@@ -1,0 +1,527 @@
+{
+    "project_description": "A Progressive Web App (PWA) implementation of Killer-Sudoku, a number puzzle combining elements of Sudoku and Ken Ken. Players fill a 9x9 grid with digits 1-9 following standard Sudoku rules, while also ensuring that digits within defined groups (cages) sum to specified totals and contain no duplicates within each group.",
+    "project_name": "Killer-Sudoku PWA",
+    "goal": "Create an engaging, modern, and accessible Killer-Sudoku game as a Progressive Web App with touch, keyboard, and mouse input support, featuring high-quality graphics and responsive design.",
+    "platform": "Progressive Web App (PWA) compatible with modern web browsers on desktop and mobile devices",
+    "languages_and_frameworks": [
+      {
+        "name": "HTML5",
+        "purpose": "Structure and content"
+      },
+      {
+        "name": "CSS3",
+        "purpose": "Styling and animations"
+      },
+      {
+        "name": "JavaScript (ES6+)",
+        "purpose": "Game logic and interactivity"
+      },
+      {
+        "name": "React",
+        "purpose": "UI components and state management"
+      },
+      {
+        "name": "TypeScript",
+        "purpose": "Type safety and code organization"
+      },
+      {
+        "name": "Service Workers",
+        "purpose": "PWA offline functionality"
+      },
+      {
+        "name": "Web Storage API",
+        "purpose": "Local game state persistence"
+      }
+    ],
+    "features": [
+      {
+        "id": "F1",
+        "name": "Game Board",
+        "description": "Interactive 9x9 Sudoku grid with customizable appearance",
+        "priority": "High",
+        "sub_features": [
+          "Visual distinction between cages/groups",
+          "Display of cage sum values",
+          "Highlighting of selected cells, rows, columns, and blocks",
+          "Color-coded feedback for valid/invalid entries"
+        ]
+      },
+      {
+        "id": "F2",
+        "name": "Input Methods",
+        "description": "Multiple ways to interact with the game",
+        "priority": "High",
+        "sub_features": [
+          "Touch input for mobile devices",
+          "Keyboard number input and navigation",
+          "Mouse clicking and dragging for selection",
+          "Number pad interface for input"
+        ]
+      },
+      {
+        "id": "F3",
+        "name": "Game Mechanics",
+        "description": "Core Killer-Sudoku rules and validation",
+        "priority": "Critical",
+        "sub_features": [
+          "Enforcement of standard Sudoku rules (no duplicates in rows, columns, blocks)",
+          "Calculation and validation of cage sums",
+          "Prevention of duplicate digits within cages",
+          "Win condition detection"
+        ]
+      },
+      {
+        "id": "F4",
+        "name": "Difficulty Levels",
+        "description": "Multiple puzzle difficulty options",
+        "priority": "Medium",
+        "sub_features": [
+          "Easy puzzles with simple cage configurations",
+          "Medium puzzles with moderate complexity",
+          "Hard puzzles with challenging configurations",
+          "Expert puzzles with minimal hints"
+        ]
+      },
+      {
+        "id": "F5",
+        "name": "Hint System",
+        "description": "Optional assistance for players",
+        "priority": "Medium",
+        "sub_features": [
+          "Highlight invalid entries",
+          "Suggest possible values for selected cell",
+          "Reveal a correct cell value (limited usage)",
+          "Provide strategic tips based on current board state"
+        ]
+      },
+      {
+        "id": "F6",
+        "name": "Game State Management",
+        "description": "Saving and loading game progress",
+        "priority": "High",
+        "sub_features": [
+          "Auto-save current game state",
+          "Multiple save slots for different puzzles",
+          "Undo/redo functionality",
+          "Game statistics tracking"
+        ]
+      },
+      {
+        "id": "F7",
+        "name": "User Interface",
+        "description": "Modern, responsive design with accessibility features",
+        "priority": "High",
+        "sub_features": [
+          "Responsive layout for various screen sizes",
+          "Dark/light theme options",
+          "High-contrast mode for accessibility",
+          "Customizable colors and appearance"
+        ]
+      },
+      {
+        "id": "F8",
+        "name": "Puzzle Generation",
+        "description": "Algorithm to create valid Killer-Sudoku puzzles",
+        "priority": "Critical",
+        "sub_features": [
+          "Generate random puzzles with unique solutions",
+          "Control difficulty level of generated puzzles",
+          "Ensure reasonable cage sizes and configurations",
+          "Option to enter custom puzzles"
+        ]
+      },
+      {
+        "id": "F9",
+        "name": "Offline Functionality",
+        "description": "Full game experience without internet connection",
+        "priority": "High",
+        "sub_features": [
+          "Offline puzzle access",
+          "Local storage of puzzle library",
+          "Synchronization when connection restored",
+          "PWA installation capability"
+        ]
+      },
+      {
+        "id": "F10",
+        "name": "Tutorials and Help",
+        "description": "Instructions and learning resources",
+        "priority": "Medium",
+        "sub_features": [
+          "Interactive tutorial for new players",
+          "Killer-Sudoku strategy guides",
+          "Context-sensitive help",
+          "Glossary of terms"
+        ]
+      }
+    ],
+    "project_structure": {
+      "folders": [
+        {
+          "name": "public",
+          "purpose": "Static assets, manifest, and index.html"
+        },
+        {
+          "name": "src",
+          "purpose": "Source code",
+          "subfolders": [
+            {
+              "name": "components",
+              "purpose": "React UI components"
+            },
+            {
+              "name": "hooks",
+              "purpose": "Custom React hooks"
+            },
+            {
+              "name": "contexts",
+              "purpose": "React context providers"
+            },
+            {
+              "name": "services",
+              "purpose": "Game logic, puzzle generation, validation"
+            },
+            {
+              "name": "utils",
+              "purpose": "Helper functions and utilities"
+            },
+            {
+              "name": "types",
+              "purpose": "TypeScript type definitions"
+            },
+            {
+              "name": "styles",
+              "purpose": "CSS/SCSS stylesheets"
+            },
+            {
+              "name": "assets",
+              "purpose": "Images, icons, and other media"
+            }
+          ]
+        }
+      ],
+      "file_naming_conventions": "camelCase for JavaScript/TypeScript files, PascalCase for React components, kebab-case for CSS/SCSS and asset files",
+      "module_structure": {
+        "components": {
+          "Board": "Main game board component",
+          "Cell": "Individual Sudoku cell component",
+          "Cage": "Group of cells forming a cage with sum",
+          "NumberPad": "Input interface for selecting numbers",
+          "Controls": "Game control buttons and options",
+          "Modal": "Popup dialogues for messages and menus",
+          "Header": "App header with game title and menu",
+          "Settings": "User customization options",
+          "Tutorial": "Interactive game instructions",
+          "Statistics": "Player performance tracking"
+        },
+        "services": {
+          "GameLogic": "Core game rules and validation",
+          "PuzzleGenerator": "Algorithm for creating valid puzzles",
+          "StorageManager": "Save/load functionality",
+          "InputHandler": "Process keyboard, mouse, and touch inputs",
+          "SolverEngine": "Algorithm to solve puzzles and provide hints"
+        }
+      }
+    },
+    "data_model": {
+      "entities": [
+        {
+          "name": "Puzzle",
+          "properties": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Unique identifier"
+            },
+            {
+              "name": "difficulty",
+              "type": "enum",
+              "values": ["easy", "medium", "hard", "expert"],
+              "description": "Difficulty level"
+            },
+            {
+              "name": "board",
+              "type": "Cell[][]",
+              "description": "2D array of cells representing the 9x9 grid"
+            },
+            {
+              "name": "cages",
+              "type": "Cage[]",
+              "description": "Array of cage definitions"
+            },
+            {
+              "name": "solution",
+              "type": "number[][]",
+              "description": "2D array of correct values"
+            },
+            {
+              "name": "created",
+              "type": "timestamp",
+              "description": "Creation date"
+            }
+          ]
+        },
+        {
+          "name": "Cell",
+          "properties": [
+            {
+              "name": "row",
+              "type": "number",
+              "description": "Row index (0-8)"
+            },
+            {
+              "name": "col",
+              "type": "number",
+              "description": "Column index (0-8)"
+            },
+            {
+              "name": "value",
+              "type": "number|null",
+              "description": "Current entered value (null if empty)"
+            },
+            {
+              "name": "notes",
+              "type": "number[]",
+              "description": "Array of pencil marks/notes"
+            },
+            {
+              "name": "isFixed",
+              "type": "boolean",
+              "description": "Whether the cell is part of the initial puzzle"
+            },
+            {
+              "name": "cageId",
+              "type": "string",
+              "description": "ID of the cage this cell belongs to"
+            }
+          ]
+        },
+        {
+          "name": "Cage",
+          "properties": [
+            {
+              "name": "id",
+              "type": "string",
+              "description": "Unique identifier"
+            },
+            {
+              "name": "cells",
+              "type": "Position[]",
+              "description": "Array of positions (row, col) in this cage"
+            },
+            {
+              "name": "sum",
+              "type": "number",
+              "description": "Target sum for this cage"
+            },
+            {
+              "name": "color",
+              "type": "string",
+              "description": "Background color for visualization (CSS color)"
+            }
+          ]
+        },
+        {
+          "name": "GameState",
+          "properties": [
+            {
+              "name": "puzzleId",
+              "type": "string",
+              "description": "ID of the current puzzle"
+            },
+            {
+              "name": "currentBoard",
+              "type": "Cell[][]",
+              "description": "Current state of the board"
+            },
+            {
+              "name": "startTime",
+              "type": "timestamp",
+              "description": "When the puzzle was started"
+            },
+            {
+              "name": "elapsedTime",
+              "type": "number",
+              "description": "Time spent in seconds"
+            },
+            {
+              "name": "hintsUsed",
+              "type": "number",
+              "description": "Count of hints requested"
+            },
+            {
+              "name": "isComplete",
+              "type": "boolean",
+              "description": "Whether the puzzle is solved"
+            },
+            {
+              "name": "moveHistory",
+              "type": "Move[]",
+              "description": "History of moves for undo/redo"
+            }
+          ]
+        },
+        {
+          "name": "UserSettings",
+          "properties": [
+            {
+              "name": "theme",
+              "type": "string",
+              "description": "UI theme preference"
+            },
+            {
+              "name": "highlightMode",
+              "type": "enum",
+              "values": ["none", "related", "same-value"],
+              "description": "Cell highlighting preference"
+            },
+            {
+              "name": "showErrors",
+              "type": "boolean",
+              "description": "Whether to highlight errors"
+            },
+            {
+              "name": "autoNotes",
+              "type": "boolean",
+              "description": "Automatically update pencil marks"
+            },
+            {
+              "name": "input",
+              "type": "enum",
+              "values": ["cell-first", "digit-first"],
+              "description": "Input method preference"
+            }
+          ]
+        }
+      ]
+    },
+    "api_endpoints": [
+      {
+        "name": "PWA Local Storage",
+        "description": "No backend server required, all data stored locally in browser"
+      }
+    ],
+    "external_dependencies": [
+      {
+        "name": "React",
+        "version": "^18.0.0",
+        "purpose": "UI component library"
+      },
+      {
+        "name": "TypeScript",
+        "version": "^5.0.0",
+        "purpose": "Type safety"
+      },
+      {
+        "name": "Materialize CSS",
+        "version": "^1.0.0",
+        "purpose": "UI framework for responsive design"
+      },
+      {
+        "name": "workbox-webpack-plugin",
+        "version": "^7.0.0",
+        "purpose": "Service worker generation for PWA"
+      },
+      {
+        "name": "web-vitals",
+        "version": "^3.0.0",
+        "purpose": "Performance monitoring"
+      },
+      {
+        "name": "localforage",
+        "version": "^1.10.0",
+        "purpose": "Enhanced local storage API"
+      }
+    ],
+    "ci_cd": {
+      "tools": [
+        "GitHub Actions",
+        "Vercel/Netlify for deployment"
+      ],
+      "process": "Automated testing and deployment pipeline that builds the project, runs unit and integration tests, and deploys to production when changes are pushed to the main branch"
+    },
+    "system_configuration": {
+      "env_variables": [
+        {
+          "name": "REACT_APP_VERSION",
+          "description": "Application version number"
+        },
+        {
+          "name": "REACT_APP_STORAGE_PREFIX",
+          "description": "Prefix for local storage keys"
+        }
+      ],
+      "ports": [
+        {
+          "number": 3000,
+          "purpose": "Development server"
+        }
+      ],
+      "config_files": [
+        {
+          "name": "manifest.json",
+          "purpose": "PWA configuration"
+        },
+        {
+          "name": "tsconfig.json",
+          "purpose": "TypeScript configuration"
+        },
+        {
+          "name": "package.json",
+          "purpose": "Project dependencies and scripts"
+        }
+      ]
+    },
+    "acceptance_criteria": [
+      {
+        "id": "AC1",
+        "feature_id": "F1, F3",
+        "description": "The game board correctly displays a 9x9 grid with visually distinct blocks and cages, each cage showing its required sum"
+      },
+      {
+        "id": "AC2",
+        "feature_id": "F2",
+        "description": "Players can input numbers via touch, keyboard, or mouse with equal functionality and responsive feedback"
+      },
+      {
+        "id": "AC3",
+        "feature_id": "F3",
+        "description": "The game validates entries according to all Killer-Sudoku rules: no duplicates in rows, columns, blocks, and cages; cage sums must match targets"
+      },
+      {
+        "id": "AC4",
+        "feature_id": "F4, F8",
+        "description": "The application offers puzzles in at least four difficulty levels, each with unique solvable configurations"
+      },
+      {
+        "id": "AC5",
+        "feature_id": "F5",
+        "description": "The hint system provides useful guidance without trivializing the puzzle challenge"
+      },
+      {
+        "id": "AC6",
+        "feature_id": "F6",
+        "description": "Game progress is automatically saved and can be resumed after closing and reopening the application"
+      },
+      {
+        "id": "AC7",
+        "feature_id": "F7",
+        "description": "The UI is fully responsive and provides equivalent functionality on devices ranging from mobile phones to desktop computers"
+      },
+      {
+        "id": "AC8",
+        "feature_id": "F8",
+        "description": "The puzzle generator creates valid Killer-Sudoku puzzles with unique solutions across all difficulty levels"
+      },
+      {
+        "id": "AC9",
+        "feature_id": "F9",
+        "description": "The application functions fully offline after initial installation as a PWA"
+      },
+      {
+        "id": "AC10",
+        "feature_id": "F10",
+        "description": "New users can complete the tutorial and understand all game mechanics without external assistance"
+      }
+    ]
+  }
