@@ -10,29 +10,29 @@
 
 ## Game Board (F1)
 
-1.  [ ] Implementiere das interaktive 9x9 Sudoku-Gitter.
-2.  [ ] Stelle die Käfige/Gruppen visuell dar.
-3.  [ ] Zeige die Summenwerte der Käfige an.
-4.  [ ] Hebe ausgewählte Zellen, Zeilen, Spalten und Blöcke hervor.
-5.  [ ] Gib farbcodiertes Feedback für gültige/ungültige Einträge.
+1.  [x] Implementiere das interaktive 9x9 Sudoku-Gitter.
+2.  [x] Stelle die Käfige/Gruppen visuell dar.
+3.  [x] Zeige die Summenwerte der Käfige an.
+4.  [x] Hebe ausgewählte Zellen, Zeilen, Spalten und Blöcke hervor.
+5.  [x] Gib farbcodiertes Feedback für gültige/ungültige Einträge.
 
 ## Input Methods (F2)
 
-1.  [ ] Implementiere die Touch-Eingabe für mobile Geräte.
-2.  [ ] Implementiere die Tastatureingabe für Zahlen und Navigation.
-3.  [ ] Implementiere das Klicken und Ziehen mit der Maus zur Auswahl.
-4.  [ ] Implementiere eine Numberpad-Oberfläche zur Eingabe.
+1.  [x] Implementiere die Touch-Eingabe für mobile Geräte.
+2.  [x] Implementiere die Tastatureingabe für Zahlen und Navigation.
+3.  [x] Implementiere das Klicken und Ziehen mit der Maus zur Auswahl.
+4.  [x] Implementiere eine Numberpad-Oberfläche zur Eingabe.
 
 ## Game Mechanics (F3)
 
-1.  [ ] Erzwinge die Standard-Sudoku-Regeln (keine Duplikate in Zeilen, Spalten, Blöcken).
-2.  [ ] Berechne und validiere die Käfigsummen.
-3.  [ ] Verhindere doppelte Ziffern innerhalb von Käfigen.
-4.  [ ] Erkenne die Gewinnbedingung.
+1.  [x] Erzwinge die Standard-Sudoku-Regeln (keine Duplikate in Zeilen, Spalten, Blöcken).
+2.  [x] Berechne und validiere die Käfigsummen.
+3.  [x] Verhindere doppelte Ziffern innerhalb von Käfigen.
+4.  [x] Erkenne die Gewinnbedingung.
 
 ## Difficulty Levels (F4)
 
-1.  [ ] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen.
+1.  [ ] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen und 
 2.  [ ] Implementiere mittelschwere Rätsel mit moderater Komplexität.
 3.  [ ] Implementiere schwere Rätsel mit anspruchsvollen Konfigurationen.
 4.  [ ] Implementiere Expertenrätsel mit minimalen Hinweisen.
@@ -79,6 +79,62 @@
 3.  [ ] Biete kontextsensitive Hilfe.
 4.  [ ] Biete ein Glossar mit Begriffen.
 
+## Spielanalytik und Statistiken (F11)
+
+1.  [ ] Implementiere Spielzeiterfassung für jedes Rätsel.
+2.  [ ] Erstelle Statistiken für gelöste Rätsel pro Schwierigkeitsgrad.
+3.  [ ] Visualisiere den Spielerfortschritt mit Diagrammen.
+4.  [ ] Implementiere Achievements/Erfolge für bestimmte Meilensteine.
+
+## Erweiterte Testabdeckung (F12)
+
+1.  [ ] Schreibe Unit-Tests für die Spiellogik-Komponenten.
+2.  [ ] Implementiere Integrationstests für die UI-Komponenten.
+3.  [ ] Richte End-to-End-Tests ein, um vollständige Spielszenarien zu testen.
+4.  [ ] Füge Performance-Tests hinzu, um Renderinggeschwindigkeit zu optimieren.
+
+## Barrierefreiheit (F13)
+
+1.  [ ] Implementiere Keyboard-Navigation für alle Spielinteraktionen.
+2.  [ ] Optimiere Screenreader-Kompatibilität mit ARIA-Attributen.
+3.  [ ] Teste und verbessere die Farbkontraste für Sehbehinderungen.
+4.  [ ] Füge Untertitel oder Textbeschreibungen für alle audiovisuellen Elemente hinzu.
+
+## Soziale Funktionen (F14)
+
+1.  [ ] Erstelle eine Bestenliste für gelöste Rätsel.
+2.  [ ] Implementiere Teilen-Funktionalität für Rätsel in sozialen Medien.
+3.  [ ] Füge Export/Import-Funktionalität hinzu, um Rätsel mit Freunden zu teilen.
+4.  [ ] Erstelle ein einfaches System zur Rätselbewertung.
+
+## Fortgeschrittene Spielmodi (F15)
+
+1.  [ ] Implementiere einen Zeitrennen-Modus mit Countdown.
+2.  [ ] Erstelle einen täglichen Herausforderungsmodus mit speziellen Rätseln.
+3.  [ ] Füge einen "Zen-Modus" ohne Zeitdruck oder Beschränkungen hinzu.
+4.  [ ] Implementiere einen progressiven Schwierigkeitsmodus, der mit dem Fortschritt des Spielers ansteigt.
+
+## Lokalisierung und Internationalisierung (F16)
+
+1.  [ ] Richte i18next oder ähnliche Bibliotheken für Sprachunterstützung ein.
+2.  [ ] Implementiere Übersetzungen für mindestens Englisch und Deutsch.
+3.  [ ] Berücksichtige kulturspezifische Anpassungen für UI-Elemente.
+4.  [ ] Implementiere RTL-Unterstützung für Sprachen wie Arabisch und Hebräisch.
+
+## Leistungsoptimierung (F17)
+
+1.  [ ] Implementiere Code-Splitting und Lazy Loading für verbesserte Ladezeiten.
+2.  [ ] Optimiere Render-Performance mit React.memo und useMemo.
+3.  [ ] Implementiere Service Worker für effizientes Caching.
+4.  [ ] Führe Lighthouse-Tests durch und verbessere die Leistungswerte.
+
+## Erweitertes Benutzerprofil (F18)
+
+1.  [ ] Implementiere lokale Benutzerprofile mit Avatarauswahl.
+2.  [ ] Erstelle personalisierte Einstellungen für Spielpräferenzen.
+3.  [ ] Implementiere Profilstatistiken und Erfolgsübersicht.
+4.  [ ] Füge Thema-Anpassungsoptionen hinzu.
+
 ## CI/CD
 
 1.  [ ] Richte GitHub Actions für automatisierte Tests und Bereitstellung ein.
@@ -102,3 +158,11 @@
 8.  [ ] Stelle sicher, dass der Puzzle-Generator gültige Killer-Sudoku-Rätsel mit eindeutigen Lösungen über alle Schwierigkeitsgrade hinweg erstellt (AC8).
 9.  [ ] Stelle sicher, dass die Anwendung nach der Erstinstallation als PWA vollständig offline funktioniert (AC9).
 10. [ ] Stelle sicher, dass neue Benutzer das Tutorial abschließen und alle Spielmechaniken ohne externe Hilfe verstehen können (AC10).
+11. [ ] Stelle sicher, dass Spielstatistiken korrekt erfasst und angezeigt werden (AC11).
+12. [ ] Stelle sicher, dass alle Spielfunktionen ausreichend durch Tests abgedeckt sind (AC12).
+13. [ ] Stelle sicher, dass die Anwendung den WCAG 2.1 AA-Standards für Barrierefreiheit entspricht (AC13).
+14. [ ] Stelle sicher, dass soziale Funktionen wie vorgesehen funktionieren und die Privatsphäre respektieren (AC14).
+15. [ ] Stelle sicher, dass alle neuen Spielmodi einwandfrei funktionieren und Spaß machen (AC15).
+16. [ ] Stelle sicher, dass die Anwendung in allen unterstützten Sprachen korrekt dargestellt wird (AC16).
+17. [ ] Stelle sicher, dass die Anwendung auf allen Zielgeräten flüssig läuft und schnell reagiert (AC17).
+18. [ ] Stelle sicher, dass Benutzerprofile zuverlässig gespeichert und wiederhergestellt werden (AC18).

@@ -3,9 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import * as serviceWorkerRegistration from './serviceWorkerRegistration';
-import { ChakraProvider, createSystem, defaultConfig } from '@chakra-ui/react';
-
-const system = createSystem(defaultConfig);
+import { ChakraProvider } from '@chakra-ui/react';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -13,7 +11,7 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ChakraProvider value={system}>
+    <ChakraProvider>
       <App />
     </ChakraProvider>
   </React.StrictMode>

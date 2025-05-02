@@ -1,46 +1,38 @@
-import { ChakraProvider, Box, Container, Heading, Text, createSystem, defaultConfig, defineConfig } from '@chakra-ui/react';
+import { ChakraProvider, Box, Container, Heading, Text, extendTheme } from '@chakra-ui/react';
 import './App.css';
 import Board from './components/Board/Board';
 
-// Erstellen eines erweiterten Themes für Chakra UI mit typografischen Anpassungen
-const config = defineConfig({
-  // Globale CSS-Stile werden jetzt mit globalCss definiert
-  globalCss: {
-    body: {
-      fontSize: '1rem',
-      lineHeight: 1.6,
-    },
-    p: {
-      maxWidth: '38rem',
-      marginLeft: 'auto',
-      marginRight: 'auto',
-    }
-  },
-  // Typographie-Token für das Theme definieren
-  theme: {
-    tokens: {
-      fonts: {
-        body: { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif" },
-        heading: { value: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif" }
+const theme = extendTheme({
+  styles: {
+    global: {
+      body: {
+        fontSize: '1rem',
+        lineHeight: 1.6,
       },
-      fontSizes: {
-        base: { value: "1rem" },
-        lg: { value: "1.125rem" },
-        xl: { value: "1.25rem" }
-      },
-      lineHeights: {
-        normal: { value: "1.6" }
+      p: {
+        maxWidth: '38rem',
+        marginLeft: 'auto',
+        marginRight: 'auto',
       }
     }
+  },
+  fonts: {
+    body: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif",
+    heading: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif"
+  },
+  fontSizes: {
+    base: "1rem",
+    lg: "1.125rem",
+    xl: "1.25rem"
+  },
+  lineHeights: {
+    normal: "1.6"
   }
 });
 
-// System mit Standard- und eigener Konfiguration erstellen
-const system = createSystem(defaultConfig, config);
-
 function App() {
   return (
-    <ChakraProvider value={system}>
+    <ChakraProvider theme={theme}>
       <Box as="header" bg="teal.500" py={4} mb={8}>
         <Heading as="h1" textAlign="center" color="white">
           Killer Sudoku

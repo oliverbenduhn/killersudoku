@@ -1,0 +1,39 @@
+{
+    "mcp": {
+        "autoStart": ["memory", "context7", "github"],
+        "servers": {
+            "memory": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@modelcontextprotocol/server-memory"
+                ]
+            },
+            "context7": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@upstash/context7-mcp@latest"
+                ]
+            },
+            "github": {
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@smithery/cli@latest",
+                    "run",
+                    "@smithery-ai/github",
+                    "--key",
+                    "934861af-ddbd-4811-b548-8753fe3fca76"
+                ]
+            }
+        }
+    },
+    "github.copilot.editor.enableAutoCompletions": true,
+    "github.copilot.advanced": {
+        "prioritizeMCP": true,
+        "enableMCPSpecificSuggestions": true,
+        "mcpConnectionTimeout": 30000
+    },
+    "editor.inlineSuggest.enabled": true
+}

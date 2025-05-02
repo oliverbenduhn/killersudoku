@@ -1,0 +1,22 @@
+{
+  "copilot": {
+    "mcpServers": {
+      "memory": {
+        "description": "Speichert lokale Projektinformationen und Kontext über Sitzungen hinweg",
+        "useFor": ["codeHistory", "projectContext", "sessionPersistence"]
+      },
+      "context7": {
+        "description": "Stellt Zugriff auf aktuelle Dokumentation und externe Ressourcen bereit",
+        "useFor": ["documentation", "apiReferences", "libraryExamples"]
+      },
+      "github": {
+        "description": "Ermöglicht Zugriff auf GitHub-Repositories und Code-Beispiele",
+        "useFor": ["codeExamples", "repositoryAccess", "issueTracking"]
+      }
+    },
+    "preferences": {
+      "priorityServers": ["memory", "context7"],
+      "autoFetchLibraries": ["@chakra-ui/react", "typescript", "react"]
+    }
+  }
+}
