@@ -1,0 +1,529 @@
+{
+  "timestamp": "2025-05-03T00:35:50.408Z",
+  "totalLevels": 100,
+  "totalErrors": 1,
+  "results": [
+    {
+      "levelId": "b3dibr",
+      "valid": false,
+      "errors": [
+        {
+          "levelId": "b3dibr",
+          "errorType": "OVERLAPPING_CAGES",
+          "message": "Es wurden überlappende Käfige gefunden",
+          "details": {
+            "overlappingIds": [
+              "66axb4",
+              "2tdpbj"
+            ],
+            "overlappingCoordinates": [
+              {
+                "row": 0,
+                "col": 7,
+                "cageIds": [
+                  "2tdpbj",
+                  "66axb4"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "levelId": "1e1x3f",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "1zz4hk",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "zlmpur",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "6pxd26",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "f6vqcg",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "tkxlj5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jo6ea1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jezw6k",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "6c0s2x",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ybmg6u",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "kgg2dc",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "uh22fx",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "t1xtih",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "n0bt3v",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "k7jvz9",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "vsygdk",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "y9ylil",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "uqt3ah",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "bdlwa9",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "j91h1a",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "g3k1ze",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jib4be",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "2f3036",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "h731k8",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "y1axzz",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "38341x",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "78h1d4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jy09ww",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "7y5rzl",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ngtbk6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "zfnvzp",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ieb5dz",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "kl8qp4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "zvolbc",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "9mcg2r",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "8h8x4m",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "y8cjoe",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "cb70ne",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "opklut",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "iwbxk5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "fd8lc1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "p12n3s",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "85maxa",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "vh2ask",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "x1zhpz",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "664k7j",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ql12uc",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "r1wd05",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "j7efaw",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "dz23p6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "o2k5nu",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "k3jcb1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ohs94t",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "6p8zml",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ojq0kf",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ikbprb",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "at9xgj",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "5jis9x",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "gvdx18",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "30kmtd",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "6pwxkd",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "l97shg",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "udho81",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "a4oj11",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ytq3jt",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "6rqhpd",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jtm8yu",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "lt1lq2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "vykcsm",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "2w68z5",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "q2q4xu",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "cu69c6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "qqiz6f",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "24stoz",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "3mmv7g",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "s4eeku",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "rz9lau",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ezzpy8",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ef2f21",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "poguo4",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "g8vfm1",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "mrczjh",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "s5c4gc",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "dehkaf",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "tp02ek",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "ajiuug",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "7qtute",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "sl8ns8",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "istjwo",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "htu2h2",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "jjvq6b",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "yq5u15",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "odasuh",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "0kyv7c",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "7pdv7x",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "9cspt6",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "iiuq5g",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "fvfivh",
+      "valid": true,
+      "errors": []
+    },
+    {
+      "levelId": "oiqt5l",
+      "valid": true,
+      "errors": []
+    }
+  ]
+}

@@ -21,4 +21,19 @@ export interface GameState {
   solved?: boolean;
   history?: GameState[];
   currentHistoryIndex?: number;
+  levelId?: string; // ID des aktuellen Levels
+}
+
+export interface GameLevel {
+  id: string;
+  levelNumber: number;
+  difficultyRating?: number; // 1-10 Schwierigkeitswert anstelle der Kategorien
+  name?: string;
+  cages: Cage[];
+  initialValues: number[][]; // Array mit vorgegebenen Zahlenwerten
+  solution?: number[][];
+  author?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  description?: string;
 }

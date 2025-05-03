@@ -19,7 +19,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "tsc": "tsc",
+    "validate": "tsc && node dist/utils/validateLevels.js"
   },
   "eslintConfig": {
     "extends": [
@@ -41,6 +43,7 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
+    "@types/node": "^22.15.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.3"
   }

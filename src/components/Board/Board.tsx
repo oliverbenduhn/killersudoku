@@ -1,69 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack } from '@chakra-ui/react';
+import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
 import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
 import useGameState from '../../hooks/useGameState';
 import NumberPad from '../NumberPad/NumberPad';
-import { Cage, CellPosition } from '../../types/gameTypes';
+import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
-import { generateRandomCages, createEmptyBoard } from '../../services/puzzleGeneratorService';
+import { createEmptyBoard } from '../../services/puzzleGeneratorService';
 
 interface BoardProps {
   size?: number;
   puzzleId?: string;
+  levelData?: GameLevel | null;
+  isLoading?: boolean;
+  error?: string | null;
 }
-
-// Vollständige Abdeckung des Spielfelds mit Käfigen unterschiedlicher Größe
-const exampleCages: Cage[] = [
-  // Zeile 0
-  { id: 'A1', sum: 17, color: 'yellow.100', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }] }, // 3er L-Form
-  { id: 'A2', sum: 6, color: 'blue.100', cells: [{ row: 0, col: 2 }, { row: 1, col: 2 }] }, // 2er vertikal
-  { id: 'A3', sum: 14, color: 'red.200', cells: [{ row: 0, col: 3 }, { row: 0, col: 4 }] }, // 2er horizontal
-  { id: 'A4', sum: 17, color: 'green.100', cells: [{ row: 0, col: 5 }, { row: 0, col: 6 }, { row: 0, col: 7 }] }, // 3er horizontal
-  { id: 'A5', sum: 7, color: 'purple.100', cells: [{ row: 0, col: 8 }] }, // 1er (Single-cell)
-  
-  // Zeile 1-2
-  { id: 'B1', sum: 11, color: 'teal.100', cells: [{ row: 1, col: 1 }, { row: 2, col: 1 }] }, // 2er vertikal
-  { id: 'B2', sum: 8, color: 'orange.100', cells: [{ row: 1, col: 3 }] }, // 1er (Single-cell)
-  { id: 'B3', sum: 16, color: 'yellow.200', cells: [{ row: 1, col: 4 }, { row: 1, col: 5 }, { row: 2, col: 5 }] }, // 3er L-Form
-  { id: 'B4', sum: 15, color: 'pink.100', cells: [{ row: 1, col: 6 }, { row: 1, col: 7 }, { row: 1, col: 8 }, { row: 2, col: 8 }] }, // 4er L-Form
-  
-  // Zeile 2
-  { id: 'C1', sum: 13, color: 'blue.200', cells: [{ row: 2, col: 0 }, { row: 3, col: 0 }] }, // 2er vertikal
-  { id: 'C2', sum: 11, color: 'red.100', cells: [{ row: 2, col: 2 }, { row: 2, col: 3 }, { row: 2, col: 4 }] }, // 3er horizontal
-  { id: 'C3', sum: 12, color: 'gray.200', cells: [{ row: 2, col: 6 }, { row: 2, col: 7 }] }, // 2er horizontal
-  
-  // Zeile 3
-  { id: 'D1', sum: 13, color: 'cyan.100', cells: [{ row: 3, col: 1 }, { row: 3, col: 2 }] }, // 2er horizontal
-  { id: 'D2', sum: 29, color: 'green.200', cells: [{ row: 3, col: 3 }, { row: 3, col: 4 }, { row: 3, col: 5 }, { row: 3, col: 6 }, { row: 3, col: 7 }] }, // 5er horizontal
-  { id: 'D3', sum: 6, color: 'yellow.300', cells: [{ row: 3, col: 8 }, { row: 4, col: 8 }] }, // 2er vertikal
-  
-  // Zeile 4
-  { id: 'E1', sum: 14, color: 'orange.200', cells: [{ row: 4, col: 0 }, { row: 4, col: 1 }, { row: 5, col: 0 }] }, // 3er L-Form
-  { id: 'E2', sum: 24, color: 'teal.200', cells: [{ row: 4, col: 2 }, { row: 4, col: 3 }, { row: 4, col: 4 }, { row: 5, col: 3 }] }, // 4er unregelmäßig
-  { id: 'E3', sum: 9, color: 'purple.200', cells: [{ row: 4, col: 5 }, { row: 4, col: 6 }] }, // 2er horizontal
-  { id: 'E4', sum: 3, color: 'red.100', cells: [{ row: 4, col: 7 }] }, // 1er (Single-cell)
-  
-  // Zeile 5
-  { id: 'F1', sum: 15, color: 'blue.100', cells: [{ row: 5, col: 1 }, { row: 5, col: 2 }] }, // 2er horizontal
-  { id: 'F2', sum: 16, color: 'pink.200', cells: [{ row: 5, col: 4 }, { row: 5, col: 5 }, { row: 5, col: 6 }] }, // 3er horizontal
-  { id: 'F3', sum: 17, color: 'green.100', cells: [{ row: 5, col: 7 }, { row: 5, col: 8 }, { row: 6, col: 8 }] }, // 3er L-Form
-  
-  // Zeile 6
-  { id: 'G1', sum: 23, color: 'yellow.100', cells: [{ row: 6, col: 0 }, { row: 6, col: 1 }, { row: 6, col: 2 }, { row: 7, col: 0 }] }, // 4er L-Form
-  { id: 'G2', sum: 13, color: 'purple.100', cells: [{ row: 6, col: 3 }, { row: 6, col: 4 }] }, // 2er horizontal
-  { id: 'G3', sum: 12, color: 'teal.100', cells: [{ row: 6, col: 5 }, { row: 6, col: 6 }, { row: 6, col: 7 }] }, // 3er horizontal
-  
-  // Zeile 7-8
-  { id: 'H1', sum: 16, color: 'pink.100', cells: [{ row: 7, col: 1 }, { row: 7, col: 2 }, { row: 8, col: 1 }] }, // 3er L-Form
-  { id: 'H2', sum: 15, color: 'orange.100', cells: [{ row: 7, col: 3 }, { row: 7, col: 4 }, { row: 7, col: 5 }] }, // 3er horizontal
-  { id: 'H3', sum: 10, color: 'blue.200', cells: [{ row: 7, col: 6 }, { row: 7, col: 7 }, { row: 7, col: 8 }] }, // 3er horizontal
-  
-  // Zeile 8
-  { id: 'I1', sum: 8, color: 'green.200', cells: [{ row: 8, col: 0 }] }, // 1er (Single-cell)
-  { id: 'I2', sum: 14, color: 'red.200', cells: [{ row: 8, col: 2 }, { row: 8, col: 3 }] }, // 2er horizontal
-  { id: 'I3', sum: 12, color: 'yellow.200', cells: [{ row: 8, col: 4 }, { row: 8, col: 5 }] }, // 2er horizontal
-  { id: 'I4', sum: 18, color: 'purple.200', cells: [{ row: 8, col: 6 }, { row: 8, col: 7 }, { row: 8, col: 8 }] }, // 3er horizontal
-];
 
 // Hilfsfunktion zum Abrufen des Käfigs für eine bestimmte Zelle
 function getCageForCell(cages: Cage[], row: number, col: number): Cage | undefined {
@@ -75,8 +25,29 @@ function areCellsInSameCage(cages: Cage[], row1: number, col1: number, row2: num
   return GameLogic.areCellsInSameCage(cages, row1, col1, row2, col2);
 }
 
-export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) => {
-  const { gameState, isLoading, updateGameState } = useGameState(puzzleId);
+// Hilfsfunktion, um das obere linke Feld eines Käfigs zu bestimmen
+function findTopLeftCellInCage(cage: Cage): CellPosition | null {
+  if (!cage || !cage.cells || cage.cells.length === 0) return null;
+  
+  // Sortieren nach Zeile (primär) und Spalte (sekundär)
+  const sortedCells = [...cage.cells].sort((a, b) => {
+    if (a.row !== b.row) {
+      return a.row - b.row;
+    }
+    return a.col - b.col;
+  });
+  
+  return sortedCells[0];
+}
+
+export const Board: React.FC<BoardProps> = ({ 
+  size = 9, 
+  puzzleId = 'default',
+  levelData = null,
+  isLoading: externalLoading = false,
+  error: externalError = null
+}) => {
+  const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId);
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   const [dragStart, setDragStart] = useState<CellPosition | null>(null);
   const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
@@ -84,16 +55,17 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
   const boardRef = useRef<HTMLDivElement>(null);
   const boardFocusRef = useRef<HTMLDivElement>(null);
   const [cellSize, setCellSize] = useState<number>(50);
-  const [cages, setCages] = useState<Cage[]>(exampleCages);
+  const [cages, setCages] = useState<Cage[]>([]);
+  const [hasError, setHasError] = useState<boolean>(false);
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
-    base: 32, // Mobil
-    sm: 36,   // Tablet klein
-    md: 42,   // Tablet
-    lg: 50,   // Desktop
-    xl: 56    // Großer Bildschirm
-  }) || 42;
+    base: 36,  // Mobil
+    sm: 42,    // Tablet klein
+    md: 48,    // Tablet
+    lg: 66,    // Desktop (erhöht von 60)
+    xl: 72     // Großer Bildschirm (erhöht von 66)
+  }) || 48;
 
   // Schriftgrößen für Zahlen und Summenwerte je nach Bildschirmgröße
   const valueFontSize = useBreakpointValue({
@@ -113,25 +85,119 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
   // Flex-Richtung für das Layout der Spielbrett- und Nummernpad-Container
   const flexDirection = useBreakpointValue({
     base: "column", // Untereinander auf kleinen Bildschirmen
-    md: "row"      // Nebeneinander ab mittlerer Größe
+    lg: "row"      // Nebeneinander ab großen Bildschirmen
   }) as "column" | "row";
+
+  // Lade Level-Daten in den State, wenn sie verfügbar sind
+  useEffect(() => {
+    if (levelData && levelData.cages) {
+      console.log('Board: Level geladen:', levelData);
+      setCages(levelData.cages);
+      
+      // Initialisiere sofort mit den initialValues, wenn Level-Daten vorliegen
+      if (levelData.initialValues && gameState) {
+        console.log('Board: initialValues verfügbar, setze direkt:', levelData.initialValues);
+        
+        // Direkte Aktualisierung, wenn sich levelId geändert hat oder wenn gameState.cellValues nur Nullen enthält
+        const isEmptyBoard = gameState.cellValues.every(row => row.every(cell => cell === 0));
+        const isDifferentLevel = gameState.levelId !== puzzleId;
+        
+        if (isDifferentLevel || isEmptyBoard) {
+          console.log('Board: Aktualisiere cellValues mit initialValues');
+          // Tiefe Kopie der initialValues erstellen und als cellValues setzen
+          const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
+          updateGameState({
+            cellValues: initialValuesCopy,
+            levelId: puzzleId
+          });
+        }
+      }
+    } else if (!levelData && !externalLoading) {
+      setHasError(true);
+    } else {
+      setHasError(false);
+    }
+  }, [levelData, puzzleId, externalLoading, gameState, updateGameState]);
 
   // Größe des Spielbretts dynamisch anpassen beim Mounten und bei Größenänderungen
   useEffect(() => {
+    // Variablen zum Verfolgen der Stabilisierung der Größe
+    let resizeAttempts = 0;
+    const maxResizeAttempts = 3;
+    let lastCellSize = cellSize;
+    let stabilizationTimer: NodeJS.Timeout;
+
     const handleResize = () => {
       if (boardRef.current) {
-        const containerWidth = boardRef.current.clientWidth;
-        const maxCellSize = Math.floor((containerWidth - 12) / size); // 12px für Padding
-        setCellSize(Math.min(maxCellSize, cellSizeByBreakpoint));
+        // Verfügbaren Platz ermitteln - Berücksichtige den Container-Padding
+        const boardBox = boardRef.current.getBoundingClientRect();
+        const parentWidth = boardBox.width - 16; // Berücksichtige Innenpolsterung
+        const parentHeight = boardBox.height - 16;
+        
+        // Berechne die maximal mögliche Zellengröße basierend auf der Breite und Höhe
+        const maxByWidth = Math.floor(parentWidth / size);
+        const maxByHeight = Math.floor(parentHeight / size);
+        
+        // Wähle den kleineren Wert, um sicherzustellen, dass das Brett ohne Scrollbars passt
+        const maxCellSize = Math.min(maxByWidth, maxByHeight);
+        
+        // Begrenzen der Zellgröße auf ein sinnvolles Maximum/Minimum
+        // Für mobile Geräte (schmale Bildschirme) verwenden wir eine kleinere Mindestgröße
+        const isMobile = window.innerWidth < 768;
+        const minSize = isMobile ? 24 : 28;
+        
+        // Berechnete optimale Größe, nicht größer als vom Breakpoint vorgegeben
+        const optimalSize = Math.min(maxCellSize, cellSizeByBreakpoint);
+        
+        // Neue Zellgröße, mindestens minSize
+        const newCellSize = Math.max(minSize, optimalSize);
+        
+        // Wenn wir einen stabilen Zustand erreicht haben oder die maximale Anzahl von Versuchen überschritten haben
+        if (Math.abs(newCellSize - lastCellSize) < 2 || resizeAttempts >= maxResizeAttempts) {
+          // Nur aktualisieren, wenn eine wesentliche Änderung vorliegt
+          if (Math.abs(newCellSize - cellSize) >= 2) {
+            setCellSize(newCellSize);
+          }
+          
+          // Tracking zurücksetzen für das nächste Resize-Event
+          resizeAttempts = 0;
+          clearTimeout(stabilizationTimer);
+          return;
+        }
+        
+        // Verfolge die aktuelle Größe für den nächsten Vergleich
+        lastCellSize = newCellSize;
+        
+        // Inkrementiere die Anzahl der Resize-Versuche
+        resizeAttempts++;
+        
+        // Setze die aktuelle Größe
+        setCellSize(newCellSize);
+        
+        // Nach einer kurzen Verzögerung erneut prüfen, ob die Größe stabil ist
+        clearTimeout(stabilizationTimer);
+        stabilizationTimer = setTimeout(handleResize, 50);
       }
     };
 
-    // Beim ersten Render
-    handleResize();
-
-    // Event-Listener für Größenänderungen
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    // Initial-Verzögerung für das erste Rendering
+    const initialDelayTimer = setTimeout(() => {
+      handleResize();
+      
+      // Event-Listener für weitere Größenänderungen
+      window.addEventListener('resize', () => {
+        // Zurücksetzen des Stabilisierungs-Trackings bei einem neuen Resize-Event
+        resizeAttempts = 0;
+        clearTimeout(stabilizationTimer);
+        handleResize();
+      });
+    }, 300); // Längere anfängliche Verzögerung, um sicherzustellen, dass das Layout fertig ist
+    
+    return () => {
+      clearTimeout(initialDelayTimer);
+      clearTimeout(stabilizationTimer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, [size, cellSizeByBreakpoint]);
 
   const handleDragStart = (row: number, col: number) => {
@@ -165,11 +231,14 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
   };
 
   const handleNumberSelect = (number: number) => {
-    if (!gameState) return;
+    if (!gameState || !levelData) return;
 
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
     selectedCells.forEach(({ row, col }) => {
-      newValues[row][col] = number;
+      // Überprüfen, ob die Zelle vorausgefüllt ist
+      if (levelData.initialValues[row][col] === 0) {
+        newValues[row][col] = number;
+      }
     });
 
     updateGameState({
@@ -178,11 +247,14 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
   };
 
   const handleClear = () => {
-    if (!gameState) return;
+    if (!gameState || !levelData) return;
 
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
     selectedCells.forEach(({ row, col }) => {
-      newValues[row][col] = 0;
+      // Überprüfen, ob die Zelle vorausgefüllt ist
+      if (levelData.initialValues[row][col] === 0) {
+        newValues[row][col] = 0;
+      }
     });
 
     updateGameState({
@@ -273,13 +345,15 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
     }
     
     // Zahlen 1-9 für die Eingabe
-    else if (/^[1-9]$/.test(e.key) && gameState) {
+    else if (/^[1-9]$/.test(e.key) && gameState && levelData) {
       const num = parseInt(e.key, 10);
       const newValues = gameState.cellValues.map((row: number[]) => [...row]);
       
-      // Nur die aktuell ausgewählten Zellen aktualisieren
+      // Nur die aktuell ausgewählten Zellen aktualisieren, wenn sie nicht vorausgefüllt sind
       selectedCells.forEach(cell => {
-        newValues[cell.row][cell.col] = num;
+        if (levelData.initialValues[cell.row][cell.col] === 0) {
+          newValues[cell.row][cell.col] = num;
+        }
       });
       
       updateGameState({
@@ -288,12 +362,14 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
       return;
     }
     // Entfernen/Löschen mit Backspace, Delete oder 0
-    else if (['Backspace', 'Delete', '0'].includes(e.key) && gameState) {
+    else if (['Backspace', 'Delete', '0'].includes(e.key) && gameState && levelData) {
       const newValues = gameState.cellValues.map((row: number[]) => [...row]);
       
-      // Nur die aktuell ausgewählten Zellen löschen
+      // Nur die aktuell ausgewählten Zellen löschen, wenn sie nicht vorausgefüllt sind
       selectedCells.forEach(cell => {
-        newValues[cell.row][cell.col] = 0;
+        if (levelData.initialValues[cell.row][cell.col] === 0) {
+          newValues[cell.row][cell.col] = 0;
+        }
       });
       
       updateGameState({
@@ -353,25 +429,7 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
   const handleReset = () => {
     if (!gameState) return;
     
-    // Alle Zellen auf 0 setzen
-    const emptyValues = Array(size).fill(0).map(() => Array(size).fill(0));
-    
-    updateGameState({
-      cellValues: emptyValues
-    });
-    
-    // Auswahl zurücksetzen
-    setSelectedCell(null);
-    setSelectedCells([]);
-  };
-  
-  // Handler für "Neues Spielfeld"-Button
-  const handleNewPuzzle = () => {
-    // Generiere neue zufällige Käfige
-    const newCages = generateRandomCages(size);
-    setCages(newCages);
-    
-    // Setze Spielfeld zurück
+    // Alle Zellen auf 0 setzen, konsistent createEmptyBoard verwenden
     const emptyValues = createEmptyBoard(size);
     
     updateGameState({
@@ -382,18 +440,23 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
     setSelectedCell(null);
     setSelectedCells([]);
   };
-
+  
   const renderCell = (row: number, col: number) => {
-    if (!gameState) return null;
+    if (!gameState || !levelData) return null;
 
     const isSelected = selectedCells.some((cell: CellPosition) => cell.row === row && cell.col === col);
     const isSameRow = selectedCell && selectedCell.row === row;
     const isSameCol = selectedCell && selectedCell.col === col;
     const isSameBlk = selectedCell && isSameBlock(selectedCell.row, selectedCell.col, row, col);
     const cage = getCageForCell(cages, row, col);
-    const isCageStart = cage && cage.cells[0].row === row && cage.cells[0].col === col;
+    
+    // Korrekte Bestimmung des Startzellen-Käfigs (oberste, linkeste Zelle)
+    const topLeftCell = cage ? findTopLeftCellInCage(cage) : null;
+    const isCageStart = topLeftCell && topLeftCell.row === row && topLeftCell.col === col;
+    
     const value = gameState.cellValues[row][col];
     const valid = isCellValid(row, col, value);
+    const isInitialValue = levelData.initialValues[row][col] !== 0;
 
     // Käfig-Status für verbesserte visuelle Rückmeldung
     const cageComplete = cage ? isCageComplete(cage) : false;
@@ -406,38 +469,24 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
 
     // Dynamische Hintergrundfarbe basierend auf verschiedenen Zuständen
     let bgColor = "white";
-    if (isSelected) {
+    if (isSelected && !isInitialValue) {
       bgColor = "blue.100";
     } else if (value && !valid) {
-      bgColor = "red.100";  // Ungültige Einträge
+      bgColor = "red.100";
     } else if (cage) {
-      if (cageComplete) {
-        bgColor = `${cage.color.split('.')[0]}.300`; // Intensivere Version der gleichen Farbe
-      } else {
-        bgColor = cage.color;
-      }
-    } else if (isSameRow || isSameCol || isSameBlk) {
+      bgColor = cage.color;  // Immer die normale Käfigfarbe verwenden
+    } else if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue) {
       bgColor = "blue.50";
     }
 
     // Wertfarbe basierend auf verschiedenen Zuständen
-    let valueColor = "black";
-    if (!valid && value !== 0) {
-      valueColor = "red.600";  // Ungültige Einträge
+    // Vorausgefüllte Zahlen immer in Schwarz anzeigen, aber Hintergrundfarbe beibehalten
+    let valueColor = isInitialValue ? "black" : "blue.700";
+    if (!valid && value !== 0 && !isInitialValue) {
+      valueColor = "red.600";
     } else if (cageComplete && cage) {
-      valueColor = "green.700";  // Korrekte Käfige
-    } else if (value) {
-      valueColor = "blue.700";  // Normale Einträge
+      valueColor = "green.700";
     }
-
-    // CSS-Animation für ungültige Einträge
-    const animationKeyframes = value && !valid ? `
-      @keyframes pulsateRed {
-        0% { box-shadow: 0 0 0 0 rgba(254, 178, 178, 0.7); }
-        70% { box-shadow: 0 0 0 6px rgba(254, 178, 178, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(254, 178, 178, 0); }
-      }
-    ` : '';
 
     return (
       <Box
@@ -445,18 +494,16 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
-        border="1px solid black"
-        borderRight={col % 3 === 2 ? "2px solid black" : "1px solid black"}
-        borderBottom={row % 3 === 2 ? "2px solid black" : "1px solid black"}
+        border="1px solid rgba(0,0,0,0.2)"
+        borderRight={col % 3 === 2 ? "2px solid rgba(0,0,0,0.4)" : "1px solid rgba(0,0,0,0.2)"}
+        borderBottom={row % 3 === 2 ? "2px solid rgba(0,0,0,0.4)" : "1px solid rgba(0,0,0,0.2)"}
         bg={bgColor}
-        onMouseDown={() => handleDragStart(row, col)}
+        onMouseDown={() => !isInitialValue && handleDragStart(row, col)}
         onMouseEnter={() => handleDragEnter(row, col)}
         onMouseUp={handleDragEnd}
-        // Touchscreen-Unterstützung
-        onTouchStart={() => handleDragStart(row, col)}
+        onTouchStart={() => !isInitialValue && handleDragStart(row, col)}
         onTouchMove={(e) => {
-          // Touch-Position in Bezug auf das Brett ermitteln und in Zellenposition umrechnen
-          if (boardRef.current && e.touches.length > 0) {
+          if (!isInitialValue && boardRef.current && e.touches.length > 0) {
             const touch = e.touches[0];
             const boardRect = boardRef.current.getBoundingClientRect();
             const touchX = touch.clientX - boardRect.left;
@@ -464,7 +511,6 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
             const touchCol = Math.floor(touchX / cellSize);
             const touchRow = Math.floor(touchY / cellSize);
             
-            // Nur wenn innerhalb des Boards und andere Zelle als aktuell ausgewählte
             if (touchRow >= 0 && touchRow < size && touchCol >= 0 && touchCol < size &&
                 (selectedCell?.row !== touchRow || selectedCell?.col !== touchCol)) {
               handleDragEnter(touchRow, touchCol);
@@ -472,13 +518,9 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
           }
         }}
         onTouchEnd={handleDragEnd}
-        cursor="pointer"
-        _hover={{ bg: "blue.50" }}
-        // Pulsieren-Animation für falsche Einträge
-        animation={value && !valid ? "pulsateRed 2s infinite" : undefined}
-        css={value && !valid ? animationKeyframes : undefined}
+        cursor={isInitialValue ? "default" : "pointer"}
+        _hover={isInitialValue ? undefined : { bg: "blue.50" }}
       >
-        {/* Innerer gestrichelter Rahmen für Käfige */}
         {cage && (
           <Box
             position="absolute"
@@ -492,33 +534,34 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
             borderRight={hasRightSameCage ? "none" : undefined}
             borderBottom={hasBottomSameCage ? "none" : undefined}
             pointerEvents="none"
-            // Hinzufügen einer leichten grünen Hintergrundfarbe für korrekte Käfige
-            bg={cageComplete ? "green.50" : undefined}
+            bg={undefined}  // Kein Hintergrund für gelöste Käfige
             transition="background-color 0.3s"
           />
         )}
         
-        {isCageStart && (
+        {isCageStart && cage && (
           <Text
             position="absolute"
             top="3px"
             left="3px"
             fontSize={sumFontSize}
             fontWeight="bold"
-            color={cageComplete ? "green.700" : "gray.700"}
+            color={cageComplete ? "green.600" : "gray.700"}  // Summe wird grün wenn gelöst
             zIndex="1"
           >
             {cage.sum}
           </Text>
         )}
+        
         <Text
           position="absolute"
           top="50%"
           left="50%"
           transform="translate(-50%, -50%)"
           fontSize={valueFontSize}
-          fontWeight="bold"
-          color={valueColor}
+          fontWeight={isInitialValue ? "bold" : "medium"}
+          color={cageComplete ? "green.600" : (isInitialValue ? "black" : "blue.700")}  // Zahlen werden grün wenn Käfig gelöst
+          userSelect="none"
           transition="color 0.3s"
         >
           {value || ''}
@@ -545,11 +588,44 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
     return grid;
   };
 
-  if (isLoading) {
+  // Kombinierte Ladeanzeige für den internen und externen Ladezustand
+  const isLoadingCombined = stateLoading || externalLoading;
+
+  // Fehleranzeige wenn kein Level geladen werden konnte
+  if (externalError || hasError) {
+    return (
+      <Alert status="error" borderRadius="md">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Fehler beim Laden des Levels</AlertTitle>
+          <AlertDescription>
+            {externalError || "Das Level konnte nicht geladen werden. Bitte versuchen Sie ein anderes Level."}
+          </AlertDescription>
+        </Box>
+      </Alert>
+    );
+  }
+
+  if (isLoadingCombined) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" h="200px">
         <Spinner size="xl" color="teal.500" />
       </Box>
+    );
+  }
+
+  // Prüfen, ob ein Level geladen ist
+  if (!cages || cages.length === 0) {
+    return (
+      <Alert status="info" borderRadius="md">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Kein Level geladen</AlertTitle>
+          <AlertDescription>
+            Bitte wählen Sie ein Level aus dem Level-Selektor.
+          </AlertDescription>
+        </Box>
+      </Alert>
     );
   }
 
@@ -558,30 +634,31 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
       direction={flexDirection} 
       gap={4} 
       justify="center" 
-      align="center" 
+      align={flexDirection === "column" ? "center" : "start"}
       flexWrap="wrap"
       w="100%"
+      minH="70vh"
     >
       <Box 
         ref={(el: HTMLDivElement | null) => {
-          // Beide Refs auf das gleiche Element setzen
           boardRef.current = el;
           boardFocusRef.current = el;
         }}
-        p={[2, 4, 6]} 
+        p={[1, 2, 4]}
         display="flex" 
         justifyContent="center"
+        alignItems="center"
         boxShadow="lg"
         borderRadius="lg"
         bg="white"
-        border="3px solid black"
         position="relative"
-        maxW="100%"
-        overflow="auto"
-        // Tabindex hinzufügen, damit das Board Keyboard-Events empfangen kann
+        flexGrow={1}
+        maxW={flexDirection === "column" ? "95%" : "70%"}
+        h={["auto", "auto", "65vh"]}
+        overflowX="hidden"
+        overflowY="hidden"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        // Hinzufügen eines visuellen Indikators für den Keyboard-Fokus
         _focus={{ 
           outline: "3px dashed teal.500", 
           outlineOffset: "4px" 
@@ -591,7 +668,6 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
           {renderGrid()}
         </Box>
         
-        {/* Success message when board is complete */}
         {gameState && isBoardComplete() && (
           <Box
             position="absolute"
@@ -613,24 +689,33 @@ export const Board: React.FC<BoardProps> = ({ size = 9, puzzleId = 'default' }) 
         )}
       </Box>
       
-      <Box p={2} alignSelf={flexDirection === "column" ? "center" : "flex-start"}>
+      <Box 
+        p={2} 
+        alignSelf={flexDirection === "column" ? "center" : "start"}
+        mt={flexDirection === "column" ? 4 : 0}
+        pt={flexDirection === "row" ? "16px" : 2}
+        width={flexDirection === "column" ? "100%" : "auto"}
+        display="flex"
+        flexDirection="column"
+        alignItems={flexDirection === "column" ? "center" : "start"}
+      >
         <NumberPad
           onNumberSelect={handleNumberSelect}
           onClear={handleClear}
           disabledNumbers={[]}
         />
-        <Stack direction="row" gap={4} mt={4}>
+        <Stack 
+          direction="row" 
+          gap={4} 
+          mt={4}
+          justify={flexDirection === "column" ? "center" : "start"}
+          width="100%"
+        >
           <Button 
             colorScheme="teal" 
             onClick={handleReset}
           >
             <RepeatIcon mr={2} /> Reset
-          </Button>
-          <Button 
-            colorScheme="orange" 
-            onClick={handleNewPuzzle}
-          >
-            <AddIcon mr={2} /> Neues Spielfeld
           </Button>
         </Stack>
       </Box>
