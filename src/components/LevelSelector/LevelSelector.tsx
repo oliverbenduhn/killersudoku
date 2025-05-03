@@ -9,16 +9,25 @@ import {
   useToast,
   Badge,
   Text,
-  useBreakpointValue
+  useBreakpointValue,
+  SimpleGrid,
+  Box,
+  Flex
 } from '@chakra-ui/react';
 import { TOTAL_LEVELS } from '../../services/levelService';
+import RippleButton from '../common/RippleButton';
 
 interface LevelSelectorProps {
   currentLevel: number;
   onLevelChange: (level: number) => void;
+  fullWidth?: boolean;
 }
 
-const LevelSelector: React.FC<LevelSelectorProps> = ({ currentLevel, onLevelChange }) => {
+const LevelSelector: React.FC<LevelSelectorProps> = ({ 
+  currentLevel, 
+  onLevelChange,
+  fullWidth = false
+}) => {
   const [inputValue, setInputValue] = useState<string>(currentLevel.toString());
   const toast = useToast();
   
@@ -64,8 +73,8 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({ currentLevel, onLevelChan
   };
 
   // Berechnet die ungefähre Schwierigkeit basierend auf der Level-Nummer
-  const getDifficultyBadge = () => {
-    const difficultyIndex = Math.ceil((currentLevel / TOTAL_LEVELS) * 5);
+  const getDifficultyBadge = (level: number) => {
+    const difficultyIndex = Math.ceil((level / TOTAL_LEVELS) * 5);
     const difficulties = [
       { color: "green", text: "Einfach" },
       { color: "teal", text: "Leicht" },
@@ -79,11 +88,11 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({ currentLevel, onLevelChan
     return (
       <Badge 
         colorScheme={difficulty.color} 
-        fontSize="2xs" 
+        fontSize={fullWidth ? "xs" : "2xs"} 
         px={1.5} 
         py={0.5} 
         borderRadius="full"
-        bg="whiteAlpha.200"
+        bg={fullWidth ? `${difficulty.color}.500` : "whiteAlpha.200"}
         color="white"
       >
         {difficulty.text}
@@ -91,6 +100,50 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({ currentLevel, onLevelChan
     );
   };
 
+  // Grid-Ansicht für Levels wenn fullWidth aktiviert ist
+  if (fullWidth) {
+    return (
+      <Box w="100%">
+        <SimpleGrid columns={[3, 4, 5, 6]} spacing={3} mb={4}>
+          {Array.from({ length: TOTAL_LEVELS }, (_, i) => i + 1).map((level) => (
+            <RippleButton
+              key={level}
+              onClick={() => onLevelChange(level)}
+              bg={level === currentLevel ? "#2196F3" : "white"}
+              color={level === currentLevel ? "white" : "gray.700"}
+              size="md"
+              height="48px"
+              borderRadius="md"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+              _hover={{ 
+                bg: level === currentLevel ? "#1976D2" : "gray.100",
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.12)"
+              }}
+              transition="all 0.2s ease"
+              position="relative"
+              p={0}
+            >
+              <Flex direction="column" justify="center" align="center" w="100%" h="100%">
+                <Text fontWeight={level === currentLevel ? "bold" : "normal"}>
+                  {level}
+                </Text>
+                <Box position="absolute" bottom="2px" right="2px">
+                  {getDifficultyBadge(level)}
+                </Box>
+              </Flex>
+            </RippleButton>
+          ))}
+        </SimpleGrid>
+        
+        <Text fontSize="sm" color="gray.500" textAlign="center">
+          Insgesamt {TOTAL_LEVELS} Level verfügbar
+        </Text>
+      </Box>
+    );
+  }
+
+  // Standard-Ansicht für Header
   return (
     <HStack spacing={2} align="center" justify="flex-end" h="100%">
       {showLevelText && (
@@ -142,7 +195,7 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({ currentLevel, onLevelChan
         </NumberInputStepper>
       </NumberInput>
       
-      {getDifficultyBadge()}
+      {getDifficultyBadge(currentLevel)}
     </HStack>
   );
 };

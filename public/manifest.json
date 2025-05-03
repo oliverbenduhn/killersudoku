@@ -1,0 +1,51 @@
+{
+  "short_name": "KillerSudoku",
+  "name": "Killer Sudoku PWA",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#2196F3",
+  "background_color": "#f5f5f5",
+  "description": "Spiele Killer Sudoku als Progressive Web App. Logik, Spaß und Herausforderung!",
+  "orientation": "portrait",
+  "categories": ["games", "entertainment", "puzzle"],
+  "screenshots": [
+    {
+      "src": "screenshot1.png",
+      "type": "image/png",
+      "sizes": "1080x1920"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Schnellstart Level 1",
+      "short_name": "Level 1",
+      "description": "Starte direkt mit Level 1",
+      "url": "/?level=1"
+    },
+    {
+      "name": "Einstellungen",
+      "short_name": "Einstellungen",
+      "description": "App-Einstellungen öffnen",
+      "url": "/?tab=settings"
+    }
+  ]
+}

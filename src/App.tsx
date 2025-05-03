@@ -5,15 +5,23 @@ import Board from './components/Board/Board';
 import LevelSelector from './components/LevelSelector/LevelSelector';
 import { loadLevelByNumber, TOTAL_LEVELS } from './services/levelService';
 import { GameLevel } from './types/gameTypes';
+import BottomNavigation from './components/common/BottomNavigation';
+import TouchRipple from './components/common/TouchRipple';
+import FadeInView from './components/common/FadeInView';
+import SwipeableBox from './components/common/SwipeableBox';
+import InstallPrompt from './components/common/InstallPrompt';
+import { requestNotificationPermission } from './serviceWorkerRegistration';
 
-// Android-inspiriertes Theme
+// Erweiterte Android-Material Design Farbpalette
 const theme = extendTheme({
   styles: {
     global: {
       body: {
         fontSize: '1rem',
         lineHeight: 1.6,
-        bg: '#f5f5f5', // Typischer Android-Hintergrund
+        bg: '#f5f5f5', // Material Design Grey 100
+        color: '#212121', // Material Design Grey 900
+        transition: 'background-color 0.2s, color 0.2s',
       },
       p: {
         maxWidth: '38rem',
@@ -28,13 +36,21 @@ const theme = extendTheme({
   },
   colors: {
     android: {
-      primary: "#1976D2",    // Material Design Blue
-      primaryDark: "#1565C0",
-      accent: "#FF4081",     // Material Design Pink
-      background: "#f5f5f5", // Material Design Grey 100
-      surface: "#ffffff",
-      text: "#212121",       // Material Design Grey 900
-      secondaryText: "#757575" // Material Design Grey 600
+      primary: "#2196F3",       // Material Design Blue 500
+      primaryDark: "#1976D2",   // Material Design Blue 700
+      primaryLight: "#BBDEFB",  // Material Design Blue 100
+      accent: "#FF4081",        // Material Design Pink A200
+      accentDark: "#F50057",    // Material Design Pink A400
+      accentLight: "#FF80AB",   // Material Design Pink A100
+      background: "#F5F5F5",    // Material Design Grey 100
+      surface: "#FFFFFF",
+      text: "#212121",          // Material Design Grey 900
+      secondaryText: "#757575", // Material Design Grey 600
+      divider: "#BDBDBD",       // Material Design Grey 400
+      success: "#4CAF50",       // Material Design Green 500
+      warning: "#FFC107",       // Material Design Amber 500
+      error: "#F44336",         // Material Design Red 500
+      info: "#2196F3"           // Material Design Blue 500
     }
   }
 });
@@ -44,13 +60,22 @@ function App() {
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>("home");
+  const [lastActiveTab, setLastActiveTab] = useState<string>("home");
+  const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   
   // Responsive Layout-Einstellungen
   const headerHeight = useBreakpointValue({ base: "56px", md: "64px" });
+  const navBarHeight = useBreakpointValue({ base: "56px", md: "64px" });
   const containerMaxWidth = useBreakpointValue({ base: "100%", xl: "container.xl" });
   const showInstructions = useBreakpointValue({ base: true, lg: false });
   const statusBarBg = useColorModeValue("android.primaryDark", "gray.900");
   const headerBg = useColorModeValue("android.primary", "gray.800");
+
+  // Beim App-Start Benachrichtigungsberechtigungen beantragen (für PWA-Updates)
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
 
   // Lädt das aktuelle Level basierend auf der Level-Nummer
   useEffect(() => {
@@ -77,8 +102,201 @@ function App() {
     setCurrentLevel(level);
   };
 
+  // Berechnet die Richtung für die Tab-Übergangsanimation
+  const calculateTransitionDirection = (newTab: string, currentTab: string) => {
+    const tabOrder = ["home", "levels", "stats", "info", "settings"];
+    const currentIndex = tabOrder.indexOf(currentTab);
+    const newIndex = tabOrder.indexOf(newTab);
+    
+    if (newIndex > currentIndex) {
+      return 'left';
+    } else {
+      return 'right';
+    }
+  };
+
+  const handleTabChange = (tabName: string) => {
+    if (tabName === activeTab) return;
+    
+    setLastActiveTab(activeTab);
+    setTabTransition(calculateTransitionDirection(tabName, activeTab));
+    setActiveTab(tabName);
+    
+    // Wechsle automatisch zur Level-Auswahl im "levels" Tab
+    if (tabName === "levels") {
+      // Hier könnten wir eine Level-Auswahl anzeigen
+    }
+  };
+
+  // Swipe-Handler für Tab-Wechsel
+  const handleSwipeLeft = () => {
+    const tabOrder = ["home", "levels", "stats", "info", "settings"];
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex < tabOrder.length - 1) {
+      handleTabChange(tabOrder[currentIndex + 1]);
+    }
+  };
+
+  const handleSwipeRight = () => {
+    const tabOrder = ["home", "levels", "stats", "info", "settings"];
+    const currentIndex = tabOrder.indexOf(activeTab);
+    if (currentIndex > 0) {
+      handleTabChange(tabOrder[currentIndex - 1]);
+    }
+  };
+
+  // Content basierend auf dem aktiven Tab anzeigen
+  const renderContent = (): React.ReactElement => {
+    switch(activeTab) {
+      case "home":
+        return (
+          <FadeInView
+            direction={tabTransition === 'left' ? 'left' : 'right'}
+            duration={300}
+            mb={4}
+            key="home-tab"
+          >
+            <Box 
+              className="game-container" 
+              bg="android.surface"
+              borderRadius="md"
+              overflow="hidden"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            >
+              <Board 
+                puzzleId={`level-${currentLevel}`}
+                levelData={levelData}
+                isLoading={isLoading}
+                error={error}
+              />
+            </Box>
+          </FadeInView>
+        );
+      case "info":
+        return (
+          <FadeInView
+            direction={tabTransition === 'left' ? 'left' : 'right'}
+            duration={300}
+            key="info-tab"
+          >
+            <Box 
+              className="content-container" 
+              mt={4}
+              bg="android.surface"
+              p={4}
+              borderRadius="md"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            >
+              <Heading as="h2" size="lg" mb={4} color="android.text">
+                Spielanleitung
+              </Heading>
+              <Text className="readable-text" mb={4} color="android.secondaryText">
+                Killer Sudoku kombiniert klassisches Sudoku mit mathematischen Herausforderungen. 
+                Zusätzlich zu den bekannten Sudoku-Regeln müssen auch die vorgegebenen Summen in 
+                jedem "Käfig" erreicht werden.
+              </Text>
+              <Text className="readable-text" color="android.secondaryText">
+                Wie bei normalem Sudoku müssen Sie jede Zahl von 1-9 in jeder Zeile, Spalte und 
+                3x3-Region genau einmal platzieren. Darüber hinaus müssen die Zahlen in jedem farbigen 
+                Käfig (durch gestrichelte Linien angezeigt) die angegebene Summe ergeben. 
+                Innerhalb eines Käfigs darf keine Zahl wiederholt werden.
+              </Text>
+            </Box>
+          </FadeInView>
+        );
+      case "levels":
+        return (
+          <FadeInView
+            direction={tabTransition === 'left' ? 'left' : 'right'}
+            duration={300}
+            key="levels-tab"
+          >
+            <Box 
+              className="content-container" 
+              mt={4}
+              bg="android.surface"
+              p={4}
+              borderRadius="md"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            >
+              <Heading as="h2" size="lg" mb={4} color="android.text">
+                Level-Auswahl
+              </Heading>
+              <LevelSelector 
+                currentLevel={currentLevel} 
+                onLevelChange={(level) => {
+                  handleLevelChange(level);
+                  setActiveTab("home"); // Wechsle zurück zum Spiel nach Level-Auswahl
+                }}
+                fullWidth={true}
+              />
+            </Box>
+          </FadeInView>
+        );
+      case "stats":
+        return (
+          <FadeInView
+            direction={tabTransition === 'left' ? 'left' : 'right'}
+            duration={300}
+            key="stats-tab"
+          >
+            <Box 
+              className="content-container" 
+              mt={4}
+              bg="android.surface"
+              p={4}
+              borderRadius="md"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            >
+              <Heading as="h2" size="lg" mb={4} color="android.text">
+                Statistiken
+              </Heading>
+              <Text className="readable-text" color="android.secondaryText">
+                Hier werden in Zukunft deine Spielstatistiken angezeigt.
+              </Text>
+            </Box>
+          </FadeInView>
+        );
+      case "settings":
+        return (
+          <FadeInView
+            direction={tabTransition === 'left' ? 'left' : 'right'}
+            duration={300}
+            key="settings-tab"
+          >
+            <Box 
+              className="content-container" 
+              mt={4}
+              bg="android.surface"
+              p={4}
+              borderRadius="md"
+              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            >
+              <Heading as="h2" size="lg" mb={4} color="android.text">
+                Einstellungen
+              </Heading>
+              <Text className="readable-text" color="android.secondaryText">
+                Hier kannst du in Zukunft Spieleinstellungen ändern.
+              </Text>
+            </Box>
+          </FadeInView>
+        );
+      default:
+        return renderContent();
+    }
+  };
+
   return (
     <ChakraProvider theme={theme}>
+      {/* TouchRipple für globales Touch-Feedback */}
+      <TouchRipple color="rgba(33, 150, 243, 0.15)" duration={900} />
+      
+      {/* PWA Installations-Aufforderung */}
+      <InstallPrompt 
+        onInstall={() => console.log("App erfolgreich installiert!")}
+        onDismiss={() => console.log("Installation abgelehnt")}
+      />
+      
       {/* Android Status Bar */}
       <Box 
         bg={statusBarBg} 
@@ -120,7 +338,7 @@ function App() {
               Killer Sudoku
             </Heading>
             
-            <Box>
+            <Box display={activeTab === "home" ? "block" : "none"}>
               <LevelSelector 
                 currentLevel={currentLevel} 
                 onLevelChange={handleLevelChange}
@@ -130,10 +348,14 @@ function App() {
         </Container>
       </Box>
       
-      {/* Main Content mit Padding für Header */}
-      <Box 
+      {/* Main Content mit Padding für Header und Bottom Navigation */}
+      <SwipeableBox
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
+        animateSwipe={true}
+        swipeThreshold={70}
         pt={{ base: "80px", md: "88px" }} // Status Bar + Header Height
-        pb={4}
+        pb={{ base: "80px", md: "88px" }} // Erhöhung des Padding-Bottom für die größere Navigationsleiste
         minH="100vh"
         bg="android.background"
       >
@@ -143,47 +365,44 @@ function App() {
           mx="auto"
           w="100%"
         >
-          <Box 
-            className="game-container" 
-            mb={4}
-            bg="android.surface"
-            borderRadius="md"
-            overflow="hidden"
-          >
-            <Board 
-              puzzleId={`level-${currentLevel}`}
-              levelData={levelData}
-              isLoading={isLoading}
-              error={error}
-            />
-          </Box>
+          {renderContent()}
           
-          {showInstructions && (
-            <Box 
-              className="content-container" 
-              mt={4}
-              bg="android.surface"
-              p={4}
-              borderRadius="md"
+          {showInstructions && activeTab === "home" && (
+            <FadeInView
+              direction="up"
+              duration={500}
+              delay={300}
             >
-              <Heading as="h2" size="lg" mb={4} color="android.text">
-                Spielanleitung
-              </Heading>
-              <Text className="readable-text" mb={4} color="android.secondaryText">
-                Killer Sudoku kombiniert klassisches Sudoku mit mathematischen Herausforderungen. 
-                Zusätzlich zu den bekannten Sudoku-Regeln müssen auch die vorgegebenen Summen in 
-                jedem "Käfig" erreicht werden.
-              </Text>
-              <Text className="readable-text" color="android.secondaryText">
-                Wie bei normalem Sudoku müssen Sie jede Zahl von 1-9 in jeder Zeile, Spalte und 
-                3x3-Region genau einmal platzieren. Darüber hinaus müssen die Zahlen in jedem farbigen 
-                Käfig (durch gestrichelte Linien angezeigt) die angegebene Summe ergeben. 
-                Innerhalb eines Käfigs darf keine Zahl wiederholt werden.
-              </Text>
-            </Box>
+              <Box 
+                className="content-container" 
+                mt={4}
+                bg="android.surface"
+                p={4}
+                borderRadius="md"
+                boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+              >
+                <Heading as="h2" size="lg" mb={4} color="android.text">
+                  Spielanleitung
+                </Heading>
+                <Text className="readable-text" mb={4} color="android.secondaryText">
+                  Killer Sudoku kombiniert klassisches Sudoku mit mathematischen Herausforderungen. 
+                  Zusätzlich zu den bekannten Sudoku-Regeln müssen auch die vorgegebenen Summen in 
+                  jedem "Käfig" erreicht werden.
+                </Text>
+                <Text className="readable-text" color="android.secondaryText">
+                  Wie bei normalem Sudoku müssen Sie jede Zahl von 1-9 in jeder Zeile, Spalte und 
+                  3x3-Region genau einmal platzieren. Darüber hinaus müssen die Zahlen in jedem farbigen 
+                  Käfig (durch gestrichelte Linien angezeigt) die angegebene Summe ergeben. 
+                  Innerhalb eines Käfigs darf keine Zahl wiederholt werden.
+                </Text>
+              </Box>
+            </FadeInView>
           )}
         </Container>
-      </Box>
+      </SwipeableBox>
+      
+      {/* Bottom Navigation */}
+      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
     </ChakraProvider>
   );
 }

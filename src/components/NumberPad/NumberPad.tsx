@@ -1,5 +1,6 @@
 import React from 'react';
-import { Grid, Button, useBreakpointValue } from '@chakra-ui/react';
+import { Grid, useBreakpointValue } from '@chakra-ui/react';
+import RippleButton from '../common/RippleButton';
 
 interface NumberPadProps {
   onNumberSelect: (number: number) => void;
@@ -12,9 +13,11 @@ export const NumberPad: React.FC<NumberPadProps> = ({
   onClear,
   disabledNumbers = [] 
 }) => {
-  // Dunklere Farben für die Buttons
-  const buttonBg = 'gray.600';
-  const buttonHoverBg = 'gray.700';
+  // Material Design inspirierte Farben
+  const buttonBg = '#2196F3';         // Material Blue 500
+  const buttonHoverBg = '#1976D2';    // Material Blue 700
+  const deleteButtonBg = '#F44336';   // Material Red 500
+  const deleteButtonHoverBg = '#D32F2F'; // Material Red 700
 
   // Responsive Größe für die Buttons und den Nummernblock
   const buttonSize = useBreakpointValue({
@@ -48,7 +51,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={gap} width={padWidth}>
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
-        <Button
+        <RippleButton
           key={number}
           onClick={() => onNumberSelect(number)}
           bg={buttonBg}
@@ -58,24 +61,32 @@ export const NumberPad: React.FC<NumberPadProps> = ({
           fontSize={fontSize}
           fontWeight="bold"
           _hover={{ bg: buttonHoverBg }}
-          _active={{ bg: 'gray.800' }}
+          _active={{ bg: buttonHoverBg }}
           disabled={disabledNumbers.includes(number)}
+          borderRadius="md"
+          boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+          rippleColor="rgba(255, 255, 255, 0.4)"
         >
           {number}
-        </Button>
+        </RippleButton>
       ))}
-      <Button
+      <RippleButton
         gridColumn="1 / span 3"
         onClick={onClear}
-        colorScheme="red"
-        variant="solid"
+        bg={deleteButtonBg}
+        color="white"
         size="lg"
         height={useBreakpointValue({ base: "40px", md: "45px", lg: "50px" })}
         fontSize={useBreakpointValue({ base: "md", md: "lg" })}
         fontWeight="bold"
+        _hover={{ bg: deleteButtonHoverBg }}
+        _active={{ bg: deleteButtonHoverBg }}
+        borderRadius="md"
+        boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+        rippleColor="rgba(255, 255, 255, 0.4)"
       >
         Löschen
-      </Button>
+      </RippleButton>
     </Grid>
   );
 };

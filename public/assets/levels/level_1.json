@@ -2,10 +2,21 @@
   "id": "b3dibr",
   "levelNumber": 1,
   "difficultyRating": 1,
-  "name": "Sehr einfach Challenge 1",
+  "name": "Sehr einfach Cascade 1",
   "cages": [
     {
-      "id": "89qhww",
+      "id": "0063q1",
+      "cells": [
+        {
+          "row": 0,
+          "col": 7
+        }
+      ],
+      "sum": 8,
+      "color": "pink.100"
+    },
+    {
+      "id": "0zx20j",
       "cells": [
         {
           "row": 0,
@@ -24,7 +35,7 @@
       "color": "pink.100"
     },
     {
-      "id": "z2iwjo",
+      "id": "0h0ogl",
       "cells": [
         {
           "row": 0,
@@ -35,7 +46,7 @@
       "color": "blue.100"
     },
     {
-      "id": "mnduqx",
+      "id": "5qhaga",
       "cells": [
         {
           "row": 0,
@@ -50,7 +61,7 @@
       "color": "pink.100"
     },
     {
-      "id": "2e10em",
+      "id": "r0222f",
       "cells": [
         {
           "row": 0,
@@ -61,18 +72,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "2tdpbj",
-      "cells": [
-        {
-          "row": 0,
-          "col": 7
-        }
-      ],
-      "sum": 8,
-      "color": "pink.100"
-    },
-    {
-      "id": "nbuey8",
+      "id": "iu52km",
       "cells": [
         {
           "row": 0,
@@ -83,7 +83,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "efn5y1",
+      "id": "msg7gp",
       "cells": [
         {
           "row": 1,
@@ -98,7 +98,7 @@
       "color": "blue.100"
     },
     {
-      "id": "hsvojg",
+      "id": "1mm2pl",
       "cells": [
         {
           "row": 1,
@@ -109,7 +109,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "ykdgx8",
+      "id": "5j1ro0",
       "cells": [
         {
           "row": 1,
@@ -120,7 +120,7 @@
       "color": "pink.100"
     },
     {
-      "id": "pfjvjd",
+      "id": "djw484",
       "cells": [
         {
           "row": 1,
@@ -135,7 +135,7 @@
       "color": "blue.100"
     },
     {
-      "id": "bh3vgp",
+      "id": "7kd3et",
       "cells": [
         {
           "row": 1,
@@ -146,22 +146,18 @@
       "color": "pink.100"
     },
     {
-      "id": "66axb4",
+      "id": "1k7r9t",
       "cells": [
         {
           "row": 1,
           "col": 7
-        },
-        {
-          "row": 0,
-          "col": 7
         }
       ],
-      "sum": 10,
-      "color": "blue.100"
+      "sum": 2,
+      "color": "green.100"
     },
     {
-      "id": "g5ugph",
+      "id": "mgxxt3",
       "cells": [
         {
           "row": 1,
@@ -172,7 +168,7 @@
       "color": "pink.100"
     },
     {
-      "id": "mlu6el",
+      "id": "pg6x2t",
       "cells": [
         {
           "row": 2,
@@ -183,7 +179,7 @@
       "color": "pink.100"
     },
     {
-      "id": "dj4fzb",
+      "id": "ofrtp0",
       "cells": [
         {
           "row": 2,
@@ -194,7 +190,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "qor9nw",
+      "id": "bsov8o",
       "cells": [
         {
           "row": 2,
@@ -205,7 +201,7 @@
       "color": "blue.100"
     },
     {
-      "id": "pdt4tn",
+      "id": "3unknk",
       "cells": [
         {
           "row": 2,
@@ -220,7 +216,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "wpml5b",
+      "id": "7481f9",
       "cells": [
         {
           "row": 2,
@@ -235,7 +231,7 @@
       "color": "pink.100"
     },
     {
-      "id": "gjf56b",
+      "id": "vuzfql",
       "cells": [
         {
           "row": 2,
@@ -246,7 +242,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "ckpkhq",
+      "id": "bg57ce",
       "cells": [
         {
           "row": 2,
@@ -257,7 +253,7 @@
       "color": "blue.100"
     },
     {
-      "id": "4566oq",
+      "id": "23qmnp",
       "cells": [
         {
           "row": 2,
@@ -268,7 +264,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "u086pn",
+      "id": "z9y61s",
       "cells": [
         {
           "row": 2,
@@ -283,7 +279,7 @@
       "color": "blue.100"
     },
     {
-      "id": "9p7udd",
+      "id": "5dro01",
       "cells": [
         {
           "row": 3,
@@ -294,7 +290,7 @@
       "color": "blue.100"
     },
     {
-      "id": "857a43",
+      "id": "dq673c",
       "cells": [
         {
           "row": 3,
@@ -305,7 +301,7 @@
       "color": "pink.100"
     },
     {
-      "id": "ymvmwn",
+      "id": "g5tt46",
       "cells": [
         {
           "row": 3,
@@ -316,7 +312,7 @@
       "color": "green.100"
     },
     {
-      "id": "jofke0",
+      "id": "p1gft6",
       "cells": [
         {
           "row": 3,
@@ -327,7 +323,7 @@
       "color": "blue.100"
     },
     {
-      "id": "3jlme9",
+      "id": "4jhicj",
       "cells": [
         {
           "row": 3,
@@ -338,7 +334,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "x2c88y",
+      "id": "pm8coi",
       "cells": [
         {
           "row": 3,
@@ -349,7 +345,7 @@
       "color": "pink.100"
     },
     {
-      "id": "o25rk6",
+      "id": "kij0xm",
       "cells": [
         {
           "row": 4,
@@ -360,7 +356,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "7q82zb",
+      "id": "w6uev9",
       "cells": [
         {
           "row": 4,
@@ -379,7 +375,7 @@
       "color": "blue.100"
     },
     {
-      "id": "mcff23",
+      "id": "ohj2j0",
       "cells": [
         {
           "row": 4,
@@ -394,7 +390,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "dwkv9q",
+      "id": "x1beds",
       "cells": [
         {
           "row": 4,
@@ -405,7 +401,7 @@
       "color": "green.100"
     },
     {
-      "id": "wgftk8",
+      "id": "xo4l4v",
       "cells": [
         {
           "row": 4,
@@ -416,7 +412,7 @@
       "color": "blue.100"
     },
     {
-      "id": "9zaljj",
+      "id": "wcch4t",
       "cells": [
         {
           "row": 4,
@@ -427,7 +423,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "zxu3if",
+      "id": "po90y7",
       "cells": [
         {
           "row": 4,
@@ -438,7 +434,7 @@
       "color": "pink.100"
     },
     {
-      "id": "su7zae",
+      "id": "zcp69s",
       "cells": [
         {
           "row": 5,
@@ -449,7 +445,7 @@
       "color": "pink.100"
     },
     {
-      "id": "hkpk40",
+      "id": "fhgjok",
       "cells": [
         {
           "row": 5,
@@ -460,7 +456,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "0fgexk",
+      "id": "66bgx2",
       "cells": [
         {
           "row": 5,
@@ -471,7 +467,7 @@
       "color": "pink.100"
     },
     {
-      "id": "4pw9td",
+      "id": "40t6cd",
       "cells": [
         {
           "row": 5,
@@ -482,7 +478,7 @@
       "color": "green.100"
     },
     {
-      "id": "55l7a9",
+      "id": "wyi8bm",
       "cells": [
         {
           "row": 5,
@@ -501,7 +497,7 @@
       "color": "pink.100"
     },
     {
-      "id": "sacgwl",
+      "id": "nhi5k7",
       "cells": [
         {
           "row": 5,
@@ -520,7 +516,7 @@
       "color": "blue.100"
     },
     {
-      "id": "r3hax8",
+      "id": "tcdduo",
       "cells": [
         {
           "row": 5,
@@ -531,7 +527,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "rlghbq",
+      "id": "emhbdu",
       "cells": [
         {
           "row": 6,
@@ -546,7 +542,7 @@
       "color": "blue.100"
     },
     {
-      "id": "zwffdj",
+      "id": "7idyc2",
       "cells": [
         {
           "row": 6,
@@ -561,7 +557,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "wdlt66",
+      "id": "551b5y",
       "cells": [
         {
           "row": 6,
@@ -580,7 +576,7 @@
       "color": "blue.100"
     },
     {
-      "id": "f2ocj8",
+      "id": "1gfuob",
       "cells": [
         {
           "row": 6,
@@ -591,7 +587,7 @@
       "color": "green.100"
     },
     {
-      "id": "0jczm0",
+      "id": "num3rk",
       "cells": [
         {
           "row": 7,
@@ -606,7 +602,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "f7nmxf",
+      "id": "jn1ucj",
       "cells": [
         {
           "row": 7,
@@ -621,7 +617,7 @@
       "color": "pink.100"
     },
     {
-      "id": "787c7w",
+      "id": "1gaxoo",
       "cells": [
         {
           "row": 7,
@@ -632,7 +628,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "bnzubw",
+      "id": "albgji",
       "cells": [
         {
           "row": 7,
@@ -651,7 +647,7 @@
       "color": "pink.100"
     },
     {
-      "id": "v1tu3y",
+      "id": "qxhy54",
       "cells": [
         {
           "row": 7,
@@ -662,7 +658,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "wa41ry",
+      "id": "tn0lx2",
       "cells": [
         {
           "row": 8,
@@ -673,7 +669,7 @@
       "color": "pink.100"
     },
     {
-      "id": "nocu86",
+      "id": "lo8thz",
       "cells": [
         {
           "row": 8,
@@ -688,7 +684,7 @@
       "color": "blue.100"
     },
     {
-      "id": "ap110b",
+      "id": "b7d37p",
       "cells": [
         {
           "row": 8,
@@ -703,7 +699,7 @@
       "color": "yellow.100"
     },
     {
-      "id": "xr9x0o",
+      "id": "iv9pz1",
       "cells": [
         {
           "row": 8,
@@ -714,7 +710,7 @@
       "color": "pink.100"
     },
     {
-      "id": "jqzxxa",
+      "id": "zzt55w",
       "cells": [
         {
           "row": 8,
@@ -745,7 +741,7 @@
       8,
       9,
       1,
-      0,
+      2,
       3
     ],
     [
@@ -929,5 +925,5 @@
   ],
   "description": "Ein Level (Schwierigkeit 1/10) mit 56 Käfigen.",
   "author": "KillerSudoku Generator",
-  "createdAt": "2025-05-03T00:29:51.684Z"
+  "createdAt": "2025-05-03T00:32:45.763Z"
 }

@@ -1,11 +1,10 @@
 // Diese Datei registriert den Service Worker für die PWA-Funktionalität
 
-// In production, we register a service worker to serve assets from local cache.
-// This lets the app load faster on subsequent visits in production, and gives
-// it offline capabilities. However, it also means that developers (and users)
-// will only see deployed updates on subsequent visits to a page, after all the
-// existing tabs open on the page have been closed, since previously cached
-// resources are updated in the background.
+interface Config {
+  onSuccess?: (registration: ServiceWorkerRegistration) => void;
+  onUpdate?: (registration: ServiceWorkerRegistration) => void;
+  onOffline?: () => void;
+}
 
 const isLocalhost = Boolean(
   window.location.hostname === 'localhost' ||
@@ -17,27 +16,53 @@ const isLocalhost = Boolean(
     )
 );
 
-export function register() {
+export function register(config?: Config) {
   if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
     const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
 
     if (isLocalhost) {
       // This is running on localhost. Let's check if a service worker still exists or not.
-      checkValidServiceWorker(swUrl);
+      checkValidServiceWorker(swUrl, config);
+      
+      // Add some additional logging to localhost
       navigator.serviceWorker.ready.then(() => {
-        console.log('Service Worker ist aktiv (localhost).');
+        console.log('Service Worker ist aktiv und bereit (Entwicklungsmodus).');
       });
     } else {
       // Register service worker
-      registerValidSW(swUrl);
+      registerValidSW(swUrl, config);
     }
   }
 }
 
-function registerValidSW(swUrl: string) {
+function registerValidSW(swUrl: string, config?: Config) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
+      // Überprüfen und Caching für Assets in öffentlichen Verzeichnissen
+      if (window.caches) {
+        // Statische Assets cachen
+        window.caches.open('killersudoku-static-v1').then(cache => {
+          cache.addAll([
+            '/',
+            '/index.html',
+            '/manifest.json',
+            '/favicon.ico',
+            '/logo192.png',
+            '/logo512.png',
+            '/assets/levels/level_1.json'
+          ]);
+        });
+        
+        // Level-Daten cachen
+        window.caches.open('killersudoku-levels-v1').then(cache => {
+          // Alle verfügbaren Level vorab laden
+          for (let i = 1; i <= 100; i++) {
+            cache.add(`/assets/levels/level_${i}.json`);
+          }
+        });
+      }
+
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;
         if (installingWorker == null) {
@@ -46,11 +71,47 @@ function registerValidSW(swUrl: string) {
         installingWorker.onstatechange = () => {
           if (installingWorker.state === 'installed') {
             if (navigator.serviceWorker.controller) {
-              // New content is available; please refresh.
-              console.log('Neue Inhalte sind verfügbar. Bitte Seite neu laden.');
+              // At this point, the updated precached content has been fetched,
+              // but the previous service worker will still serve the older
+              // content until all client tabs are closed.
+              console.log('Neue Version verfügbar! Aktualisiere die App...');
+              
+              // Optional: Benachrichtigung an den User
+              if ('Notification' in window && Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(registration => {
+                  registration.showNotification('Killer Sudoku-Update', {
+                    body: 'Eine neue Version der App ist verfügbar. Schließe alle Tabs und öffne die App erneut.',
+                    icon: '/logo192.png',
+                    badge: '/logo192.png'
+                  });
+                });
+              }
+              
+              // Execute callback
+              if (config && config.onUpdate) {
+                config.onUpdate(registration);
+              }
             } else {
-              // Content is cached for offline use.
-              console.log('Inhalte sind jetzt offline verfügbar!');
+              // At this point, everything has been precached.
+              // It's the perfect time to display a
+              // "Content is cached for offline use." message.
+              console.log('Inhalte wurden für die Offline-Nutzung gespeichert.');
+              
+              // Optional: Benachrichtigung, dass die App offline funktioniert
+              if ('Notification' in window && Notification.permission === 'granted') {
+                navigator.serviceWorker.ready.then(registration => {
+                  registration.showNotification('Killer Sudoku', {
+                    body: 'Die App ist jetzt offline verfügbar!',
+                    icon: '/logo192.png',
+                    badge: '/logo192.png'
+                  });
+                });
+              }
+              
+              // Execute callback
+              if (config && config.onSuccess) {
+                config.onSuccess(registration);
+              }
             }
           }
         };
@@ -61,7 +122,8 @@ function registerValidSW(swUrl: string) {
     });
 }
 
-function checkValidServiceWorker(swUrl: string) {
+function checkValidServiceWorker(swUrl: string, config?: Config) {
+  // Check if the service worker can be found. If it can't reload the page.
   fetch(swUrl, {
     headers: { 'Service-Worker': 'script' },
   })
@@ -80,11 +142,14 @@ function checkValidServiceWorker(swUrl: string) {
         });
       } else {
         // Service worker found. Proceed as normal.
-        registerValidSW(swUrl);
+        registerValidSW(swUrl, config);
       }
     })
     .catch(() => {
       console.log('Keine Internetverbindung. App wird im Offline-Modus geladen.');
+      if (config && config.onOffline) {
+        config.onOffline();
+      }
     });
 }
 
@@ -97,5 +162,25 @@ export function unregister() {
       .catch(error => {
         console.error(error.message);
       });
+  }
+}
+
+// Erweiterung: Benachrichtigungen anfordern (für Updates)
+export function requestNotificationPermission() {
+  if ('Notification' in window) {
+    Notification.requestPermission();
+  }
+}
+
+// Typdeklaration für window.caches
+declare global {
+  interface Window {
+    caches: {
+      open(cacheName: string): Promise<Cache>;
+      match(request: Request): Promise<Response | undefined>;
+      has(cacheName: string): Promise<boolean>;
+      delete(cacheName: string): Promise<boolean>;
+      keys(): Promise<string[]>;
+    };
   }
 }

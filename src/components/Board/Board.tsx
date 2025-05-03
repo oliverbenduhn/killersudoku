@@ -1,11 +1,36 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
+import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, keyframes } from '@chakra-ui/react';
 import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
 import useGameState from '../../hooks/useGameState';
 import NumberPad from '../NumberPad/NumberPad';
 import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
 import { createEmptyBoard } from '../../services/puzzleGeneratorService';
+import RippleButton from '../common/RippleButton';
+import FadeInView from '../common/FadeInView';
+
+// Animation für die hervorgehobene Zelle
+const pulseAnimation = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
+
+// Animation für erfolgreiche Eingabe
+const successAnimation = keyframes`
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+  100% { transform: scale(1); opacity: 1; }
+`;
+
+// Animation für Fehleingabe
+const errorAnimation = keyframes`
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX(3px); }
+  75% { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+`;
 
 interface BoardProps {
   size?: number;
@@ -57,6 +82,10 @@ export const Board: React.FC<BoardProps> = ({
   const [cellSize, setCellSize] = useState<number>(50);
   const [cages, setCages] = useState<Cage[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
+  const [lastEnteredCell, setLastEnteredCell] = useState<CellPosition | null>(null);
+  const [lastEnteredValue, setLastEnteredValue] = useState<number>(0);
+  const [lastEnteredValid, setLastEnteredValid] = useState<boolean>(true);
+  const [animating, setAnimating] = useState<boolean>(false);
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
@@ -234,16 +263,31 @@ export const Board: React.FC<BoardProps> = ({
     if (!gameState || !levelData) return;
 
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
+    let lastCell: CellPosition | null = null;
+    
     selectedCells.forEach(({ row, col }) => {
       // Überprüfen, ob die Zelle vorausgefüllt ist
       if (levelData.initialValues[row][col] === 0) {
         newValues[row][col] = number;
+        lastCell = { row, col }; // Letzte Zelle für Animation
       }
     });
 
     updateGameState({
       cellValues: newValues
     });
+    
+    // Für Animations-Feedback
+    if (lastCell) {
+      const validCell: CellPosition = lastCell; // Explizite Typannotation hinzufügen
+      setLastEnteredCell(validCell);
+      setLastEnteredValue(number);
+      setLastEnteredValid(isCellValid(validCell.row, validCell.col, number));
+      setAnimating(true);
+      
+      // Nach der Animation zurücksetzen
+      setTimeout(() => setAnimating(false), 500);
+    }
   };
 
   const handleClear = () => {
@@ -467,6 +511,9 @@ export const Board: React.FC<BoardProps> = ({
     const hasRightSameCage = col < size-1 && areCellsInSameCage(cages, row, col, row, col+1);
     const hasBottomSameCage = row < size-1 && areCellsInSameCage(cages, row, col, row+1, col);
 
+    // Prüfen, ob diese Zelle zuletzt geändert wurde (für Animation)
+    const isLastEntered = lastEnteredCell && lastEnteredCell.row === row && lastEnteredCell.col === col;
+
     // Dynamische Hintergrundfarbe basierend auf verschiedenen Zuständen
     let bgColor = "white";
     if (isSelected && !isInitialValue) {
@@ -487,6 +534,26 @@ export const Board: React.FC<BoardProps> = ({
     } else if (cageComplete && cage) {
       valueColor = "green.700";
     }
+
+    // Animation für diese Zelle bestimmen
+    let animation = "none";
+    if (animating && isLastEntered) {
+      if (lastEnteredValid) {
+        animation = `${successAnimation} 0.5s ease`;
+      } else {
+        animation = `${errorAnimation} 0.4s ease`;
+      }
+    } else if (isSelected && !isInitialValue) {
+      animation = `${pulseAnimation} 1.5s infinite ease-in-out`;
+    }
+
+    // Schatten für tieferen visuellen Effekt
+    const boxShadow = isSelected ? "0px 1px 3px rgba(0,0,0,0.2) inset" : "none";
+    
+    // Material Design-Elevation-Effekt für ausgewählte Zellen
+    const elevation = isSelected ? 
+      "0px 1px 3px 0px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.12)" : 
+      "none";
 
     return (
       <Box
@@ -520,6 +587,14 @@ export const Board: React.FC<BoardProps> = ({
         onTouchEnd={handleDragEnd}
         cursor={isInitialValue ? "default" : "pointer"}
         _hover={isInitialValue ? undefined : { bg: "blue.50" }}
+        boxShadow={boxShadow}
+        transition="all 0.3s ease"
+        zIndex={isSelected ? 1 : 0}
+        style={{
+          animation,
+          boxShadow: elevation,
+          transform: isSelected && !isInitialValue ? "translateZ(1px)" : "none",
+        }}
       >
         {cage && (
           <Box
@@ -648,7 +723,7 @@ export const Board: React.FC<BoardProps> = ({
         display="flex" 
         justifyContent="center"
         alignItems="center"
-        boxShadow="lg"
+        boxShadow="0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)"
         borderRadius="lg"
         bg="white"
         position="relative"
@@ -660,7 +735,7 @@ export const Board: React.FC<BoardProps> = ({
         tabIndex={0}
         onKeyDown={handleKeyDown}
         _focus={{ 
-          outline: "3px dashed teal.500", 
+          outline: "3px dashed #2196F3", 
           outlineOffset: "4px" 
         }}
       >
@@ -669,7 +744,9 @@ export const Board: React.FC<BoardProps> = ({
         </Box>
         
         {gameState && isBoardComplete() && (
-          <Box
+          <FadeInView
+            direction="scale"
+            duration={800}
             position="absolute"
             top="50%"
             left="50%"
@@ -685,7 +762,7 @@ export const Board: React.FC<BoardProps> = ({
             <Text fontSize="xl" fontWeight="bold" color="green.600">
               Gratulation! Das Rätsel ist gelöst!
             </Text>
-          </Box>
+          </FadeInView>
         )}
       </Box>
       
@@ -711,12 +788,17 @@ export const Board: React.FC<BoardProps> = ({
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
         >
-          <Button 
-            colorScheme="teal" 
+          <RippleButton 
+            bg="#2196F3"
+            color="white"
             onClick={handleReset}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            _hover={{ bg: "#1976D2" }}
+            _active={{ bg: "#1565C0" }}
           >
             <RepeatIcon mr={2} /> Reset
-          </Button>
+          </RippleButton>
         </Stack>
       </Box>
     </Flex>
