@@ -1,527 +1,505 @@
 {
-  "timestamp": "2025-05-03T00:35:50.408Z",
+  "timestamp": "2025-05-07T11:30:06.545Z",
   "totalLevels": 100,
-  "totalErrors": 1,
+  "totalErrors": 0,
   "results": [
     {
-      "levelId": "b3dibr",
-      "valid": false,
-      "errors": [
-        {
-          "levelId": "b3dibr",
-          "errorType": "OVERLAPPING_CAGES",
-          "message": "Es wurden überlappende Käfige gefunden",
-          "details": {
-            "overlappingIds": [
-              "66axb4",
-              "2tdpbj"
-            ],
-            "overlappingCoordinates": [
-              {
-                "row": 0,
-                "col": 7,
-                "cageIds": [
-                  "2tdpbj",
-                  "66axb4"
-                ]
-              }
-            ]
-          }
-        }
-      ]
+      "levelId": "vekfaz",
+      "valid": true,
+      "errors": []
     },
     {
-      "levelId": "1e1x3f",
+      "levelId": "09wvj1",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "1zz4hk",
+      "levelId": "psgfq0",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "zlmpur",
+      "levelId": "33kzhv",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "6pxd26",
+      "levelId": "gxk146",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "f6vqcg",
+      "levelId": "d3n6le",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "tkxlj5",
+      "levelId": "yp207y",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jo6ea1",
+      "levelId": "s55awe",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jezw6k",
+      "levelId": "h9xw80",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "6c0s2x",
+      "levelId": "pf2fxl",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ybmg6u",
+      "levelId": "zkmlxr",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "kgg2dc",
+      "levelId": "gzk3hr",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "uh22fx",
+      "levelId": "gdq68k",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "t1xtih",
+      "levelId": "7nsarg",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "n0bt3v",
+      "levelId": "3mkily",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "k7jvz9",
+      "levelId": "kznfuq",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "vsygdk",
+      "levelId": "1dfr7h",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "y9ylil",
+      "levelId": "6vu9wn",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "uqt3ah",
+      "levelId": "t3xpik",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "bdlwa9",
+      "levelId": "xcs8h7",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "j91h1a",
+      "levelId": "kxjfpc",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "g3k1ze",
+      "levelId": "e8660e",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jib4be",
+      "levelId": "nwcin4",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "2f3036",
+      "levelId": "np4qvd",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "h731k8",
+      "levelId": "7upvmq",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "y1axzz",
+      "levelId": "uygpga",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "38341x",
+      "levelId": "b01x9a",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "78h1d4",
+      "levelId": "23gv2g",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jy09ww",
+      "levelId": "xsdjwg",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "7y5rzl",
+      "levelId": "zq8nn3",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ngtbk6",
+      "levelId": "horeow",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "zfnvzp",
+      "levelId": "zcb1do",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ieb5dz",
+      "levelId": "153gyc",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "kl8qp4",
+      "levelId": "fp24hu",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "zvolbc",
+      "levelId": "xmcc4z",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "9mcg2r",
+      "levelId": "uufoj8",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "8h8x4m",
+      "levelId": "bu4lq7",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "y8cjoe",
+      "levelId": "z5guxp",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "cb70ne",
+      "levelId": "m4mqbf",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "opklut",
+      "levelId": "2yurzg",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "iwbxk5",
+      "levelId": "x28wm2",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "fd8lc1",
+      "levelId": "h4m1yv",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "p12n3s",
+      "levelId": "4yllci",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "85maxa",
+      "levelId": "s9mr9y",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "vh2ask",
+      "levelId": "ittsyd",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "x1zhpz",
+      "levelId": "8ky7iz",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "664k7j",
+      "levelId": "tisrdt",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ql12uc",
+      "levelId": "jl2qg9",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "r1wd05",
+      "levelId": "99jsj5",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "j7efaw",
+      "levelId": "k9rqeh",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "dz23p6",
+      "levelId": "4gfokq",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "o2k5nu",
+      "levelId": "ftz1xh",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "k3jcb1",
+      "levelId": "v24o5c",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ohs94t",
+      "levelId": "pcg9dk",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "6p8zml",
+      "levelId": "27vyqt",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ojq0kf",
+      "levelId": "2etmh9",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ikbprb",
+      "levelId": "iokzky",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "at9xgj",
+      "levelId": "zby5bl",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "5jis9x",
+      "levelId": "pbv36u",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "gvdx18",
+      "levelId": "d0fofx",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "30kmtd",
+      "levelId": "9ykjs8",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "6pwxkd",
+      "levelId": "9az70s",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "l97shg",
+      "levelId": "jstjmd",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "udho81",
+      "levelId": "c8u865",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "a4oj11",
+      "levelId": "7aphea",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ytq3jt",
+      "levelId": "1tjp5v",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "6rqhpd",
+      "levelId": "hi1wrc",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jtm8yu",
+      "levelId": "m0jabg",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "lt1lq2",
+      "levelId": "mf2v9x",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "vykcsm",
+      "levelId": "p6zajk",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "2w68z5",
+      "levelId": "d2owkt",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "q2q4xu",
+      "levelId": "1w4773",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "cu69c6",
+      "levelId": "64bded",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "qqiz6f",
+      "levelId": "98nnb1",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "24stoz",
+      "levelId": "k71k74",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "3mmv7g",
+      "levelId": "qhm1w6",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "s4eeku",
+      "levelId": "uxxgsx",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "rz9lau",
+      "levelId": "02ln9y",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ezzpy8",
+      "levelId": "85780h",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ef2f21",
+      "levelId": "nd2fv6",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "poguo4",
+      "levelId": "2n5b2l",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "g8vfm1",
+      "levelId": "kytnvp",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "mrczjh",
+      "levelId": "j5vemm",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "s5c4gc",
+      "levelId": "7vln9i",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "dehkaf",
+      "levelId": "2ug9c8",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "tp02ek",
+      "levelId": "x3jznw",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "ajiuug",
+      "levelId": "i6oa9x",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "7qtute",
+      "levelId": "m32drj",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "sl8ns8",
+      "levelId": "wzieg6",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "istjwo",
+      "levelId": "5k7reb",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "htu2h2",
+      "levelId": "e33mzo",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "jjvq6b",
+      "levelId": "d7tb3t",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "yq5u15",
+      "levelId": "vvwfhj",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "odasuh",
+      "levelId": "di1qzz",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "0kyv7c",
+      "levelId": "1c06lr",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "7pdv7x",
+      "levelId": "vx3xbm",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "9cspt6",
+      "levelId": "eatdp3",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "iiuq5g",
+      "levelId": "xjkbal",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "fvfivh",
+      "levelId": "6qxy8p",
       "valid": true,
       "errors": []
     },
     {
-      "levelId": "oiqt5l",
+      "levelId": "rpk7go",
       "valid": true,
       "errors": []
     }

@@ -32,10 +32,10 @@
 
 ## Difficulty Levels (F4)
 
-1.  [ ] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen und 
-2.  [ ] Implementiere mittelschwere Rätsel mit moderater Komplexität.
-3.  [ ] Implementiere schwere Rätsel mit anspruchsvollen Konfigurationen.
-4.  [ ] Implementiere Expertenrätsel mit minimalen Hinweisen.
+1.  [x] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen und 
+2.  [x] Implementiere mittelschwere Rätsel mit moderater Komplexität.
+3.  [x] Implementiere schwere Rätsel mit anspruchsvollen Konfigurationen.
+4.  [x] Implementiere Expertenrätsel mit minimalen Hinweisen.
 
 ## Hint System (F5)
 

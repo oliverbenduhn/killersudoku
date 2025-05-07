@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue } from '@chakra-ui/react';
+import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay } from '@chakra-ui/react';
 import './App.css';
 import Board from './components/Board/Board';
 import LevelSelector from './components/LevelSelector/LevelSelector';
@@ -11,6 +11,9 @@ import FadeInView from './components/common/FadeInView';
 import SwipeableBox from './components/common/SwipeableBox';
 import InstallPrompt from './components/common/InstallPrompt';
 import { requestNotificationPermission } from './serviceWorkerRegistration';
+import { clearAllGameStates } from './services/storageService';
+import React from 'react';
+import { FocusableElement } from '@chakra-ui/utils';
 
 // Erweiterte Android-Material Design Farbpalette
 const theme = extendTheme({
@@ -63,7 +66,10 @@ function App() {
   const [activeTab, setActiveTab] = useState<string>("home");
   const [lastActiveTab, setLastActiveTab] = useState<string>("home");
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
-  
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
+  const cancelRef = React.useRef<any>(null);
+  const toast = useToast();
+
   // Responsive Layout-Einstellungen
   const headerHeight = useBreakpointValue({ base: "56px", md: "64px" });
   const navBarHeight = useBreakpointValue({ base: "56px", md: "64px" });
@@ -142,6 +148,30 @@ function App() {
     const currentIndex = tabOrder.indexOf(activeTab);
     if (currentIndex > 0) {
       handleTabChange(tabOrder[currentIndex - 1]);
+    }
+  };
+
+  // Funktion zum Zurücksetzen aller Level
+  const handleResetAllLevels = async () => {
+    try {
+      await clearAllGameStates();
+      toast({
+        title: "Erfolgreich zurückgesetzt",
+        description: "Alle Spielstände wurden zurückgesetzt.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+      setIsResetDialogOpen(false);
+    } catch (error) {
+      console.error("Fehler beim Zurücksetzen der Spielstände:", error);
+      toast({
+        title: "Fehler",
+        description: "Beim Zurücksetzen der Spielstände ist ein Fehler aufgetreten.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
     }
   };
 
@@ -275,9 +305,22 @@ function App() {
               <Heading as="h2" size="lg" mb={4} color="android.text">
                 Einstellungen
               </Heading>
-              <Text className="readable-text" color="android.secondaryText">
-                Hier kannst du in Zukunft Spieleinstellungen ändern.
-              </Text>
+              
+              <VStack spacing={4} align="stretch">
+                <Box>
+                  <Button 
+                    colorScheme="red" 
+                    variant="outline"
+                    onClick={() => setIsResetDialogOpen(true)}
+                    w="100%"
+                  >
+                    Alle Level zurücksetzen
+                  </Button>
+                  <Text mt={2} fontSize="sm" color="android.secondaryText">
+                    Setzt den Fortschritt aller Level zurück. Diese Aktion kann nicht rückgängig gemacht werden.
+                  </Text>
+                </Box>
+              </VStack>
             </Box>
           </FadeInView>
         );
@@ -400,6 +443,34 @@ function App() {
           )}
         </Container>
       </SwipeableBox>
+      
+      {/* Reset-Bestätigungsdialog */}
+      <AlertDialog
+        isOpen={isResetDialogOpen}
+        leastDestructiveRef={cancelRef}
+        onClose={() => setIsResetDialogOpen(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Alle Level zurücksetzen
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Bist du sicher? Diese Aktion wird den Fortschritt aller Level zurücksetzen und kann nicht rückgängig gemacht werden.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={() => setIsResetDialogOpen(false)}>
+                Abbrechen
+              </Button>
+              <Button colorScheme="red" onClick={handleResetAllLevels} ml={3}>
+                Zurücksetzen
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
       
       {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
