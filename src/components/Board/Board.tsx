@@ -44,6 +44,7 @@ interface BoardProps {
   levelData?: GameLevel | null;
   isLoading?: boolean;
   error?: string | null;
+  blackAndWhiteMode?: boolean;
 }
 
 // Hilfsfunktion zum Abrufen des Käfigs für eine bestimmte Zelle
@@ -76,7 +77,8 @@ export const Board: React.FC<BoardProps> = ({
   puzzleId = 'default',
   levelData = null,
   isLoading: externalLoading = false,
-  error: externalError = null
+  error: externalError = null,
+  blackAndWhiteMode = false
 }) => {
   const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId);
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
@@ -608,17 +610,25 @@ export const Board: React.FC<BoardProps> = ({
     // Dynamische Hintergrundfarbe basierend auf verschiedenen Zuständen
     let bgColor = "white";
     if (cage) {
-      bgColor = cage.color;
+      // Im Schwarzweißmodus verwenden wir Graustufen anstelle von Farben
+      if (blackAndWhiteMode) {
+        // Käfignummer in Graustufe umwandeln (um verschiedene Käfige zu unterscheiden)
+        const cageIndex = cages.indexOf(cage);
+        const grayLevel = 100 - (cageIndex % 4) * 10; // Verschiedene Graustufen für verschiedene Käfige
+        bgColor = `gray.${grayLevel}`;
+      } else {
+        bgColor = cage.color;
+      }
     } else if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue) {
-      bgColor = "blue.50";
+      bgColor = blackAndWhiteMode ? "gray.50" : "blue.50";
     }
 
     // Wertfarbe basierend auf verschiedenen Zuständen
-    let valueColor = isInitialValue ? "black" : "blue.700";
+    let valueColor = isInitialValue ? "black" : (blackAndWhiteMode ? "gray.800" : "blue.700");
     if (!valid && value !== 0) {
-      valueColor = "red.500"; // Kräftigeres Rot für ungültige Einträge
+      valueColor = blackAndWhiteMode ? "gray.800" : "red.500"; // Kräftigeres Rot für ungültige Einträge
     } else if (cageComplete && cage) {
-      valueColor = "green.700";
+      valueColor = blackAndWhiteMode ? "gray.900" : "green.700";
     }
 
     // Prüfen, ob diese Zelle den gleichen Wert hat wie die ausgewählte Zelle
@@ -709,14 +719,15 @@ export const Board: React.FC<BoardProps> = ({
           <Text
             position="absolute"
             top="1px"
-            left="1px"
+            left="2px"
             fontSize={sumFontSize}
             fontWeight="bold"
             color={cageComplete ? "green.600" : "gray.700"}
-            zIndex="1"
-            bg={cage.color} // Hintergrund gleich der Käfigfarbe für bessere Lesbarkeit
+            zIndex="2" // Erhöhter z-index, um sicherzustellen, dass die Zahl über der Linie liegt
+            bg="rgba(255,255,255,0.7)" // Leicht transparenter weißer Hintergrund statt komplett transparent
             lineHeight="1"
             px="1px"
+            borderRadius="2px" // Abgerundete Ecken für bessere Lesbarkeit
           >
             {cage.sum}
           </Text>

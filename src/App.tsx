@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay } from '@chakra-ui/react';
+import { useState, useEffect, useRef } from 'react';
+import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay, IconButton, Tooltip } from '@chakra-ui/react';
 import './App.css';
 import Board from './components/Board/Board';
 import LevelSelector from './components/LevelSelector/LevelSelector';
@@ -12,8 +12,7 @@ import SwipeableBox from './components/common/SwipeableBox';
 import InstallPrompt from './components/common/InstallPrompt';
 import { requestNotificationPermission } from './serviceWorkerRegistration';
 import { clearAllGameStates } from './services/storageService';
-import React from 'react';
-import { FocusableElement } from '@chakra-ui/utils';
+import { RepeatIcon, ViewOffIcon, ViewIcon } from '@chakra-ui/icons';
 
 // Erweiterte Android-Material Design Farbpalette
 const theme = extendTheme({
@@ -67,7 +66,8 @@ function App() {
   const [lastActiveTab, setLastActiveTab] = useState<string>("home");
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
-  const cancelRef = React.useRef<any>(null);
+  const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
+  const cancelRef = useRef<any>(null);
   const toast = useToast();
 
   // Responsive Layout-Einstellungen
@@ -198,6 +198,7 @@ function App() {
                 levelData={levelData}
                 isLoading={isLoading}
                 error={error}
+                blackAndWhiteMode={blackAndWhiteMode}
               />
             </Box>
           </FadeInView>
@@ -381,7 +382,17 @@ function App() {
               Killer Sudoku
             </Heading>
             
-            <Box display={activeTab === "home" ? "block" : "none"}>
+            <Box display={activeTab === "home" ? "flex" : "none"} alignItems="center" gap={2}>
+              <Tooltip label={blackAndWhiteMode ? "Farbmodus aktivieren" : "Schwarzweiß-Modus aktivieren"} placement="bottom">
+                <IconButton
+                  aria-label={blackAndWhiteMode ? "Farbmodus aktivieren" : "Schwarzweiß-Modus aktivieren"}
+                  icon={blackAndWhiteMode ? <ViewIcon /> : <ViewOffIcon />}
+                  variant="ghost"
+                  colorScheme="whiteAlpha"
+                  size="sm"
+                  onClick={() => setBlackAndWhiteMode(!blackAndWhiteMode)}
+                />
+              </Tooltip>
               <LevelSelector 
                 currentLevel={currentLevel} 
                 onLevelChange={handleLevelChange}
