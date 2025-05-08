@@ -172,12 +172,51 @@ export const getPossibleValues = (
   cages: Cage[],
   size: number = 9
 ): number[] => {
+  const cage = getCageForCell(cages, row, col);
+  if (!cage) return [];
+
+  // Bereits verwendete Zahlen im Käfig
+  const usedInCage = cage.cells
+    .filter(cell => !(cell.row === row && cell.col === col)) // Aktuelle Zelle ausschließen
+    .map(cell => cellValues[cell.row][cell.col])
+    .filter(value => value !== 0);
+
+  // Berechne die verbleibende Summe für den Käfig
+  const currentSum = calculateCageSum(cellValues, cage);
+  const remainingSum = cage.sum - currentSum;
+  
+  // Anzahl der noch zu füllenden Zellen im Käfig
+  const remainingCells = cage.cells.filter(cell => 
+    cellValues[cell.row][cell.col] === 0
+  ).length;
+
   const possibleValues = [];
   
   for (let value = 1; value <= size; value++) {
-    if (isCellValid(cellValues, row, col, value, cages, size)) {
-      possibleValues.push(value);
+    // Prüfe Standard Sudoku-Regeln
+    if (!isCellValidForSudokuRules(cellValues, row, col, value, size)) {
+      continue;
     }
+
+    // Prüfe, ob die Zahl bereits im Käfig verwendet wurde
+    if (usedInCage.includes(value)) {
+      continue;
+    }
+
+    // Wenn dies die letzte leere Zelle im Käfig ist
+    if (remainingCells === 1) {
+      // Die Zahl muss exakt die verbleibende Summe ergeben
+      if (value !== remainingSum) {
+        continue;
+      }
+    } else {
+      // Für andere Zellen: Die Zahl darf nicht größer sein als die verbleibende Summe
+      if (value > remainingSum) {
+        continue;
+      }
+    }
+
+    possibleValues.push(value);
   }
   
   return possibleValues;

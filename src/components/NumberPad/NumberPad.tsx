@@ -1,17 +1,19 @@
 import React from 'react';
-import { Grid, useBreakpointValue } from '@chakra-ui/react';
+import { Grid, useBreakpointValue, Box, Text } from '@chakra-ui/react';
 import RippleButton from '../common/RippleButton';
 
 interface NumberPadProps {
   onNumberSelect: (number: number) => void;
   onClear: () => void;
   disabledNumbers?: number[];
+  remainingDigits?: { [key: number]: number };
 }
 
 export const NumberPad: React.FC<NumberPadProps> = ({ 
   onNumberSelect, 
   onClear,
-  disabledNumbers = [] 
+  disabledNumbers = [],
+  remainingDigits = {}
 }) => {
   // Material Design inspirierte Farben
   const buttonBg = '#2196F3';         // Material Blue 500
@@ -48,27 +50,51 @@ export const NumberPad: React.FC<NumberPadProps> = ({
     lg: 3          // Desktop
   }) || 2;
 
+  // Schriftgröße für die Anzeige der verbleibenden Ziffern
+  const remainingDigitsFontSize = useBreakpointValue({
+    base: "10px",  // Mobil
+    sm: "11px",    // Tablet klein
+    md: "12px",    // Tablet
+    lg: "12px"     // Desktop
+  }) || "11px";
+
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={gap} width={padWidth}>
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((number) => (
-        <RippleButton
-          key={number}
-          onClick={() => onNumberSelect(number)}
-          bg={buttonBg}
-          color="white"
-          size="lg"
-          height={buttonSize}
-          fontSize={fontSize}
-          fontWeight="bold"
-          _hover={{ bg: buttonHoverBg }}
-          _active={{ bg: buttonHoverBg }}
-          disabled={disabledNumbers.includes(number)}
-          borderRadius="md"
-          boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-          rippleColor="rgba(255, 255, 255, 0.4)"
-        >
-          {number}
-        </RippleButton>
+        <Box key={number} position="relative">
+          <RippleButton
+            onClick={() => onNumberSelect(number)}
+            bg={buttonBg}
+            color="white"
+            size="lg"
+            height={buttonSize}
+            fontSize={fontSize}
+            fontWeight="bold"
+            _hover={{ bg: buttonHoverBg }}
+            _active={{ bg: buttonHoverBg }}
+            disabled={disabledNumbers.includes(number)}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            rippleColor="rgba(255, 255, 255, 0.4)"
+            width="100%"
+          >
+            {number}
+          </RippleButton>
+          {/* Anzeige der verbleibenden Ziffern */}
+          {remainingDigits[number] !== undefined && (
+            <Text
+              position="absolute"
+              top="3px"
+              left="4px"
+              fontSize={remainingDigitsFontSize}
+              fontWeight="bold"
+              color="white"
+              lineHeight="1"
+            >
+              {remainingDigits[number]}
+            </Text>
+          )}
+        </Box>
       ))}
       <RippleButton
         gridColumn="1 / span 3"

@@ -32,6 +32,12 @@ const errorAnimation = keyframes`
   100% { transform: translateX(0); }
 `;
 
+// Animation für mögliche Werte
+const fadeInAnimation = keyframes`
+  0% { opacity: 0; transform: translateY(-2px); }
+  100% { opacity: 1; transform: translateY(0); }
+`;
+
 interface BoardProps {
   size?: number;
   puzzleId?: string;
@@ -86,6 +92,8 @@ export const Board: React.FC<BoardProps> = ({
   const [lastEnteredValue, setLastEnteredValue] = useState<number>(0);
   const [lastEnteredValid, setLastEnteredValid] = useState<boolean>(true);
   const [animating, setAnimating] = useState<boolean>(false);
+  const [showHints, setShowHints] = useState<boolean>(false);
+  const [possibleValues, setPossibleValues] = useState<number[]>([]);
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
@@ -229,6 +237,78 @@ export const Board: React.FC<BoardProps> = ({
     };
   }, [size, cellSizeByBreakpoint]);
 
+  // Handler für F5 (Hinweise)
+  useEffect(() => {
+    const handleKeyboardHints = (e: KeyboardEvent) => {
+      if (e.key === 'F5') {
+        e.preventDefault();
+        setShowHints(prev => !prev);
+        
+        if (selectedCell && gameState) {
+          const hints = GameLogic.getPossibleValues(
+            gameState.cellValues,
+            selectedCell.row,
+            selectedCell.col,
+            cages,
+            size
+          );
+          setPossibleValues(hints);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyboardHints);
+    return () => window.removeEventListener('keydown', handleKeyboardHints);
+  }, [selectedCell, gameState, cages, size]);
+
+  // Aktualisiere mögliche Werte wenn sich die Zellauswahl ändert
+  useEffect(() => {
+    if (selectedCell && gameState && showHints) {
+      const hints = GameLogic.getPossibleValues(
+        gameState.cellValues,
+        selectedCell.row,
+        selectedCell.col,
+        cages,
+        size
+      );
+      setPossibleValues(hints);
+    } else {
+      setPossibleValues([]);
+    }
+  }, [selectedCell, gameState, showHints, cages]);
+
+  // Berechnet die Anzahl der noch verfügbaren Ziffern (von den 9 möglichen)
+  const calculateRemainingDigits = (): { [key: number]: number } => {
+    if (!gameState) return {};
+    
+    // Initialisiere ein Objekt, das für jede Ziffer von 1-9 zählt, wie oft sie verwendet wurde
+    const usedDigits: { [key: number]: number } = {};
+    for (let i = 1; i <= 9; i++) {
+      usedDigits[i] = 0;
+    }
+    
+    // Zähle, wie oft jede Ziffer im Spielfeld vorkommt
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        const value = gameState.cellValues[row][col];
+        if (value > 0) {
+          usedDigits[value]++;
+        }
+      }
+    }
+    
+    // Berechne die verbleibenden Ziffern (9 - Anzahl der verwendeten)
+    const remainingDigits: { [key: number]: number } = {};
+    for (let i = 1; i <= 9; i++) {
+      remainingDigits[i] = 9 - usedDigits[i];
+    }
+    
+    return remainingDigits;
+  };
+
+  // Berechne die verbleibenden Ziffern, wenn sich der Spielzustand ändert
+  const remainingDigits = calculateRemainingDigits();
+
   const handleDragStart = (row: number, col: number) => {
     const cellPosition = { row, col };
     setSelectedCell(cellPosition);
@@ -311,6 +391,17 @@ export const Board: React.FC<BoardProps> = ({
       Math.floor(row1 / 3) === Math.floor(row2 / 3) &&
       Math.floor(col1 / 3) === Math.floor(col2 / 3)
     );
+  };
+
+  // Überprüft, ob der Wert einer Zelle mit dem Wert der ausgewählten Zelle übereinstimmt
+  const hasSameValue = (cellRow: number, cellCol: number): boolean => {
+    if (!selectedCell || !gameState) return false;
+    
+    const selectedValue = gameState.cellValues[selectedCell.row][selectedCell.col];
+    const cellValue = gameState.cellValues[cellRow][cellCol];
+    
+    // Nur Übereinstimmungen für Zellen mit Werten (nicht leer)
+    return selectedValue !== 0 && selectedValue === cellValue;
   };
 
   // Überprüft, ob eine Zelle gültig ist
@@ -516,25 +607,23 @@ export const Board: React.FC<BoardProps> = ({
 
     // Dynamische Hintergrundfarbe basierend auf verschiedenen Zuständen
     let bgColor = "white";
-    if (isSelected && !isInitialValue) {
-      bgColor = "blue.100";
-    } else if (value && !valid) {
-      bgColor = "red.100";
-    } else if (cage) {
-      bgColor = cage.color;  // Immer die normale Käfigfarbe verwenden
+    if (cage) {
+      bgColor = cage.color;
     } else if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue) {
       bgColor = "blue.50";
     }
 
     // Wertfarbe basierend auf verschiedenen Zuständen
-    // Vorausgefüllte Zahlen immer in Schwarz anzeigen, aber Hintergrundfarbe beibehalten
     let valueColor = isInitialValue ? "black" : "blue.700";
-    if (!valid && value !== 0 && !isInitialValue) {
-      valueColor = "red.600";
+    if (!valid && value !== 0) {
+      valueColor = "red.500"; // Kräftigeres Rot für ungültige Einträge
     } else if (cageComplete && cage) {
       valueColor = "green.700";
     }
 
+    // Prüfen, ob diese Zelle den gleichen Wert hat wie die ausgewählte Zelle
+    const isSameValue = hasSameValue(row, col);
+    
     // Animation für diese Zelle bestimmen
     let animation = "none";
     if (animating && isLastEntered) {
@@ -549,28 +638,28 @@ export const Board: React.FC<BoardProps> = ({
 
     // Schatten für tieferen visuellen Effekt
     const boxShadow = isSelected ? "0px 1px 3px rgba(0,0,0,0.2) inset" : "none";
-    
-    // Material Design-Elevation-Effekt für ausgewählte Zellen
-    const elevation = isSelected ? 
+    // Material Design-Elevation-Effekt für ausgewählte und ungültige Zellen
+    const elevation = (!valid && value !== 0) ? 
       "0px 1px 3px 0px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.12)" : 
       "none";
 
     return (
       <Box
         key={`${row}-${col}`}
+        data-testid={`cell-${row}-${col}`}
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
-        border="1px solid rgba(0,0,0,0.2)"
-        borderRight={col % 3 === 2 ? "2px solid rgba(0,0,0,0.4)" : "1px solid rgba(0,0,0,0.2)"}
-        borderBottom={row % 3 === 2 ? "2px solid rgba(0,0,0,0.4)" : "1px solid rgba(0,0,0,0.2)"}
+        border={isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)"}
+        borderRight={col % 3 === 2 ? (isSelected ? "2px solid rgba(0,0,0,0.75)" : "2px solid rgba(0,0,0,0.4)") : (isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)")}
+        borderBottom={row % 3 === 2 ? (isSelected ? "2px solid rgba(0,0,0,0.75)" : "2px solid rgba(0,0,0,0.4)") : (isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)")}
         bg={bgColor}
-        onMouseDown={() => !isInitialValue && handleDragStart(row, col)}
+        onMouseDown={() => handleDragStart(row, col)}
         onMouseEnter={() => handleDragEnter(row, col)}
         onMouseUp={handleDragEnd}
-        onTouchStart={() => !isInitialValue && handleDragStart(row, col)}
+        onTouchStart={() => handleDragStart(row, col)}
         onTouchMove={(e) => {
-          if (!isInitialValue && boardRef.current && e.touches.length > 0) {
+          if (boardRef.current && e.touches.length > 0) {
             const touch = e.touches[0];
             const boardRect = boardRef.current.getBoundingClientRect();
             const touchX = touch.clientX - boardRect.left;
@@ -585,15 +674,17 @@ export const Board: React.FC<BoardProps> = ({
           }
         }}
         onTouchEnd={handleDragEnd}
-        cursor={isInitialValue ? "default" : "pointer"}
-        _hover={isInitialValue ? undefined : { bg: "blue.50" }}
+        cursor="pointer"
+        _hover={{ 
+          opacity: 0.5  // Stärkere Verdunkelung durch stärker reduzierte Deckkraft
+        }}
         boxShadow={boxShadow}
         transition="all 0.3s ease"
         zIndex={isSelected ? 1 : 0}
         style={{
           animation,
           boxShadow: elevation,
-          transform: isSelected && !isInitialValue ? "translateZ(1px)" : "none",
+          transform: isSelected && !isInitialValue ? "translateZ(1px)" : "none"
         }}
       >
         {cage && (
@@ -617,12 +708,15 @@ export const Board: React.FC<BoardProps> = ({
         {isCageStart && cage && (
           <Text
             position="absolute"
-            top="3px"
-            left="3px"
+            top="1px"
+            left="1px"
             fontSize={sumFontSize}
             fontWeight="bold"
-            color={cageComplete ? "green.600" : "gray.700"}  // Summe wird grün wenn gelöst
+            color={cageComplete ? "green.600" : "gray.700"}
             zIndex="1"
+            bg={cage.color} // Hintergrund gleich der Käfigfarbe für bessere Lesbarkeit
+            lineHeight="1"
+            px="1px"
           >
             {cage.sum}
           </Text>
@@ -633,14 +727,43 @@ export const Board: React.FC<BoardProps> = ({
           top="50%"
           left="50%"
           transform="translate(-50%, -50%)"
-          fontSize={valueFontSize}
-          fontWeight={isInitialValue ? "bold" : "medium"}
-          color={cageComplete ? "green.600" : (isInitialValue ? "black" : "blue.700")}  // Zahlen werden grün wenn Käfig gelöst
+          fontSize={isSameValue ? `calc(${valueFontSize} * 0.85)` : valueFontSize}
+          fontWeight={(!valid && value !== 0) || isSameValue ? "bold" : "normal"}
+          color={cageComplete ? "green.600" : (!valid && value !== 0) ? "red.500" : (isInitialValue ? "black" : "blue.700")}
           userSelect="none"
-          transition="color 0.3s"
+          transition="color 0.3s, font-size 0.2s"
         >
           {value || ''}
         </Text>
+        
+        {/* Anzeige der möglichen Werte */}
+        {showHints && isSelected && !value && !isInitialValue && possibleValues.length > 0 && (
+          <Box
+            position="absolute"
+            top="2px"
+            left="2px"
+            right="2px"
+            bottom="2px"
+            display="flex"
+            flexWrap="wrap"
+            justifyContent="center"
+            alignItems="center"
+            gap="1px"
+            pointerEvents="none"
+            animation={`${fadeInAnimation} 0.3s ease-out`}
+          >
+            {possibleValues.map((v) => (
+              <Text
+                key={v}
+                fontSize={sumFontSize}
+                color="gray.600"
+                lineHeight="1"
+              >
+                {v}
+              </Text>
+            ))}
+          </Box>
+        )}
       </Box>
     );
   };
@@ -780,6 +903,7 @@ export const Board: React.FC<BoardProps> = ({
           onNumberSelect={handleNumberSelect}
           onClear={handleClear}
           disabledNumbers={[]}
+          remainingDigits={remainingDigits}
         />
         <Stack 
           direction="row" 
