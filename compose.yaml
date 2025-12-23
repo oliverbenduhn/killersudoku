@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     pull_policy: never
     ports:
-      - "3000:80"
+      - "8084:80"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost/healthz >/dev/null 2>&1 || exit 1"]
       interval: 10s
