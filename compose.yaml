@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: killersudoku:latest
+    pull_policy: never
     ports:
       - "3000:80"
     healthcheck:
