@@ -46,7 +46,7 @@
 
 ## Game State Management (F6)
 
-1.  [ ] Speichere den aktuellen Spielstatus automatisch.
+1.  [x] Speichere den aktuellen Spielstatus automatisch.
 2.  [ ] Biete mehrere Speicherplätze für verschiedene Rätsel.
 3.  [ ] Implementiere die Undo/Redo-Funktionalität.
 4.  [x] Verfolge die Spielstatistiken.

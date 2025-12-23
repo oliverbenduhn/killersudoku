@@ -17,6 +17,8 @@ export const useGameState = (puzzleId: string) => {
   const saveOperationRef = useRef<Promise<void>>(Promise.resolve());
   // Ref zum Verfolgen der aktuellen puzzleId
   const currentPuzzleIdRef = useRef<string>(puzzleId);
+  const gameStateRef = useRef<GameState | null>(null);
+  const lastAutoSaveRef = useRef<number>(0);
 
   useEffect(() => {
     // Aktualisiere die aktuelle puzzleId Referenz
@@ -110,6 +112,54 @@ export const useGameState = (puzzleId: string) => {
 
     loadState();
   }, [puzzleId]);
+
+  useEffect(() => {
+    gameStateRef.current = gameState;
+  }, [gameState]);
+
+  useEffect(() => {
+    if (!gameState || gameState.solved) return;
+
+    const tick = () => {
+      const currentState = gameStateRef.current;
+      if (!currentState) return;
+
+      const now = Date.now();
+      const startTime = currentState.startTime || now;
+      const elapsedTime = Math.max(0, now - startTime);
+
+      if (elapsedTime === currentState.elapsedTime) return;
+
+      const updatedState = {
+        ...currentState,
+        elapsedTime
+      };
+
+      setGameState(updatedState);
+      gameStateRef.current = updatedState;
+
+      if (now - lastAutoSaveRef.current >= 15000) {
+        lastAutoSaveRef.current = now;
+        const targetPuzzleId = currentPuzzleIdRef.current;
+
+        const saveOperation = (async () => {
+          try {
+            await saveOperationRef.current;
+            if (targetPuzzleId === currentPuzzleIdRef.current) {
+              await saveGameState(targetPuzzleId, updatedState);
+            }
+          } catch (error) {
+            console.error('Fehler beim automatischen Speichern:', error);
+          }
+        })();
+
+        saveOperationRef.current = saveOperation;
+      }
+    };
+
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [gameState]);
 
   const updateGameState = async (newState: Partial<GameState>) => {
     if (!gameState) return;
