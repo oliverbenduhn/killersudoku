@@ -41,7 +41,7 @@
 
 1.  [x] Hebe ungültige Einträge hervor.
 2.  [x] Schlage mögliche Werte für die ausgewählte Zelle vor.
-3.  [ ] Enthülle einen korrekten Zellenwert (begrenzte Nutzung).
+3.  [x] Enthülle einen korrekten Zellenwert (begrenzte Nutzung).
 4.  [ ] Gib strategische Tipps basierend auf dem aktuellen Board-Status.
 
 ## Game State Management (F6)

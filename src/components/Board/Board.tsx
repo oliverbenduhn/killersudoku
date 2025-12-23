@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, keyframes } from '@chakra-ui/react';
+import { Box, Grid, Text, Spinner, useBreakpointValue, Flex, Button, Stack, Alert, AlertIcon, AlertTitle, AlertDescription, keyframes, useToast } from '@chakra-ui/react';
 import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
 import useGameState from '../../hooks/useGameState';
 import NumberPad from '../NumberPad/NumberPad';
@@ -81,6 +81,7 @@ export const Board: React.FC<BoardProps> = ({
   error: externalError = null,
   blackAndWhiteMode = false
 }) => {
+  const toast = useToast();
   const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId);
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   const [dragStart, setDragStart] = useState<CellPosition | null>(null);
@@ -98,6 +99,7 @@ export const Board: React.FC<BoardProps> = ({
   const [showHints, setShowHints] = useState<boolean>(false);
   const [possibleValues, setPossibleValues] = useState<number[]>([]);
   const solveRecordedRef = useRef<string | null>(null);
+  const maxHints = 3;
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
@@ -388,6 +390,103 @@ export const Board: React.FC<BoardProps> = ({
     updateGameState({
       cellValues: newValues
     });
+  };
+
+  const findHintTarget = () => {
+    if (!levelData || !gameState || !levelData.solution) return null;
+
+    if (selectedCell) {
+      const { row, col } = selectedCell;
+      if (levelData.initialValues[row][col] === 0) {
+        const currentValue = gameState.cellValues[row][col];
+        const solutionValue = levelData.solution[row]?.[col];
+        if (solutionValue && currentValue !== solutionValue) {
+          return selectedCell;
+        }
+      }
+    }
+
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
+        if (levelData.initialValues[row][col] === 0) {
+          const currentValue = gameState.cellValues[row][col];
+          const solutionValue = levelData.solution[row]?.[col];
+          if (solutionValue && currentValue !== solutionValue) {
+            return { row, col };
+          }
+        }
+      }
+    }
+
+    return null;
+  };
+
+  const handleRevealHint = () => {
+    if (!gameState || !levelData) return;
+
+    const hintsUsed = gameState.hintsUsed || 0;
+    if (hintsUsed >= maxHints) {
+      toast({
+        title: 'Hinweise aufgebraucht',
+        description: `Du hast bereits alle ${maxHints} Hinweise genutzt.`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
+
+    if (!levelData.solution) {
+      toast({
+        title: 'Kein Hinweis verfügbar',
+        description: 'Für dieses Level ist keine Lösung hinterlegt.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
+
+    const target = findHintTarget();
+    if (!target) {
+      toast({
+        title: 'Keine leere Zelle',
+        description: 'Es gibt keine freien Zellen für einen Hinweis.',
+        status: 'info',
+        duration: 2500,
+        isClosable: true
+      });
+      return;
+    }
+
+    const correctValue = levelData.solution[target.row]?.[target.col];
+    if (!correctValue) {
+      toast({
+        title: 'Hinweis fehlgeschlagen',
+        description: 'Die Lösung enthält keinen Wert für diese Zelle.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
+
+    const newValues = gameState.cellValues.map((row: number[]) => [...row]);
+    newValues[target.row][target.col] = correctValue;
+
+    setSelectedCell(target);
+    setSelectedCells([target]);
+
+    updateGameState({
+      cellValues: newValues,
+      hintsUsed: hintsUsed + 1
+    });
+
+    setLastEnteredCell(target);
+    setLastEnteredValue(correctValue);
+    setLastEnteredValid(isCellValid(target.row, target.col, correctValue));
+    setAnimating(true);
+    setTimeout(() => setAnimating(false), 500);
   };
 
   const isSameBlock = (row1: number, col1: number, row2: number, col2: number) => {
@@ -957,6 +1056,18 @@ export const Board: React.FC<BoardProps> = ({
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
         >
+          <RippleButton 
+            bg="teal.500"
+            color="white"
+            onClick={handleRevealHint}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            _hover={{ bg: "teal.600" }}
+            _active={{ bg: "teal.700" }}
+            isDisabled={!gameState || (gameState.hintsUsed || 0) >= maxHints}
+          >
+            <AddIcon mr={2} /> Hinweis ({maxHints - (gameState?.hintsUsed || 0)})
+          </RippleButton>
           <RippleButton 
             bg="#2196F3"
             color="white"
