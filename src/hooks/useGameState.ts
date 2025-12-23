@@ -8,6 +8,8 @@ interface GameState extends GlobalGameState {
   startTime: number;
   elapsedTime: number;
   hintsUsed: number;
+  mistakesUsed: number;
+  gameOver: boolean;
 }
 
 export const useGameState = (puzzleId: string) => {
@@ -65,6 +67,8 @@ export const useGameState = (puzzleId: string) => {
                     elapsedTime: 0,
                     difficulty: 'normal',
                     hintsUsed: 0,
+                    mistakesUsed: 0,
+                    gameOver: false,
                     levelId: puzzleId
                   };
                   console.log('useGameState: Neuer Spielstand mit initialValues:', newGameState);
@@ -104,6 +108,8 @@ export const useGameState = (puzzleId: string) => {
         elapsedTime: 0,
         difficulty: 'normal',
         hintsUsed: 0,
+        mistakesUsed: 0,
+        gameOver: false,
         levelId: puzzleId
       };
       console.log('useGameState: Erstelle leeren Spielstand:', emptyState);
@@ -118,7 +124,7 @@ export const useGameState = (puzzleId: string) => {
   }, [gameState]);
 
   useEffect(() => {
-    if (!gameState || gameState.solved) return;
+    if (!gameState || gameState.solved || gameState.gameOver) return;
 
     const tick = () => {
       const currentState = gameStateRef.current;

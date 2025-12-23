@@ -19,9 +19,13 @@ export interface GameState {
   endTime?: number;
   difficulty?: string;
   solved?: boolean;
+  gameOver?: boolean;
   history?: GameState[];
   currentHistoryIndex?: number;
   levelId?: string; // ID des aktuellen Levels
+  hintsUsed?: number;
+  mistakesUsed?: number;
+  elapsedTime?: number;
 }
 
 export interface GameLevel {

@@ -100,6 +100,8 @@ export const Board: React.FC<BoardProps> = ({
   const [possibleValues, setPossibleValues] = useState<number[]>([]);
   const solveRecordedRef = useRef<string | null>(null);
   const maxHints = 3;
+  const maxMistakes = 3;
+  const isGameOver = (gameState?.mistakesUsed || 0) >= maxMistakes;
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
@@ -347,37 +349,82 @@ export const Board: React.FC<BoardProps> = ({
 
   const handleNumberSelect = (number: number) => {
     if (!gameState || !levelData) return;
+    if (isGameOver) {
+      toast({
+        title: 'Game Over',
+        description: 'Du hast das Fehlerlimit erreicht. Bitte starte neu.',
+        status: 'error',
+        duration: 2500,
+        isClosable: true
+      });
+      return;
+    }
 
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
     let lastCell: CellPosition | null = null;
-    
+    let lastValid = true;
+    let mistakesAdded = 0;
+
     selectedCells.forEach(({ row, col }) => {
       // Überprüfen, ob die Zelle vorausgefüllt ist
       if (levelData.initialValues[row][col] === 0) {
+        const currentValue = newValues[row][col];
+        if (currentValue === number) return;
+
         newValues[row][col] = number;
         lastCell = { row, col }; // Letzte Zelle für Animation
+        const isValid = GameLogic.isCellValid(newValues, row, col, number, cages, size);
+        lastValid = isValid;
+        if (!isValid) {
+          mistakesAdded += 1;
+        }
       }
     });
 
+    if (!lastCell) {
+      return;
+    }
+
+    const previousMistakes = gameState.mistakesUsed || 0;
+    const updatedMistakes = Math.min(maxMistakes, previousMistakes + mistakesAdded);
+    const gameOverNow = updatedMistakes >= maxMistakes;
+
     updateGameState({
-      cellValues: newValues
+      cellValues: newValues,
+      mistakesUsed: updatedMistakes,
+      gameOver: gameOverNow
     });
-    
+
     // Für Animations-Feedback
-    if (lastCell) {
-      const validCell: CellPosition = lastCell; // Explizite Typannotation hinzufügen
-      setLastEnteredCell(validCell);
-      setLastEnteredValue(number);
-      setLastEnteredValid(isCellValid(validCell.row, validCell.col, number));
-      setAnimating(true);
-      
-      // Nach der Animation zurücksetzen
-      setTimeout(() => setAnimating(false), 500);
+    setLastEnteredCell(lastCell);
+    setLastEnteredValue(number);
+    setLastEnteredValid(lastValid);
+    setAnimating(true);
+    setTimeout(() => setAnimating(false), 500);
+
+    if (!isGameOver && gameOverNow) {
+      toast({
+        title: 'Game Over',
+        description: 'Du hast das Fehlerlimit erreicht.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true
+      });
     }
   };
 
   const handleClear = () => {
     if (!gameState || !levelData) return;
+    if (isGameOver) {
+      toast({
+        title: 'Game Over',
+        description: 'Du kannst keine Änderungen mehr machen.',
+        status: 'info',
+        duration: 2000,
+        isClosable: true
+      });
+      return;
+    }
 
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
     selectedCells.forEach(({ row, col }) => {
@@ -423,6 +470,16 @@ export const Board: React.FC<BoardProps> = ({
 
   const handleRevealHint = () => {
     if (!gameState || !levelData) return;
+    if (isGameOver) {
+      toast({
+        title: 'Game Over',
+        description: 'Hinweise sind nach Game Over nicht verfügbar.',
+        status: 'info',
+        duration: 2500,
+        isClosable: true
+      });
+      return;
+    }
 
     const hintsUsed = gameState.hintsUsed || 0;
     if (hintsUsed >= maxHints) {
@@ -593,34 +650,12 @@ export const Board: React.FC<BoardProps> = ({
     // Zahlen 1-9 für die Eingabe
     else if (/^[1-9]$/.test(e.key) && gameState && levelData) {
       const num = parseInt(e.key, 10);
-      const newValues = gameState.cellValues.map((row: number[]) => [...row]);
-      
-      // Nur die aktuell ausgewählten Zellen aktualisieren, wenn sie nicht vorausgefüllt sind
-      selectedCells.forEach(cell => {
-        if (levelData.initialValues[cell.row][cell.col] === 0) {
-          newValues[cell.row][cell.col] = num;
-        }
-      });
-      
-      updateGameState({
-        cellValues: newValues
-      });
+      handleNumberSelect(num);
       return;
     }
     // Entfernen/Löschen mit Backspace, Delete oder 0
     else if (['Backspace', 'Delete', '0'].includes(e.key) && gameState && levelData) {
-      const newValues = gameState.cellValues.map((row: number[]) => [...row]);
-      
-      // Nur die aktuell ausgewählten Zellen löschen, wenn sie nicht vorausgefüllt sind
-      selectedCells.forEach(cell => {
-        if (levelData.initialValues[cell.row][cell.col] === 0) {
-          newValues[cell.row][cell.col] = 0;
-        }
-      });
-      
-      updateGameState({
-        cellValues: newValues
-      });
+      handleClear();
       return;
     }
     // Mehrere Zellen mit Shift + Pfeiltasten auswählen
@@ -703,7 +738,9 @@ export const Board: React.FC<BoardProps> = ({
     const emptyValues = createEmptyBoard(size);
     
     updateGameState({
-      cellValues: emptyValues
+      cellValues: emptyValues,
+      mistakesUsed: 0,
+      gameOver: false
     });
     
     // Auswahl zurücksetzen
@@ -1031,6 +1068,28 @@ export const Board: React.FC<BoardProps> = ({
             </Text>
           </FadeInView>
         )}
+
+        {gameState && isGameOver && (
+          <FadeInView
+            direction="scale"
+            duration={800}
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            bg="red.100"
+            border="2px solid red.500"
+            borderRadius="md"
+            p={4}
+            textAlign="center"
+            boxShadow="xl"
+            zIndex={10}
+          >
+            <Text fontSize="xl" fontWeight="bold" color="red.600">
+              Game Over – zu viele Fehler
+            </Text>
+          </FadeInView>
+        )}
       </Box>
       
       <Box 
@@ -1046,7 +1105,7 @@ export const Board: React.FC<BoardProps> = ({
         <NumberPad
           onNumberSelect={handleNumberSelect}
           onClear={handleClear}
-          disabledNumbers={[]}
+          disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
           remainingDigits={remainingDigits}
         />
         <Stack 
@@ -1064,7 +1123,7 @@ export const Board: React.FC<BoardProps> = ({
             boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
             _hover={{ bg: "teal.600" }}
             _active={{ bg: "teal.700" }}
-            isDisabled={!gameState || (gameState.hintsUsed || 0) >= maxHints}
+            isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= maxHints}
           >
             <AddIcon mr={2} /> Hinweis ({maxHints - (gameState?.hintsUsed || 0)})
           </RippleButton>
