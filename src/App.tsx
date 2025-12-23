@@ -13,6 +13,7 @@ import InstallPrompt from './components/common/InstallPrompt';
 import { requestNotificationPermission } from './serviceWorkerRegistration';
 import { clearAllGameStates } from './services/storageService';
 import { RepeatIcon, ViewOffIcon, ViewIcon } from '@chakra-ui/icons';
+import { GameStatistics, loadStatistics } from './services/statisticsService';
 
 // Erweiterte Android-Material Design Farbpalette
 const theme = extendTheme({
@@ -67,6 +68,7 @@ function App() {
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
+  const [stats, setStats] = useState<GameStatistics | null>(null);
   const cancelRef = useRef<any>(null);
   const toast = useToast();
 
@@ -103,6 +105,38 @@ function App() {
 
     fetchLevel();
   }, [currentLevel]);
+
+  useEffect(() => {
+    if (activeTab !== 'stats') return;
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      const loadedStats = await loadStatistics();
+      if (isMounted) {
+        setStats(loadedStats);
+      }
+    };
+
+    fetchStats();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeTab]);
+
+  const formatDuration = (durationMs: number) => {
+    const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}m ${seconds}s`;
+    }
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
+  };
 
   const handleLevelChange = (level: number) => {
     setCurrentLevel(level);
@@ -282,9 +316,54 @@ function App() {
               <Heading as="h2" size="lg" mb={4} color="android.text">
                 Statistiken
               </Heading>
-              <Text className="readable-text" color="android.secondaryText">
-                Hier werden in Zukunft deine Spielstatistiken angezeigt.
-              </Text>
+              {!stats || stats.totalSolved === 0 ? (
+                <Text className="readable-text" color="android.secondaryText">
+                  Noch keine gelösten Rätsel. Sobald du eines abschließt, erscheinen hier deine Stats.
+                </Text>
+              ) : (
+                <VStack spacing={4} align="stretch">
+                  <Box>
+                    <Text fontWeight="600" color="android.text">Gelöste Rätsel</Text>
+                    <Text color="android.secondaryText">{stats.totalSolved}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="600" color="android.text">Gesamtspielzeit</Text>
+                    <Text color="android.secondaryText">{formatDuration(stats.totalTimeMs)}</Text>
+                  </Box>
+                  <Box>
+                    <Text fontWeight="600" color="android.text">Gelöst nach Schwierigkeit</Text>
+                    {Object.keys(stats.solvedByDifficulty).length === 0 ? (
+                      <Text color="android.secondaryText">Keine Daten verfügbar.</Text>
+                    ) : (
+                      Object.entries(stats.solvedByDifficulty).map(([difficulty, count]) => (
+                        <Text key={difficulty} color="android.secondaryText">
+                          {difficulty}: {count}
+                        </Text>
+                      ))
+                    )}
+                  </Box>
+                  <Box>
+                    <Text fontWeight="600" color="android.text">Beste Zeiten</Text>
+                    {Object.keys(stats.bestTimeMsByDifficulty).length === 0 ? (
+                      <Text color="android.secondaryText">Keine Daten verfügbar.</Text>
+                    ) : (
+                      Object.entries(stats.bestTimeMsByDifficulty).map(([difficulty, timeMs]) => (
+                        <Text key={difficulty} color="android.secondaryText">
+                          {difficulty}: {formatDuration(timeMs)}
+                        </Text>
+                      ))
+                    )}
+                  </Box>
+                  {stats.lastSolvedAt && (
+                    <Box>
+                      <Text fontWeight="600" color="android.text">Zuletzt gelöst</Text>
+                      <Text color="android.secondaryText">
+                        {new Date(stats.lastSolvedAt).toLocaleString()}
+                      </Text>
+                    </Box>
+                  )}
+                </VStack>
+              )}
             </Box>
           </FadeInView>
         );

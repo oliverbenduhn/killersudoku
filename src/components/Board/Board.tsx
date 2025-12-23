@@ -8,6 +8,7 @@ import * as GameLogic from '../../services/gameLogicService';
 import { createEmptyBoard } from '../../services/puzzleGeneratorService';
 import RippleButton from '../common/RippleButton';
 import FadeInView from '../common/FadeInView';
+import { recordSolve } from '../../services/statisticsService';
 
 // Animation für die hervorgehobene Zelle
 const pulseAnimation = keyframes`
@@ -96,6 +97,7 @@ export const Board: React.FC<BoardProps> = ({
   const [animating, setAnimating] = useState<boolean>(false);
   const [showHints, setShowHints] = useState<boolean>(false);
   const [possibleValues, setPossibleValues] = useState<number[]>([]);
+  const solveRecordedRef = useRef<string | null>(null);
 
   // Responsive Design: Zellengrößen anpassen je nach Bildschirmgröße
   const cellSizeByBreakpoint = useBreakpointValue({
@@ -569,6 +571,30 @@ export const Board: React.FC<BoardProps> = ({
       boardFocusRef.current.focus();
     }
   }, [selectedCell]);
+
+  useEffect(() => {
+    if (!gameState) return;
+
+    if (gameState.solved) {
+      solveRecordedRef.current = puzzleId;
+      return;
+    }
+
+    if (!levelData || !isBoardComplete()) return;
+    if (solveRecordedRef.current === puzzleId) return;
+
+    const finishedAt = Date.now();
+    const startTime = gameState.startTime || finishedAt;
+    const elapsedMs = Math.max(0, finishedAt - startTime);
+
+    solveRecordedRef.current = puzzleId;
+    updateGameState({
+      solved: true,
+      endTime: finishedAt,
+      elapsedTime: elapsedMs
+    });
+    recordSolve(levelData.difficulty, elapsedMs);
+  }, [gameState, levelData, puzzleId, updateGameState]);
   
   // Handler für Reset-Button
   const handleReset = () => {

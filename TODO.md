@@ -49,7 +49,7 @@
 1.  [ ] Speichere den aktuellen Spielstatus automatisch.
 2.  [ ] Biete mehrere Speicherplätze für verschiedene Rätsel.
 3.  [ ] Implementiere die Undo/Redo-Funktionalität.
-4.  [ ] Verfolge die Spielstatistiken.
+4.  [x] Verfolge die Spielstatistiken.
 
 ## User Interface (F7)
 
@@ -81,8 +81,8 @@
 
 ## Spielanalytik und Statistiken (F11)
 
-1.  [ ] Implementiere Spielzeiterfassung für jedes Rätsel.
-2.  [ ] Erstelle Statistiken für gelöste Rätsel pro Schwierigkeitsgrad.
+1.  [x] Implementiere Spielzeiterfassung für jedes Rätsel.
+2.  [x] Erstelle Statistiken für gelöste Rätsel pro Schwierigkeitsgrad.
 3.  [ ] Visualisiere den Spielerfortschritt mit Diagrammen.
 4.  [ ] Implementiere Achievements/Erfolge für bestimmte Meilensteine.
 

@@ -27,6 +27,7 @@ export interface GameState {
 export interface GameLevel {
   id: string;
   levelNumber: number;
+  difficulty?: string;
   difficultyRating?: number; // 1-10 Schwierigkeitswert anstelle der Kategorien
   name?: string;
   cages: Cage[];
