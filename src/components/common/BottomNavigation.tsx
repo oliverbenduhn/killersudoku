@@ -92,9 +92,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             direction="column"
             alignItems="center"
             justifyContent="center"
+            gap={1}
             flex={1}
-            py={2}
-            height="100%"
+            h="100%"
+            px={0}
+            py={0}
+            minH={0}
             onClick={item.action}
             bg="transparent"
             _hover={{ bg: "rgba(0,0,0,0.03)" }}
@@ -105,8 +108,9 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             duration={800}
             position="relative"
             overflow="hidden"
+            variant="unstyled"
           >
-            <Box mb={1}>
+            <Box>
               {item.icon}
             </Box>
             <Text 
