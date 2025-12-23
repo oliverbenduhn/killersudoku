@@ -436,22 +436,30 @@ export const Board: React.FC<BoardProps> = ({
 
     if (!selectedCell) return;
 
+    const lowerKey = e.key.toLowerCase();
+    const normalizedKey =
+      lowerKey === 'w' ? 'ArrowUp' :
+      lowerKey === 'a' ? 'ArrowLeft' :
+      lowerKey === 's' ? 'ArrowDown' :
+      lowerKey === 'd' ? 'ArrowRight' :
+      e.key;
+
     // Navigation mit Pfeiltasten
     const { row, col } = selectedCell;
     const newSelectedCell = { ...selectedCell };
     
-    if (e.key === 'ArrowUp' && row > 0) {
+    if (normalizedKey === 'ArrowUp' && row > 0) {
       newSelectedCell.row = row - 1;
-    } else if (e.key === 'ArrowDown' && row < size - 1) {
+    } else if (normalizedKey === 'ArrowDown' && row < size - 1) {
       newSelectedCell.row = row + 1;
-    } else if (e.key === 'ArrowLeft' && col > 0) {
+    } else if (normalizedKey === 'ArrowLeft' && col > 0) {
       newSelectedCell.col = col - 1;
-    } else if (e.key === 'ArrowRight' && col < size - 1) {
+    } else if (normalizedKey === 'ArrowRight' && col < size - 1) {
       newSelectedCell.col = col + 1;
     }
     
     // Tab-Navigation durch die Zellen (vorwärts und rückwärts)
-    else if (e.key === 'Tab') {
+    else if (normalizedKey === 'Tab') {
       e.preventDefault(); // Verhindert den Standard-Tab-Fokus
       
       if (e.shiftKey) {
@@ -515,7 +523,7 @@ export const Board: React.FC<BoardProps> = ({
       return;
     }
     // Mehrere Zellen mit Shift + Pfeiltasten auswählen
-    else if (e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+    else if (e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(normalizedKey)) {
       if (!dragStart) {
         setDragStart(selectedCell);
       }
