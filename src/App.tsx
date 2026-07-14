@@ -564,7 +564,13 @@ function App() {
       
       {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-    </ChakraProvider>
+    
+      <Box as="footer" textAlign="center" py={4} fontSize="sm" color="gray.500" borderTop="1px solid" borderColor="gray.200" mt={4}>
+        <Link href="https://legal.benduhn.de/impressum/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Impressum</Link>
+        {" · "}
+        <Link href="https://legal.benduhn.de/datenschutz/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Datenschutz</Link>
+      </Box>
+</ChakraProvider>
   );
 }
 
