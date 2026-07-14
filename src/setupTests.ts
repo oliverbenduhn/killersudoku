@@ -54,3 +54,25 @@ class IntersectionObserverMock {
   disconnect() { return null; }
 }
 window.IntersectionObserver = IntersectionObserverMock;
+
+// Mock localforage with an in-memory store so tests can verify persistence
+// without hitting IndexedDB (which jsdom does not provide).
+jest.mock('localforage', () => {
+  const store = new Map<string, unknown>();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (key: string) => store.get(key) ?? null),
+      setItem: jest.fn(async (key: string, value: unknown) => {
+        store.set(key, value);
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        store.delete(key);
+      }),
+      clear: jest.fn(async () => {
+        store.clear();
+      }),
+      keys: jest.fn(async () => Array.from(store.keys()))
+    }
+  };
+});

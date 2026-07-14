@@ -164,6 +164,12 @@ export const isBoardComplete = (
   return true;
 };
 
+export interface PossibleValuesResult {
+  values: number[];
+  /** true, wenn der aktuell eingetragene Wert bereits ungültig ist. */
+  currentValueInvalid: boolean;
+}
+
 // Gibt eine Liste potentieller Werte für eine Zelle zurück
 export const getPossibleValues = (
   cellValues: number[][],
@@ -171,13 +177,17 @@ export const getPossibleValues = (
   col: number,
   cages: Cage[],
   size: number = 9
-): number[] => {
+): number[] | PossibleValuesResult => {
   const cage = getCageForCell(cages, row, col);
   if (!cage) return [];
 
-  // Bereits verwendete Zahlen im Käfig
+  const currentValue = cellValues[row][col];
+  const currentValueInvalid =
+    currentValue !== 0 && !isCellValid(cellValues, row, col, currentValue, cages, size);
+
+  // Bereits verwendete Zahlen im Käfig (aktuelle Zelle ausgeschlossen)
   const usedInCage = cage.cells
-    .filter(cell => !(cell.row === row && cell.col === col)) // Aktuelle Zelle ausschließen
+    .filter(cell => !(cell.row === row && cell.col === col))
     .map(cell => cellValues[cell.row][cell.col])
     .filter(value => value !== 0);
 
@@ -218,8 +228,8 @@ export const getPossibleValues = (
 
     possibleValues.push(value);
   }
-  
-  return possibleValues;
+
+  return { values: possibleValues, currentValueInvalid };
 };
 
 // Prüft, ob zwei Zellen zum gleichen Käfig gehören

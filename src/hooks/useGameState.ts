@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { saveGameState, loadGameState } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
+import { createEmptyBoard } from '../services/puzzleGeneratorService';
 
 // Lokale Erweiterung des GameState-Interfaces mit zusätzlichen Eigenschaften für den Hook
 interface GameState extends GlobalGameState {
@@ -12,7 +13,7 @@ interface GameState extends GlobalGameState {
   gameOver: boolean;
 }
 
-export const useGameState = (puzzleId: string) => {
+export const useGameState = (puzzleId: string, size: number = 9) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   // Ref zum Verfolgen der letzten Speicheroperation
@@ -103,7 +104,7 @@ export const useGameState = (puzzleId: string) => {
     const createEmptyGameState = () => {
       const emptyState = {
         id: `game_${puzzleId}_${Date.now()}`,
-        cellValues: Array(9).fill(null).map(() => Array(9).fill(0)),
+        cellValues: createEmptyBoard(size),
         startTime: Date.now(),
         elapsedTime: 0,
         difficulty: 'normal',
@@ -136,19 +137,21 @@ export const useGameState = (puzzleId: string) => {
 
       if (elapsedTime === currentState.elapsedTime) return;
 
+      // Bugfix: Timer-Updates nur im lokalen State, kein direkter Save hier.
+      // updateGameState() (für echte Eingaben) speichert ohnehin sofort.
+      // Auto-Save für elapsedTime nur, wenn lange keine Eingabe erfolgte
+      // (max. 1 Save/15s, um IndexedDB nicht zu fluten).
       const updatedState = {
         ...currentState,
         elapsedTime
       };
-
-      setGameState(updatedState);
       gameStateRef.current = updatedState;
+      setGameState(updatedState);
 
       if (now - lastAutoSaveRef.current >= 15000) {
         lastAutoSaveRef.current = now;
         const targetPuzzleId = currentPuzzleIdRef.current;
-
-        const saveOperation = (async () => {
+        saveOperationRef.current = (async () => {
           try {
             await saveOperationRef.current;
             if (targetPuzzleId === currentPuzzleIdRef.current) {
@@ -158,8 +161,6 @@ export const useGameState = (puzzleId: string) => {
             console.error('Fehler beim automatischen Speichern:', error);
           }
         })();
-
-        saveOperationRef.current = saveOperation;
       }
     };
 
@@ -177,29 +178,24 @@ export const useGameState = (puzzleId: string) => {
 
     console.log('useGameState: Aktualisiere Spielstand:', updatedState);
     setGameState(updatedState);
-    
-    // Erstelle ein neues Speicherversprechen und speichere es in der Ref
+
+    // Bugfix: Sofort persistieren statt auf den 15s-Timer zu warten.
+    // Vorher konnten bis zu 15 Sekunden Spielverlust beim Tab-Close entstehen.
     const saveOperation = (async () => {
       try {
-        // Speichere die aktuelle puzzleId für die Validierung vor dem Speichern
         const targetPuzzleId = currentPuzzleIdRef.current;
-        
-        // Warte auf die Fertigstellung des vorherigen Speichervorgangs
         await saveOperationRef.current;
-        
-        // Vermeide das Speichern, wenn wir bereits zu einem anderen Level gewechselt haben
         if (targetPuzzleId === currentPuzzleIdRef.current) {
-          console.log('useGameState: Speichere Spielstand für:', targetPuzzleId);
           await saveGameState(targetPuzzleId, updatedState);
         }
       } catch (error) {
         console.error('Fehler beim Speichern des Spielstands:', error);
       }
     })();
-    
-    // Aktualisiere die Ref mit dem neuen Speicherversprechen
+
     saveOperationRef.current = saveOperation;
-    
+    lastAutoSaveRef.current = Date.now();
+
     return saveOperation;
   };
 

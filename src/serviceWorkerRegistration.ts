@@ -35,33 +35,51 @@ export function register(config?: Config) {
   }
 }
 
+// Cache-Versionen als Konstanten, damit Updates kontrolliert invalidiert werden können.
+const CACHE_VERSION = 'v2';
+const STATIC_CACHE = `killersudoku-static-${CACHE_VERSION}`;
+const LEVELS_CACHE = `killersudoku-levels-${CACHE_VERSION}`;
+const TOTAL_LEVELS_COUNT = 100;
+
+async function precacheAssets(): Promise<void> {
+  if (!window.caches) return;
+
+  // Alte Cache-Versionen löschen (Bugfix: keine veralteten Level-Daten cachen)
+  const cacheKeys = await window.caches.keys();
+  await Promise.all(
+    cacheKeys
+      .filter(name => name.startsWith('killersudoku-') && !name.endsWith(`-${CACHE_VERSION}`))
+      .map(name => window.caches.delete(name))
+  );
+
+  // Statische Assets cachen
+  const staticCache = await window.caches.open(STATIC_CACHE);
+  await staticCache.addAll([
+    '/',
+    '/index.html',
+    '/manifest.json',
+    '/favicon.ico',
+    '/logo192.png',
+    '/logo512.png',
+    '/assets/levels/level_1.json'
+  ]);
+
+  // Level-Daten cachen (parallel, mit Fehlertoleranz)
+  const levelsCache = await window.caches.open(LEVELS_CACHE);
+  await Promise.all(
+    Array.from({ length: TOTAL_LEVELS_COUNT }, (_, i) =>
+      levelsCache.add(`/assets/levels/level_${i + 1}.json`).catch(() => undefined)
+    )
+  );
+}
+
 function registerValidSW(swUrl: string, config?: Config) {
   navigator.serviceWorker
     .register(swUrl)
     .then(registration => {
-      // Überprüfen und Caching für Assets in öffentlichen Verzeichnissen
-      if (window.caches) {
-        // Statische Assets cachen
-        window.caches.open('killersudoku-static-v1').then(cache => {
-          cache.addAll([
-            '/',
-            '/index.html',
-            '/manifest.json',
-            '/favicon.ico',
-            '/logo192.png',
-            '/logo512.png',
-            '/assets/levels/level_1.json'
-          ]);
-        });
-        
-        // Level-Daten cachen
-        window.caches.open('killersudoku-levels-v1').then(cache => {
-          // Alle verfügbaren Level vorab laden
-          for (let i = 1; i <= 100; i++) {
-            cache.add(`/assets/levels/level_${i}.json`);
-          }
-        });
-      }
+      precacheAssets().catch(err => {
+        console.error('Fehler beim Precaching:', err);
+      });
 
       registration.onupdatefound = () => {
         const installingWorker = registration.installing;

@@ -404,7 +404,7 @@
     "external_dependencies": [
       {
         "name": "React",
-        "version": "^18.0.0",
+        "version": "^18.2.0",
         "purpose": "UI component library"
       },
       {
@@ -413,19 +413,19 @@
         "purpose": "Type safety"
       },
       {
-        "name": "Materialize CSS",
-        "version": "^1.0.0",
+        "name": "Chakra UI",
+        "version": "^2.8.2",
         "purpose": "UI framework for responsive design"
       },
       {
-        "name": "workbox-webpack-plugin",
-        "version": "^7.0.0",
-        "purpose": "Service worker generation for PWA"
+        "name": "framer-motion",
+        "version": "^12.9.4",
+        "purpose": "Animation library used by Chakra UI"
       },
       {
-        "name": "web-vitals",
-        "version": "^3.0.0",
-        "purpose": "Performance monitoring"
+        "name": "react-icons",
+        "version": "^5.5.0",
+        "purpose": "Icon library"
       },
       {
         "name": "localforage",

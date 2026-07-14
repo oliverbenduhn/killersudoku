@@ -1,13 +1,12 @@
 import React from 'react';
 import { Box, Flex, Text, useBreakpointValue, Icon } from '@chakra-ui/react';
-import { 
-  ViewIcon, 
-  SettingsIcon, 
-  InfoIcon, 
-  HamburgerIcon, 
-  StarIcon 
+import {
+  ViewIcon,
+  SettingsIcon,
+  InfoIcon,
+  HamburgerIcon,
+  StarIcon
 } from '@chakra-ui/icons';
-import RippleButton from '../common/RippleButton';
 
 interface NavItem {
   icon: React.ReactElement;
@@ -88,7 +87,8 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
         {navItems.map((item) => (
           <Flex
             key={item.id}
-            as={RippleButton}
+            as="button"
+            type="button"
             direction="column"
             alignItems="center"
             justifyContent="center"
@@ -104,17 +104,18 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             _active={{ bg: "rgba(0,0,0,0.05)" }}
             borderRadius={0}
             color={activeTab === item.id ? "#2196F3" : "gray.500"}
-            rippleColor="rgba(33, 150, 243, 0.1)"
-            duration={800}
+            border="none"
+            cursor="pointer"
             position="relative"
             overflow="hidden"
-            variant="unstyled"
+            aria-label={item.label}
+            aria-current={activeTab === item.id ? "page" : undefined}
           >
             <Box>
               {item.icon}
             </Box>
-            <Text 
-              fontSize={fontSize} 
+            <Text
+              fontSize={fontSize}
               fontWeight={activeTab === item.id ? "500" : "normal"}
               lineHeight="1.2"
             >

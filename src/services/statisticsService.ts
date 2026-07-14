@@ -3,11 +3,14 @@ import localforage from 'localforage';
 const STORAGE_PREFIX = process.env.REACT_APP_STORAGE_PREFIX || 'killersudoku_';
 const STATS_KEY = `${STORAGE_PREFIX}stats`;
 
+// Bugfix: Type-Safety für Schwierigkeitsstufen.
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'unknown';
+
 export interface GameStatistics {
   totalSolved: number;
   totalTimeMs: number;
-  solvedByDifficulty: Record<string, number>;
-  bestTimeMsByDifficulty: Record<string, number>;
+  solvedByDifficulty: Partial<Record<Difficulty, number>>;
+  bestTimeMsByDifficulty: Partial<Record<Difficulty, number>>;
   lastSolvedAt?: number;
 }
 
@@ -41,7 +44,15 @@ export const recordSolve = async (
 ): Promise<GameStatistics> => {
   const stats = await loadStatistics();
   const difficultyKey = difficulty || 'unknown';
-  const normalizedElapsed = Math.max(0, Math.floor(elapsedMs));
+  // Bugfix: 0ms als Bestzeit verhindern (theoretisch möglich, aber unsinnig).
+  // Echte Solver brauchen mindestens eine Sekunde.
+  const normalizedElapsed = Math.max(1, Math.floor(elapsedMs));
+
+  const previousBest = stats.bestTimeMsByDifficulty[difficultyKey];
+  const newBest =
+    previousBest === undefined || previousBest > normalizedElapsed
+      ? normalizedElapsed
+      : previousBest;
 
   const updatedStats: GameStatistics = {
     ...stats,
@@ -53,11 +64,7 @@ export const recordSolve = async (
     },
     bestTimeMsByDifficulty: {
       ...stats.bestTimeMsByDifficulty,
-      [difficultyKey]:
-        stats.bestTimeMsByDifficulty[difficultyKey] &&
-        stats.bestTimeMsByDifficulty[difficultyKey] <= normalizedElapsed
-          ? stats.bestTimeMsByDifficulty[difficultyKey]
-          : normalizedElapsed
+      [difficultyKey]: newBest
     },
     lastSolvedAt: Date.now()
   };

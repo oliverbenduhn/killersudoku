@@ -82,7 +82,7 @@ export const Board: React.FC<BoardProps> = ({
   blackAndWhiteMode = false
 }) => {
   const toast = useToast();
-  const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId);
+  const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId, size);
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
   const [dragStart, setDragStart] = useState<CellPosition | null>(null);
   const [selectedCells, setSelectedCells] = useState<CellPosition[]>([]);
@@ -99,6 +99,17 @@ export const Board: React.FC<BoardProps> = ({
   const [showHints, setShowHints] = useState<boolean>(false);
   const [possibleValues, setPossibleValues] = useState<number[]>([]);
   const solveRecordedRef = useRef<string | null>(null);
+  const lastInitializedLevelIdRef = useRef<string | null>(null);
+  const animationTimerRef = useRef<number | null>(null);
+
+  // Bugfix: Animation-Timer bei Unmount aufräumen
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current !== null) {
+        window.clearTimeout(animationTimerRef.current);
+      }
+    };
+  }, []);
   const maxHints = 3;
   const maxMistakes = 3;
   const isGameOver = (gameState?.mistakesUsed || 0) >= maxMistakes;
@@ -136,33 +147,34 @@ export const Board: React.FC<BoardProps> = ({
   // Lade Level-Daten in den State, wenn sie verfügbar sind
   useEffect(() => {
     if (levelData && levelData.cages) {
-      console.log('Board: Level geladen:', levelData);
       setCages(levelData.cages);
-      
-      // Initialisiere sofort mit den initialValues, wenn Level-Daten vorliegen
-      if (levelData.initialValues && gameState) {
-        console.log('Board: initialValues verfügbar, setze direkt:', levelData.initialValues);
-        
-        // Direkte Aktualisierung, wenn sich levelId geändert hat oder wenn gameState.cellValues nur Nullen enthält
-        const isEmptyBoard = gameState.cellValues.every(row => row.every(cell => cell === 0));
-        const isDifferentLevel = gameState.levelId !== puzzleId;
-        
-        if (isDifferentLevel || isEmptyBoard) {
-          console.log('Board: Aktualisiere cellValues mit initialValues');
-          // Tiefe Kopie der initialValues erstellen und als cellValues setzen
-          const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
-          updateGameState({
-            cellValues: initialValuesCopy,
-            levelId: puzzleId
-          });
-        }
+
+      // Initialisiere mit den initialValues NUR beim ersten Wechsel auf dieses Level.
+      // Reset-/Spielzüge-Updates laufen separat und werden nicht überschrieben.
+      if (
+        levelData.initialValues &&
+        gameState &&
+        lastInitializedLevelIdRef.current !== puzzleId
+      ) {
+        lastInitializedLevelIdRef.current = puzzleId;
+        const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
+        updateGameState({
+          cellValues: initialValuesCopy,
+          levelId: puzzleId
+        });
       }
     } else if (!levelData && !externalLoading) {
       setHasError(true);
     } else {
       setHasError(false);
     }
-  }, [levelData, puzzleId, externalLoading, gameState, updateGameState]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [levelData, puzzleId, externalLoading]);
+  // Bugfix: `gameState` und `updateGameState` aus den Deps entfernt.
+  // Sonst feuert dieser Effect nach jeder Zelleingabe und produziert
+  // unnötige Schreibvorgänge in IndexedDB.
+  // `gameState` ist absichtlich nicht in den Deps: wir reagieren auf
+  // levelData/puzzleId/externalLoading und nutzen lastInitializedLevelIdRef als Guard.
 
   // Größe des Spielbretts dynamisch anpassen beim Mounten und bei Größenänderungen
   useEffect(() => {
@@ -251,16 +263,16 @@ export const Board: React.FC<BoardProps> = ({
       if (e.key === 'F5') {
         e.preventDefault();
         setShowHints(prev => !prev);
-        
+
         if (selectedCell && gameState) {
-          const hints = GameLogic.getPossibleValues(
+          const result = GameLogic.getPossibleValues(
             gameState.cellValues,
             selectedCell.row,
             selectedCell.col,
             cages,
             size
           );
-          setPossibleValues(hints);
+          setPossibleValues(Array.isArray(result) ? result : result.values);
         }
       }
     };
@@ -272,14 +284,14 @@ export const Board: React.FC<BoardProps> = ({
   // Aktualisiere mögliche Werte wenn sich die Zellauswahl ändert
   useEffect(() => {
     if (selectedCell && gameState && showHints) {
-      const hints = GameLogic.getPossibleValues(
+      const result = GameLogic.getPossibleValues(
         gameState.cellValues,
         selectedCell.row,
         selectedCell.col,
         cages,
         size
       );
-      setPossibleValues(hints);
+      setPossibleValues(Array.isArray(result) ? result : result.values);
     } else {
       setPossibleValues([]);
     }
@@ -328,6 +340,13 @@ export const Board: React.FC<BoardProps> = ({
   const handleDragEnter = (row: number, col: number) => {
     if (!isDragging || !dragStart) return;
 
+    // Bugfix: Drag-Select nur innerhalb des Käfigs der Startzelle erlauben.
+    // Killer-Sudoku verbietet doppelte Werte innerhalb eines Käfigs -
+    // eine rechteckige Auswahl über Käfig-Grenzen hinweg macht keinen Sinn.
+    const startCage = GameLogic.getCageForCell(cages, dragStart.row, dragStart.col);
+    const inCage = (r: number, c: number) =>
+      startCage?.cells.some(cell => cell.row === r && cell.col === c) ?? true;
+
     const minRow = Math.min(dragStart.row, row);
     const maxRow = Math.max(dragStart.row, row);
     const minCol = Math.min(dragStart.col, col);
@@ -336,7 +355,9 @@ export const Board: React.FC<BoardProps> = ({
     const newSelectedCells: CellPosition[] = [];
     for (let r = minRow; r <= maxRow; r++) {
       for (let c = minCol; c <= maxCol; c++) {
-        newSelectedCells.push({ row: r, col: c });
+        if (inCage(r, c)) {
+          newSelectedCells.push({ row: r, col: c });
+        }
       }
     }
     setSelectedCells(newSelectedCells);
@@ -363,7 +384,7 @@ export const Board: React.FC<BoardProps> = ({
     const newValues = gameState.cellValues.map((row: number[]) => [...row]);
     let lastCell: CellPosition | null = null;
     let lastValid = true;
-    let mistakesAdded = 0;
+    let anyInvalid = false;
 
     selectedCells.forEach(({ row, col }) => {
       // Überprüfen, ob die Zelle vorausgefüllt ist
@@ -376,7 +397,7 @@ export const Board: React.FC<BoardProps> = ({
         const isValid = GameLogic.isCellValid(newValues, row, col, number, cages, size);
         lastValid = isValid;
         if (!isValid) {
-          mistakesAdded += 1;
+          anyInvalid = true;
         }
       }
     });
@@ -385,8 +406,11 @@ export const Board: React.FC<BoardProps> = ({
       return;
     }
 
+    // Mehrfachauswahl: maximal 1 Fehler pro Eingabe-Aktion zählen
     const previousMistakes = gameState.mistakesUsed || 0;
-    const updatedMistakes = Math.min(maxMistakes, previousMistakes + mistakesAdded);
+    const updatedMistakes = anyInvalid
+      ? Math.min(maxMistakes, previousMistakes + 1)
+      : previousMistakes;
     const gameOverNow = updatedMistakes >= maxMistakes;
 
     updateGameState({
@@ -400,7 +424,7 @@ export const Board: React.FC<BoardProps> = ({
     setLastEnteredValue(number);
     setLastEnteredValid(lastValid);
     setAnimating(true);
-    setTimeout(() => setAnimating(false), 500);
+    animationTimerRef.current = window.setTimeout(() => setAnimating(false), 500);
 
     if (!isGameOver && gameOverNow) {
       toast({
@@ -543,7 +567,7 @@ export const Board: React.FC<BoardProps> = ({
     setLastEnteredValue(correctValue);
     setLastEnteredValid(isCellValid(target.row, target.col, correctValue));
     setAnimating(true);
-    setTimeout(() => setAnimating(false), 500);
+    animationTimerRef.current = window.setTimeout(() => setAnimating(false), 500);
   };
 
   const isSameBlock = (row1: number, col1: number, row2: number, col2: number) => {
@@ -732,24 +756,41 @@ export const Board: React.FC<BoardProps> = ({
   
   // Handler für Reset-Button
   const handleReset = () => {
-    if (!gameState) return;
-    
-    // Alle Zellen auf 0 setzen, konsistent createEmptyBoard verwenden
-    const emptyValues = createEmptyBoard(size);
-    
+    if (!gameState || !levelData) return;
+
+    // Direkt mit den initialValues des Levels neu starten, statt leeres Board
+    // (vermeidet den useEffect-Schreibloop in Board)
+    const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
+
     updateGameState({
-      cellValues: emptyValues,
+      cellValues: initialValuesCopy,
       mistakesUsed: 0,
-      gameOver: false
+      hintsUsed: 0,
+      solved: false,
+      gameOver: false,
+      endTime: undefined,
+      startTime: Date.now()
     });
-    
+
+    // solveRecordedRef zurücksetzen, damit recordSolve beim nächsten Solve wieder greift
+    solveRecordedRef.current = null;
+
     // Auswahl zurücksetzen
     setSelectedCell(null);
     setSelectedCells([]);
+    setLastEnteredCell(null);
+    setLastEnteredValue(0);
+    setLastEnteredValid(true);
+    setAnimating(false);
   };
   
   const renderCell = (row: number, col: number) => {
     if (!gameState || !levelData) return null;
+
+    // Bugfix Race-Condition: Wenn der puzzleId (Prop) nicht zum gameState.levelId passt,
+    // würde der Spieler für ein paar Frames die alten Zellen mit den neuen Käfigen sehen.
+    // Wir rendern in diesem Übergangszustand keine Zellen.
+    if (gameState.levelId !== puzzleId) return null;
 
     const isSelected = selectedCells.some((cell: CellPosition) => cell.row === row && cell.col === col);
     const isSameRow = selectedCell && selectedCell.row === row;
@@ -827,6 +868,9 @@ export const Board: React.FC<BoardProps> = ({
       <Box
         key={`${row}-${col}`}
         data-testid={`cell-${row}-${col}`}
+        role="gridcell"
+        aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}`}
+        aria-selected={isSelected}
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
@@ -855,8 +899,10 @@ export const Board: React.FC<BoardProps> = ({
         }}
         onTouchEnd={handleDragEnd}
         cursor="pointer"
-        _hover={{ 
-          opacity: 0.5  // Stärkere Verdunkelung durch stärker reduzierte Deckkraft
+        _hover={{
+          // Bugfix: opacity:0.5 machte Zellen unlesbar.
+          // Subtile Border-Hervorhebung statt Verdunkelung.
+          borderColor: "rgba(0,0,0,0.5)"
         }}
         boxShadow={boxShadow}
         transition="all 0.3s ease"
@@ -985,7 +1031,7 @@ export const Board: React.FC<BoardProps> = ({
     );
   }
 
-  if (isLoadingCombined) {
+  if (isLoadingCombined || (gameState && gameState.levelId !== puzzleId)) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" h="200px">
         <Spinner size="xl" color="teal.500" />

@@ -77,6 +77,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
             boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
             rippleColor="rgba(255, 255, 255, 0.4)"
             width="100%"
+            aria-label={`Zahl ${number}`}
           >
             {number}
           </RippleButton>
@@ -110,6 +111,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
         borderRadius="md"
         boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
         rippleColor="rgba(255, 255, 255, 0.4)"
+        aria-label="Auswahl löschen"
       >
         Löschen
       </RippleButton>

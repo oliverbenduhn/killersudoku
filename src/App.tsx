@@ -1,16 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay, IconButton, Tooltip } from '@chakra-ui/react';
+import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay, IconButton, Tooltip, Link } from '@chakra-ui/react';
 import './App.css';
 import Board from './components/Board/Board';
 import LevelSelector from './components/LevelSelector/LevelSelector';
 import { loadLevelByNumber, TOTAL_LEVELS } from './services/levelService';
 import { GameLevel } from './types/gameTypes';
 import BottomNavigation from './components/common/BottomNavigation';
-import TouchRipple from './components/common/TouchRipple';
 import FadeInView from './components/common/FadeInView';
 import SwipeableBox from './components/common/SwipeableBox';
 import InstallPrompt from './components/common/InstallPrompt';
-import { requestNotificationPermission } from './serviceWorkerRegistration';
 import { clearAllGameStates } from './services/storageService';
 import { RepeatIcon, ViewOffIcon, ViewIcon } from '@chakra-ui/icons';
 import { GameStatistics, loadStatistics } from './services/statisticsService';
@@ -64,7 +62,6 @@ function App() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("home");
-  const [lastActiveTab, setLastActiveTab] = useState<string>("home");
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
@@ -76,14 +73,13 @@ function App() {
   const headerHeight = useBreakpointValue({ base: "56px", md: "64px" });
   const navBarHeight = useBreakpointValue({ base: "56px", md: "64px" });
   const containerMaxWidth = useBreakpointValue({ base: "100%", xl: "container.xl" });
-  const showInstructions = useBreakpointValue({ base: true, lg: false });
   const statusBarBg = useColorModeValue("android.primaryDark", "gray.900");
   const headerBg = useColorModeValue("android.primary", "gray.800");
 
-  // Beim App-Start Benachrichtigungsberechtigungen beantragen (für PWA-Updates)
-  useEffect(() => {
-    requestNotificationPermission();
-  }, []);
+  // Bugfix: requestNotificationPermission entfernt. Browser fragen den User
+  // nur einmal pro Origin; ein ungefragter Aufruf bei jedem Mount verschwendet
+  // diese Chance und triggert auf iOS ins Leere. PWA-Update-Benachrichtigungen
+  // sollten explizit über einen Settings-Toggle aktiviert werden.
 
   // Lädt das aktuelle Level basierend auf der Level-Nummer
   useEffect(() => {
@@ -157,8 +153,7 @@ function App() {
 
   const handleTabChange = (tabName: string) => {
     if (tabName === activeTab) return;
-    
-    setLastActiveTab(activeTab);
+
     setTabTransition(calculateTransitionDirection(tabName, activeTab));
     setActiveTab(tabName);
     
@@ -388,8 +383,8 @@ function App() {
               
               <VStack spacing={4} align="stretch">
                 <Box>
-                  <Button 
-                    colorScheme="red" 
+                  <Button
+                    colorScheme="red"
                     variant="outline"
                     onClick={() => setIsResetDialogOpen(true)}
                     w="100%"
@@ -397,10 +392,16 @@ function App() {
                     Alle Level zurücksetzen
                   </Button>
                   <Text mt={2} fontSize="sm" color="android.secondaryText">
-                    Setzt den Fortschritt aller Level zurück. Diese Aktion kann nicht rückgängig gemacht werden.
+                    Setzt den Fortschritt aller Level zurück. Statistiken bleiben erhalten.
                   </Text>
                 </Box>
               </VStack>
+
+              <Box as="footer" textAlign="center" pt={6} pb={2} fontSize="sm" color="gray.500" borderTop="1px solid" borderColor="gray.200" mt={6}>
+                <Link href="https://legal.benduhn.de/impressum/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Impressum</Link>
+                {" · "}
+                <Link href="https://legal.benduhn.de/datenschutz/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Datenschutz</Link>
+              </Box>
             </Box>
           </FadeInView>
         );
@@ -411,9 +412,10 @@ function App() {
 
   return (
     <ChakraProvider theme={theme}>
-      {/* TouchRipple für globales Touch-Feedback */}
-      <TouchRipple color="rgba(33, 150, 243, 0.15)" duration={900} />
-      
+      {/* Bugfix: TouchRipple entfernt - RippleButton-Komponenten liefern bereits
+          Ripple-Feedback. Globaler TouchRipple auf document-Ebene führte zu
+          Doppel-Animationen und GPU-Last auf mobilen Geräten. */}
+
       {/* PWA Installations-Aufforderung */}
       <InstallPrompt 
         onInstall={() => console.log("App erfolgreich installiert!")}
@@ -500,38 +502,7 @@ function App() {
         >
           {renderContent()}
           
-          {showInstructions && activeTab === "home" && (
-            <FadeInView
-              direction="up"
-              duration={500}
-              delay={300}
-            >
-              <Box 
-                className="content-container" 
-                mt={4}
-                bg="android.surface"
-                p={4}
-                borderRadius="md"
-                boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-              >
-                <Heading as="h2" size="lg" mb={4} color="android.text">
-                  Spielanleitung
-                </Heading>
-                <Text className="readable-text" mb={4} color="android.secondaryText">
-                  Killer Sudoku kombiniert klassisches Sudoku mit mathematischen Herausforderungen. 
-                  Zusätzlich zu den bekannten Sudoku-Regeln müssen auch die vorgegebenen Summen in 
-                  jedem "Käfig" erreicht werden.
-                </Text>
-                <Text className="readable-text" color="android.secondaryText">
-                  Wie bei normalem Sudoku müssen Sie jede Zahl von 1-9 in jeder Zeile, Spalte und 
-                  3x3-Region genau einmal platzieren. Darüber hinaus müssen die Zahlen in jedem farbigen 
-                  Käfig (durch gestrichelte Linien angezeigt) die angegebene Summe ergeben. 
-                  Innerhalb eines Käfigs darf keine Zahl wiederholt werden.
-                </Text>
-              </Box>
-            </FadeInView>
-          )}
-        </Container>
+          </Container>
       </SwipeableBox>
       
       {/* Reset-Bestätigungsdialog */}
@@ -561,15 +532,9 @@ function App() {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
-      
+
       {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-    
-      <Box as="footer" textAlign="center" py={4} fontSize="sm" color="gray.500" borderTop="1px solid" borderColor="gray.200" mt={4}>
-        <Link href="https://legal.benduhn.de/impressum/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Impressum</Link>
-        {" · "}
-        <Link href="https://legal.benduhn.de/datenschutz/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Datenschutz</Link>
-      </Box>
 </ChakraProvider>
   );
 }

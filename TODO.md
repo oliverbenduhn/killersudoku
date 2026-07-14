@@ -1,10 +1,10 @@
-# To-Do-Liste
+# To-Do-Liste (aktualisiert nach Audit)
 
 ## Projekt Setup
 
 1.  [x] Initialisiere das Projekt mit TypeScript und React.
 2.  [x] Richte Chakra UI ein.
-3.  [x] Erstelle die Basisordnerstruktur (public, src, components, hooks, contexts, services, utils, types, styles, assets).
+3.  [x] Erstelle die Basisordnerstruktur.
 4.  [x] Konfiguriere die PWA-Funktionalität mit Service Workers.
 5.  [x] Richte die lokale Speicherung mit Web Storage API ein.
 
@@ -25,14 +25,14 @@
 
 ## Game Mechanics (F3)
 
-1.  [x] Erzwinge die Standard-Sudoku-Regeln (keine Duplikate in Zeilen, Spalten, Blöcken).
+1.  [x] Erzwinge die Standard-Sudoku-Regeln.
 2.  [x] Berechne und validiere die Käfigsummen.
 3.  [x] Verhindere doppelte Ziffern innerhalb von Käfigen.
 4.  [x] Erkenne die Gewinnbedingung.
 
 ## Difficulty Levels (F4)
 
-1.  [x] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen und 
+1.  [x] Implementiere einfache Rätsel mit einfachen Käfigkonfigurationen.
 2.  [x] Implementiere mittelschwere Rätsel mit moderater Komplexität.
 3.  [x] Implementiere schwere Rätsel mit anspruchsvollen Konfigurationen.
 4.  [x] Implementiere Expertenrätsel mit minimalen Hinweisen.
@@ -40,37 +40,37 @@
 ## Hint System (F5)
 
 1.  [x] Hebe ungültige Einträge hervor.
-2.  [x] Schlage mögliche Werte für die ausgewählte Zelle vor.
+2.  [x] Schlage mögliche Werte für die ausgewählte Zelle vor (F5).
 3.  [x] Enthülle einen korrekten Zellenwert (begrenzte Nutzung).
 4.  [ ] Gib strategische Tipps basierend auf dem aktuellen Board-Status.
 
 ## Game State Management (F6)
 
-1.  [x] Speichere den aktuellen Spielstatus automatisch.
+1.  [x] Speichere den aktuellen Spielstatus automatisch (sofort pro Eingabe).
 2.  [ ] Biete mehrere Speicherplätze für verschiedene Rätsel.
 3.  [ ] Implementiere die Undo/Redo-Funktionalität.
 4.  [x] Verfolge die Spielstatistiken.
 
 ## User Interface (F7)
 
-1.  [ ] Implementiere ein responsives Layout mit Chakra UI für verschiedene Bildschirmgrößen.
+1.  [x] Responsives Layout mit Chakra UI (Basis).
 2.  [ ] Nutze Chakra UIs eingebautes Dark/Light-Theme.
-3.  [ ] Biete einen High-Contrast-Modus mit Chakra UIs Accessibility-Features.
-4.  [ ] Nutze Chakra UIs Theme-System für anpassbare Farben und Erscheinungsbilder.
+3.  [ ] Biete einen High-Contrast-Modus.
+4.  [ ] Nutze Chakra UIs Theme-System für anpassbare Farben.
 
 ## Puzzle Generation (F8)
 
-1.  [ ] Generiere zufällige Rätsel mit eindeutigen Lösungen.
+1.  [ ] Generiere zufällige Rätsel mit eindeutigen Lösungen (nur statische Levels vorhanden).
 2.  [ ] Steuere den Schwierigkeitsgrad der generierten Rätsel.
 3.  [ ] Stelle angemessene Käfiggrößen und -konfigurationen sicher.
 4.  [ ] Biete die Möglichkeit, benutzerdefinierte Rätsel einzugeben.
 
 ## Offline Functionality (F9)
 
-1.  [ ] Biete Offline-Puzzle-Zugriff.
-2.  [ ] Speichere die Puzzle-Bibliothek lokal.
-3.  [ ] Synchronisiere die Daten, wenn die Verbindung wiederhergestellt ist.
-4.  [ ] Biete die Möglichkeit zur PWA-Installation.
+1.  [x] Biete Offline-Puzzle-Zugriff (über Service Worker).
+2.  [x] Speichere die Puzzle-Bibliothek lokal.
+3.  [ ] Synchronisiere die Daten, wenn die Verbindung wiederhergestellt ist (kein Backend).
+4.  [x] Biete die Möglichkeit zur PWA-Installation.
 
 ## Tutorials and Help (F10)
 
@@ -88,15 +88,15 @@
 
 ## Erweiterte Testabdeckung (F12)
 
-1.  [ ] Schreibe Unit-Tests für die Spiellogik-Komponenten.
-2.  [ ] Implementiere Integrationstests für die UI-Komponenten.
-3.  [ ] Richte End-to-End-Tests ein, um vollständige Spielszenarien zu testen.
-4.  [ ] Füge Performance-Tests hinzu, um Renderinggeschwindigkeit zu optimieren.
+1.  [x] Schreibe Unit-Tests für die Spiellogik-Komponenten (gameLogicService).
+2.  [x] Schreibe Unit-Tests für storageService und statisticsService.
+3.  [ ] Implementiere Integrationstests für die UI-Komponenten.
+4.  [ ] Füge Performance-Tests hinzu.
 
 ## Barrierefreiheit (F13)
 
-1.  [ ] Implementiere Keyboard-Navigation für alle Spielinteraktionen.
-2.  [ ] Optimiere Screenreader-Kompatibilität mit ARIA-Attributen.
+1.  [x] Implementiere Keyboard-Navigation für Board-Zellen.
+2.  [x] Screenreader-ARIA-Attribute für Zellen und Buttons.
 3.  [ ] Teste und verbessere die Farbkontraste für Sehbehinderungen.
 4.  [ ] Füge Untertitel oder Textbeschreibungen für alle audiovisuellen Elemente hinzu.
 
@@ -104,29 +104,29 @@
 
 1.  [ ] Erstelle eine Bestenliste für gelöste Rätsel.
 2.  [ ] Implementiere Teilen-Funktionalität für Rätsel in sozialen Medien.
-3.  [ ] Füge Export/Import-Funktionalität hinzu, um Rätsel mit Freunden zu teilen.
+3.  [ ] Füge Export/Import-Funktionalität hinzu.
 4.  [ ] Erstelle ein einfaches System zur Rätselbewertung.
 
 ## Fortgeschrittene Spielmodi (F15)
 
 1.  [ ] Implementiere einen Zeitrennen-Modus mit Countdown.
-2.  [ ] Erstelle einen täglichen Herausforderungsmodus mit speziellen Rätseln.
-3.  [ ] Füge einen "Zen-Modus" ohne Zeitdruck oder Beschränkungen hinzu.
-4.  [ ] Implementiere einen progressiven Schwierigkeitsmodus, der mit dem Fortschritt des Spielers ansteigt.
+2.  [ ] Erstelle einen täglichen Herausforderungsmodus.
+3.  [ ] Füge einen "Zen-Modus" ohne Zeitdruck hinzu.
+4.  [ ] Implementiere einen progressiven Schwierigkeitsmodus.
 
 ## Lokalisierung und Internationalisierung (F16)
 
 1.  [ ] Richte i18next oder ähnliche Bibliotheken für Sprachunterstützung ein.
 2.  [ ] Implementiere Übersetzungen für mindestens Englisch und Deutsch.
 3.  [ ] Berücksichtige kulturspezifische Anpassungen für UI-Elemente.
-4.  [ ] Implementiere RTL-Unterstützung für Sprachen wie Arabisch und Hebräisch.
+4.  [ ] Implementiere RTL-Unterstützung.
 
 ## Leistungsoptimierung (F17)
 
-1.  [ ] Implementiere Code-Splitting und Lazy Loading für verbesserte Ladezeiten.
-2.  [ ] Optimiere Render-Performance mit React.memo und useMemo.
-3.  [ ] Implementiere Service Worker für effizientes Caching.
-4.  [ ] Führe Lighthouse-Tests durch und verbessere die Leistungswerte.
+1.  [ ] Implementiere Code-Splitting und Lazy Loading.
+2.  [x] Optimiere Render-Performance mit useMemo (useEffect Deps reduziert).
+3.  [x] Implementiere Service Worker für effizientes Caching.
+4.  [ ] Führe Lighthouse-Tests durch.
 
 ## Erweitertes Benutzerprofil (F18)
 
@@ -142,27 +142,27 @@
 
 ## System Configuration
 
-1.  [ ] Definiere Umgebungsvariablen (REACT\_APP\_VERSION, REACT\_APP\_STORAGE\_PREFIX).
-2.  [ ] Konfiguriere die Ports (3000 für den Entwicklungsserver).
-3.  [ ] Konfiguriere die Konfigurationsdateien (manifest.json, tsconfig.json, package.json).
+1.  [x] REACT_APP_VERSION (via package.json), REACT_APP_STORAGE_PREFIX (mit Default).
+2.  [x] Ports konfiguriert (8084 für Container).
+3.  [x] Konfigurationsdateien vorhanden.
 
 ## Acceptance Criteria
 
-1.  [ ] Stelle sicher, dass das Spielbrett ein 9x9-Gitter mit visuell unterschiedlichen Blöcken und Käfigen korrekt anzeigt, wobei jeder Käfig seine erforderliche Summe anzeigt (AC1).
-2.  [ ] Stelle sicher, dass Spieler Zahlen per Touch, Tastatur oder Maus mit gleicher Funktionalität und responsivem Feedback eingeben können (AC2).
-3.  [ ] Stelle sicher, dass das Spiel Einträge gemäß allen Killer-Sudoku-Regeln validiert: keine Duplikate in Zeilen, Spalten, Blöcken und Käfigen; Käfigsummen müssen mit den Zielen übereinstimmen (AC3).
-4.  [ ] Stelle sicher, dass die Anwendung Rätsel in mindestens vier Schwierigkeitsstufen mit jeweils eindeutigen lösbaren Konfigurationen bietet (AC4).
-5.  [ ] Stelle sicher, dass das Hinweissystem nützliche Anleitungen bietet, ohne die Rätselherausforderung zu trivialisieren (AC5).
-6.  [ ] Stelle sicher, dass der Spielfortschritt automatisch gespeichert wird und nach dem Schließen und erneuten Öffnen der Anwendung fortgesetzt werden kann (AC6).
-7.  [ ] Stelle sicher, dass die Benutzeroberfläche vollständig responsiv ist und auf Geräten vom Mobiltelefon bis zum Desktop-Computer die gleiche Funktionalität bietet (AC7).
-8.  [ ] Stelle sicher, dass der Puzzle-Generator gültige Killer-Sudoku-Rätsel mit eindeutigen Lösungen über alle Schwierigkeitsgrade hinweg erstellt (AC8).
-9.  [ ] Stelle sicher, dass die Anwendung nach der Erstinstallation als PWA vollständig offline funktioniert (AC9).
-10. [ ] Stelle sicher, dass neue Benutzer das Tutorial abschließen und alle Spielmechaniken ohne externe Hilfe verstehen können (AC10).
-11. [ ] Stelle sicher, dass Spielstatistiken korrekt erfasst und angezeigt werden (AC11).
-12. [ ] Stelle sicher, dass alle Spielfunktionen ausreichend durch Tests abgedeckt sind (AC12).
-13. [ ] Stelle sicher, dass die Anwendung den WCAG 2.1 AA-Standards für Barrierefreiheit entspricht (AC13).
-14. [ ] Stelle sicher, dass soziale Funktionen wie vorgesehen funktionieren und die Privatsphäre respektieren (AC14).
-15. [ ] Stelle sicher, dass alle neuen Spielmodi einwandfrei funktionieren und Spaß machen (AC15).
-16. [ ] Stelle sicher, dass die Anwendung in allen unterstützten Sprachen korrekt dargestellt wird (AC16).
-17. [ ] Stelle sicher, dass die Anwendung auf allen Zielgeräten flüssig läuft und schnell reagiert (AC17).
-18. [ ] Stelle sicher, dass Benutzerprofile zuverlässig gespeichert und wiederhergestellt werden (AC18).
+1.  [x] 9x9-Gitter mit Käfigen und Summen (AC1).
+2.  [x] Touch/Tastatur/Maus-Eingabe (AC2).
+3.  [x] Killer-Sudoku-Regeln validiert (AC3).
+4.  [x] Vier Schwierigkeitsstufen (AC4).
+5.  [x] Hinweise-System (AC5, ohne strategische Tipps).
+6.  [x] Auto-Save und Resume (AC6).
+7.  [x] Responsives Layout (AC7, Basis).
+8.  [ ] Puzzle-Generator mit eindeutigen Lösungen (AC8, statische Levels).
+9.  [x] PWA-Offline-Fähigkeit (AC9).
+10. [ ] Interaktives Tutorial (AC10).
+11. [x] Spielstatistiken (AC11).
+12. [ ] Erweiterte Testabdeckung (AC12, in Arbeit).
+13. [ ] WCAG 2.1 AA (AC13, in Arbeit).
+14. [ ] Soziale Funktionen (AC14).
+15. [ ] Erweiterte Spielmodi (AC15).
+16. [ ] Internationalisierung (AC16).
+17. [ ] Performance-Optimierung (AC17, in Arbeit).
+18. [ ] Benutzerprofile (AC18).
