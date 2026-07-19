@@ -42,5 +42,19 @@ export default defineConfig({
   build: {
     outDir: 'build',
     sourcemap: false,
+    rollupOptions: {
+      // Manueller Chunk-Split. Hintergrund: Chakra (~150 KB) und framer-motion
+      // (~120 KB) ändern sich selten. Sie als eigenes Vendor-Bundle zu führen
+      // heißt: ein App-Code-Update invalidiert nur das App-Bundle im Browser-Cache,
+      // Vendor bleibt warm. Bei 561 KB Bundle ist das noch nicht zwingend, aber
+      // billig genug zum Mitnehmen.
+      output: {
+        manualChunks: {
+          'vendor.chakra': ['@chakra-ui/react', '@chakra-ui/icons', '@emotion/react', '@emotion/styled'],
+          'vendor.motion': ['framer-motion'],
+          'vendor.storage': ['localforage'],
+        },
+      },
+    },
   },
 });
