@@ -84,16 +84,16 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({
     ];
     
     const difficulty = difficulties[difficultyIndex - 1] || { color: "gray", text: "Unbekannt" };
-    
+
     return (
-      <Badge 
-        colorScheme={difficulty.color} 
-        fontSize={fullWidth ? "xs" : "2xs"} 
-        px={1.5} 
-        py={0.5} 
+      <Badge
+        colorScheme={difficulty.color}
+        fontSize={fullWidth ? "xs" : "2xs"}
+        px={1.5}
+        py={0.5}
         borderRadius="full"
-        bg={fullWidth ? `${difficulty.color}.500` : "whiteAlpha.200"}
-        color="white"
+        bg={fullWidth ? `${difficulty.color}.500` : "brand.primary.subtle"}
+        color={fullWidth ? 'white' : 'brand.primary'}
       >
         {difficulty.text}
       </Badge>

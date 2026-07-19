@@ -1,5 +1,8 @@
 // Killer Sudoku Theme.
-// Light + Dark Tokens, Material-Design-inspiriert, mobile-first.
+// Light + Dark Tokens. Mobile-first, modern (2024er-Stil):
+//   - größere Border-Radien (12–20px statt Material-Default 6px)
+//   - weichere Schatten (Blur-basierte statt 1px-Linien)
+//   - zurückhaltende Käfig-Farben mit höherem Kontrast im Dark Mode
 
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
 
@@ -17,18 +20,22 @@ const semanticTokens = {
     'surface.raised':       { default: 'white',     _dark: 'gray.800' },
     'surface.sunken':       { default: 'gray.100',  _dark: 'gray.700' },
     'surface.overlay':      { default: 'blackAlpha.500', _dark: 'blackAlpha.700' },
+    'surface.header':       { default: 'white',     _dark: 'gray.800' },
+    'surface.header.text':  { default: 'gray.900',  _dark: 'gray.50'  },
 
-    // Käfig-Hintergründe (zarte Tönung). Mapping CageColor → Token weiter unten.
-    'cage.blue.100':        { default: 'blue.50',   _dark: 'blue.900' },
-    'cage.green.100':       { default: 'green.50',  _dark: 'green.900' },
-    'cage.pink.100':        { default: 'pink.50',   _dark: 'pink.900' },
-    'cage.yellow.100':      { default: 'yellow.50', _dark: 'yellow.900' },
+    // Käfig-Hintergründe — weicher. Light .100 (pastell), Dark .900
+    // (sehr dunkel, fast schwarz mit Farbstich). .800 war zu sattig
+    // und ließ die weißen Zahlen schlecht lesen.
+    'cage.blue.100':        { default: 'blue.100',  _dark: 'blue.900' },
+    'cage.green.100':       { default: 'green.100', _dark: 'green.900' },
+    'cage.pink.100':        { default: 'pink.100',  _dark: 'pink.900' },
+    'cage.yellow.100':      { default: 'yellow.100',_dark: 'yellow.900' },
 
-    // Käfig-Ränder (deutlicher, damit die Käfige sichtbar bleiben)
-    'cage.blue.border':     { default: 'blue.300',  _dark: 'blue.500' },
-    'cage.green.border':    { default: 'green.300', _dark: 'green.500' },
-    'cage.pink.border':     { default: 'pink.300',  _dark: 'pink.500' },
-    'cage.yellow.border':   { default: 'yellow.400', _dark: 'yellow.500' },
+    // Käfig-Ränder: dezent im Light Mode (gray.300), sichtbarer im Dark.
+    'cage.blue.border':     { default: 'gray.300',  _dark: 'blue.400' },
+    'cage.green.border':    { default: 'gray.300',  _dark: 'green.400' },
+    'cage.pink.border':     { default: 'gray.300',  _dark: 'pink.400' },
+    'cage.yellow.border':   { default: 'gray.300',  _dark: 'yellow.400' },
 
     // Vorgegebene Werte vs. User-Eingabe
     'cell.given.text':      { default: 'gray.900',  _dark: 'gray.50'  },
@@ -44,15 +51,41 @@ const semanticTokens = {
     'text.muted':           { default: 'gray.500',  _dark: 'gray.500' },
     'text.inverse':         { default: 'white',     _dark: 'gray.900' },
 
-    // Brand (App-Bar, Primary-Button, Selection)
+    // Brand: einzige Akzentfarbe. Buttons benutzen ausschließlich diese
+    // Schiene, kein Lila/Türkis/Hellblau-Mischmasch mehr.
     'brand.primary':        { default: 'blue.500',  _dark: 'blue.400' },
     'brand.primary.hover':  { default: 'blue.600',  _dark: 'blue.300' },
+    'brand.primary.subtle': { default: 'blue.50',   _dark: 'blue.900' },
     'brand.onPrimary':      { default: 'white',     _dark: 'gray.900' },
 
     // Status
     'status.success':       { default: 'green.500', _dark: 'green.300' },
     'status.warning':       { default: 'orange.500', _dark: 'orange.300' },
     'status.error':         { default: 'red.500',   _dark: 'red.300' },
+
+    // Bottom-Nav-Pill für aktiven Tab (moderne Mobile-UX).
+    'nav.active.bg':        { default: 'blue.50',   _dark: 'blue.900' },
+    'nav.active.text':      { default: 'blue.600',  _dark: 'blue.200' },
+    'nav.inactive.text':    { default: 'gray.500',  _dark: 'gray.400' },
+  },
+  radii: {
+    // Größere Radien überall für weicheren, modernen Look.
+    sm: '6px',
+    md: '10px',
+    lg: '14px',
+    xl: '20px',
+    '2xl': '28px',
+    full: '9999px',
+  },
+  shadows: {
+    // Weicher, mit mehr Blur und weniger Opazität. Material-Defaults
+    // waren 1px-Linien mit harten Kanten — modern ist Blur.
+    sm: '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+    md: '0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+    lg: '0 10px 24px -4px rgba(0, 0, 0, 0.10), 0 4px 8px -4px rgba(0, 0, 0, 0.04)',
+    xl: '0 20px 40px -8px rgba(0, 0, 0, 0.12), 0 8px 16px -8px rgba(0, 0, 0, 0.06)',
+    // Spezielle Pill-Höhe für Bottom-Nav (sehr subtiler Glow)
+    glow: '0 -2px 12px rgba(0, 0, 0, 0.06)',
   },
 };
 
@@ -72,12 +105,10 @@ export const theme = extendTheme({
       body: {
         bg: 'surface.canvas',
         color: 'text.primary',
-        // System-Schriftarten statt Webfont-Download — spart ~100 KB und ist DSGVO-konform.
         fontFeatureSettings: '"cv11", "ss01"',
         textRendering: 'optimizeLegibility',
         WebkitFontSmoothing: 'antialiased',
       },
-      // Safe-Area-Insets (iPhone Notch etc.) global respektieren.
       '#root': {
         paddingTop: 'env(safe-area-inset-top)',
         paddingBottom: 'env(safe-area-inset-bottom)',
@@ -87,10 +118,13 @@ export const theme = extendTheme({
   components: {
     Button: {
       baseStyle: {
-        // Touch-Target-Mindestmaß (WCAG 2.5.5 / Apple HIG)
         minH: '44px',
         minW: '44px',
         fontWeight: '600',
+        borderRadius: 'lg',
+        letterSpacing: '0.01em',
+        transition: 'background-color 0.15s, transform 0.1s',
+        _active: { transform: 'scale(0.97)' },
       },
       defaultProps: {
         colorScheme: 'blue',
@@ -100,6 +134,25 @@ export const theme = extendTheme({
       baseStyle: {
         minH: '44px',
         minW: '44px',
+        borderRadius: 'lg',
+      },
+    },
+    // Modal: rundere Ecken, weicherer Schatten, kein hartes Material-Overlay.
+    Modal: {
+      baseStyle: {
+        dialog: {
+          borderRadius: '2xl',
+          boxShadow: 'xl',
+        },
+        overlay: {
+          backdropFilter: 'blur(4px)',
+          bg: 'surface.overlay',
+        },
+      },
+    },
+    Heading: {
+      baseStyle: {
+        letterSpacing: '-0.01em',
       },
     },
   },

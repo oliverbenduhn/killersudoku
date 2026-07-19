@@ -538,9 +538,9 @@ export const Board: React.FC<BoardProps> = ({
         display="flex"
         justifyContent="center"
         alignItems="center"
-        boxShadow="0px 2px 4px -1px rgba(0,0,0,0.2), 0px 4px 5px 0px rgba(0,0,0,0.14), 0px 1px 10px 0px rgba(0,0,0,0.12)"
+        boxShadow="md"
         borderRadius="lg"
-        bg="white"
+        bg="surface.raised"
         position="relative"
         flexGrow={1}
         maxW={flexDirection === "column" ? "95%" : "70%"}
@@ -549,7 +549,7 @@ export const Board: React.FC<BoardProps> = ({
         overflowY="hidden"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        _focus={{ outline: "3px dashed #2196F3", outlineOffset: "4px" }}
+        _focus={{ outline: "3px dashed", outlineColor: "brand.primary", outlineOffset: "4px" }}
       >
         <Box>{renderGrid()}</Box>
 
@@ -561,15 +561,16 @@ export const Board: React.FC<BoardProps> = ({
             top="50%"
             left="50%"
             transform="translate(-50%, -50%)"
-            bg="green.100"
-            border="2px solid green.500"
+            bg="status.success"
+            border="2px solid"
+            borderColor="status.success"
             borderRadius="md"
             p={4}
             textAlign="center"
             boxShadow="xl"
             zIndex={10}
           >
-            <Text fontSize="xl" fontWeight="bold" color="green.600">
+            <Text fontSize="xl" fontWeight="bold" color="status.success">
               Gratulation! Das Rätsel ist gelöst!
             </Text>
           </FadeInView>
@@ -583,8 +584,9 @@ export const Board: React.FC<BoardProps> = ({
             top="50%"
             left="50%"
             transform="translate(-50%, -50%)"
-            bg="red.100"
-            border="2px solid red.500"
+            bg="status.error"
+            border="2px solid"
+            borderColor="status.error"
             borderRadius="md"
             p={4}
             textAlign="center"
@@ -621,9 +623,10 @@ export const Board: React.FC<BoardProps> = ({
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
         >
+          {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
-            bg="purple.500"
-            color="white"
+            variant="outline"
+            colorScheme="blue"
             onClick={() => {
               if (!gameState) return;
               if (cages.length === 0) {
@@ -654,62 +657,39 @@ export const Board: React.FC<BoardProps> = ({
                 isClosable: true,
                 position: 'top',
               });
-              // Markiere die Zelle visuell durch Selection, damit der
-              // User die Stelle sofort findet.
               setSelectedCell(hint.cell);
             }}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            _hover={{ bg: "purple.600" }}
-            _active={{ bg: "purple.700" }}
             isDisabled={!gameState || isGameOver || cages.length === 0}
           >
             Tipp
           </RippleButton>
+          {/* Direkter Reveal-Hinweis: brand primary, klar als primäre Aktion. */}
           <RippleButton
-            bg="teal.500"
-            color="white"
+            colorScheme="blue"
             onClick={handleRevealHint}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            _hover={{ bg: "teal.600" }}
-            _active={{ bg: "teal.700" }}
             isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
           >
             <AddIcon mr={2} /> Hinweis ({MAX_HINTS - (gameState?.hintsUsed || 0)})
           </RippleButton>
+          {/* Reset: tonal, nicht akzent. */}
           <RippleButton
-            bg="#2196F3"
-            color="white"
+            variant="ghost"
             onClick={handleReset}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            _hover={{ bg: "#1976D2" }}
-            _active={{ bg: "#1565C0" }}
+            isDisabled={!gameState || isGameOver}
           >
             <RepeatIcon mr={2} /> Reset
           </RippleButton>
           <RippleButton
-            bg="gray.500"
-            color="white"
+            variant="ghost"
             onClick={() => { void undo(); }}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            _hover={{ bg: "gray.600" }}
-            _active={{ bg: "gray.700" }}
             isDisabled={!gameState || isGameOver || !canUndo}
             aria-label="Rückgängig"
           >
             ↶ Undo
           </RippleButton>
           <RippleButton
-            bg="gray.500"
-            color="white"
+            variant="ghost"
             onClick={() => { void redo(); }}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            _hover={{ bg: "gray.600" }}
-            _active={{ bg: "gray.700" }}
             isDisabled={!gameState || isGameOver || !canRedo}
             aria-label="Wiederherstellen"
           >
