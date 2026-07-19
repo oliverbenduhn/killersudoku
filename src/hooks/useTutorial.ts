@@ -130,6 +130,11 @@ export function useTutorial() {
     setStepIndex((i) => Math.max(0, i - 1));
   }, []);
 
+  const jumpTo = useCallback((index: number) => {
+    if (index < 0 || index >= TUTORIAL_STEPS.length) return;
+    setStepIndex(index);
+  }, []);
+
   const skip = useCallback(() => {
     markSeen();
     setActive(false);
@@ -149,6 +154,7 @@ export function useTutorial() {
     isLastStep: stepIndex === TUTORIAL_STEPS.length - 1,
     next,
     prev,
+    jumpTo,
     skip,
     restart,
     demoLevel: DEMO_LEVEL,

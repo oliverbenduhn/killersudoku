@@ -80,4 +80,21 @@ describe('useTutorial', () => {
       }
     }
   });
+
+  test('jumpTo springt zum angegebenen Schritt', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useTutorial());
+    act(() => result.current.jumpTo(3));
+    expect(result.current.stepIndex).toBe(3);
+    expect(result.current.step.id).toBe(TUTORIAL_STEPS[3].id);
+  });
+
+  test('jumpTo mit out-of-range Index ist no-op', () => {
+    localStorage.clear();
+    const { result } = renderHook(() => useTutorial());
+    act(() => result.current.jumpTo(-1));
+    expect(result.current.stepIndex).toBe(0);
+    act(() => result.current.jumpTo(999));
+    expect(result.current.stepIndex).toBe(0);
+  });
 });

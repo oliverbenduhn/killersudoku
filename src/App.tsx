@@ -198,6 +198,7 @@ function App() {
         demoLevelCages={tutorial.demoLevel.cages}
         onNext={tutorial.next}
         onPrev={tutorial.prev}
+        onJump={tutorial.jumpTo}
         onSkip={tutorial.skip}
       />
     </ChakraProvider>

@@ -1,13 +1,12 @@
 // Interaktives Killer-Sudoku-Tutorial.
-// Modal-Layer mit echtem Demo-Board: zeigt die Käfig-Regel live an einer
-// Mini-Auswahl gefüllter Zellen. „Überspringen" jederzeit möglich.
+// Bottom-Sheet statt Modal: das echte Spielbrett bleibt oben sichtbar,
+// das Tutorial sitzt unten als kompakte Card. „Überspringen" jederzeit.
 
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalBody,
-  ModalFooter,
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerOverlay,
   Button,
   Heading,
   Text,
@@ -16,7 +15,6 @@ import {
   HStack,
   IconButton,
   Tooltip,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import { CloseIcon } from '@chakra-ui/icons';
 import type { TutorialStep } from '../../hooks/useTutorial';
@@ -37,20 +35,19 @@ interface TutorialOverlayProps {
   }>;
   onNext: () => void;
   onPrev: () => void;
+  onJump: (index: number) => void;
   onSkip: () => void;
 }
 
 const CAGE_BASE = {
-  'blue.100':  { bg: 'cage.blue.100',  border: 'cage.blue.border'  },
-  'green.100': { bg: 'cage.green.100', border: 'cage.green.border' },
-  'pink.100':  { bg: 'cage.pink.100',  border: 'cage.pink.border'  },
-  'yellow.100':{ bg: 'cage.yellow.100',border: 'cage.yellow.border'},
+  'blue.100':   { bg: 'cage.blue.100',  border: 'cage.blue.border'  },
+  'green.100':  { bg: 'cage.green.100', border: 'cage.green.border' },
+  'pink.100':   { bg: 'cage.pink.100',  border: 'cage.pink.border'  },
+  'yellow.100': { bg: 'cage.yellow.100',border: 'cage.yellow.border'},
 } as const;
 
-// Reduziertes Demo-Board-Rendering. Bewusst ohne die volle Board-Logik
-// (Drag, Selection, Number-Pad). Nur die Tutorial-Zellen sind klickbar;
-// die zeigen aber keinen Effekt, das ist by design — der User soll nur
-// sehen, was wo leuchtet.
+// Mini-Board nur zur Veranschaulichung der Regel — eine kleine
+// Insellösung im Sheet, nicht das echte Brett.
 function DemoBoard({
   highlightedCells,
   cages,
@@ -58,15 +55,11 @@ function DemoBoard({
   highlightedCells: ReadonlyArray<{ row: number; col: number; value: number }>;
   cages: TutorialOverlayProps['demoLevelCages'];
 }) {
-  const cellBg = useColorModeValue('white', 'gray.800');
-  const cellBorder = useColorModeValue('gray.300', 'gray.600');
   const grid: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
   for (const { row, col, value } of highlightedCells) {
     grid[row][col] = value;
   }
 
-  // Cage-Background pro Zelle: erste Käfig-Zelle gewinnt (einfaches
-  // Overlay statt komplexem Border-Puzzle wie im echten Board).
   const cellToCage = new Map<string, typeof cages[number]>();
   for (const cage of cages) {
     for (const cell of cage.cells) {
@@ -77,19 +70,19 @@ function DemoBoard({
   return (
     <Box
       mx="auto"
-      maxW="280px"
-      p={2}
-      bg={cellBg}
-      borderRadius="md"
+      maxW="240px"
+      p={1.5}
+      bg="surface.raised"
+      borderRadius="lg"
       border="1px solid"
-      borderColor={cellBorder}
+      borderColor="surface.sunken"
+      boxShadow="sm"
     >
       <Grid templateColumns="repeat(9, 1fr)" gap="1px">
         {grid.flatMap((row, r) =>
           row.map((value, c) => {
             const cage = cellToCage.get(`${r},${c}`);
             const tokens = cage ? CAGE_BASE[cage.color] : null;
-            // Summe nur in Top-Left der Käfig-Zellen anzeigen (Demo, nicht perfekt).
             const topLeft = cage
               ? cage.cells.reduce(
                   (acc, cell) => (cell.row < acc.row || (cell.row === acc.row && cell.col < acc.col) ? cell : acc),
@@ -101,18 +94,18 @@ function DemoBoard({
               <Box
                 key={`${r}-${c}`}
                 position="relative"
-                bg={tokens ? tokens.bg : cellBg}
+                bg={tokens ? tokens.bg : 'surface.canvas'}
                 border={cage ? '1px dashed' : '1px solid'}
-                borderColor={tokens ? tokens.border : cellBorder}
+                borderColor={tokens ? tokens.border : 'surface.sunken'}
                 borderRightWidth={c % 3 === 2 ? '2px' : undefined}
                 borderBottomWidth={r % 3 === 2 ? '2px' : undefined}
-                borderRightColor={c % 3 === 2 ? (tokens ? tokens.border : cellBorder) : undefined}
-                borderBottomColor={r % 3 === 2 ? (tokens ? tokens.border : cellBorder) : undefined}
+                borderRightColor={c % 3 === 2 ? (tokens ? tokens.border : 'surface.sunken') : undefined}
+                borderBottomColor={r % 3 === 2 ? (tokens ? tokens.border : 'surface.sunken') : undefined}
                 aspectRatio="1"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                fontSize={{ base: 'xs', sm: 'sm' }}
+                fontSize={{ base: '2xs', sm: 'xs' }}
                 fontWeight="600"
                 color={value ? 'cell.user.text' : 'transparent'}
               >
@@ -139,6 +132,41 @@ function DemoBoard({
   );
 }
 
+// Punkt-Indikator für die Schritt-Navigation. Klick auf einen Punkt
+// springt zum entsprechenden Schritt — komfortabler als Zurück/Weiter.
+function StepDots({
+  current,
+  total,
+  onJump,
+}: {
+  current: number;
+  total: number;
+  onJump: (i: number) => void;
+}) {
+  return (
+    <HStack spacing={2} justify="center" minH="24px">
+      {Array.from({ length: total }, (_, i) => (
+        <Box
+          key={i}
+          as="button"
+          aria-label={`Zu Schritt ${i + 1} springen`}
+          aria-current={i === current ? 'step' : undefined}
+          onClick={() => onJump(i)}
+          width={i === current ? '24px' : '8px'}
+          height="8px"
+          borderRadius="full"
+          bg={i === current ? 'brand.primary' : 'surface.sunken'}
+          transition="width 0.2s, background-color 0.2s"
+          cursor="pointer"
+          border="none"
+          p={0}
+          _hover={{ bg: i === current ? 'brand.primary.hover' : 'text.muted' }}
+        />
+      ))}
+    </HStack>
+  );
+}
+
 export function TutorialOverlay({
   isOpen,
   step,
@@ -150,13 +178,26 @@ export function TutorialOverlay({
   demoLevelCages,
   onNext,
   onPrev,
+  onJump,
   onSkip,
 }: TutorialOverlayProps) {
   return (
-    <Modal isOpen={isOpen} onClose={onSkip} size="md" isCentered>
-      <ModalOverlay />
-      <ModalContent mx={3}>
-        <Box position="absolute" top={2} right={2} zIndex={2}>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onSkip}
+      placement="bottom"
+      // Bottom-Sheet: maximal halbe Höhe, Scrollen wenn nötig.
+      size="md"
+    >
+      <DrawerOverlay />
+      <DrawerContent
+        borderTopRadius="2xl"
+        maxH="60vh"
+        // Safe-Area für iPhone-Home-Indicator
+        pb="env(safe-area-inset-bottom, 16px)"
+      >
+        {/* Schließen-Button oben rechts. */}
+        <Box position="absolute" top={3} right={3} zIndex={2}>
           <Tooltip label="Überspringen" placement="left">
             <IconButton
               aria-label="Tutorial überspringen"
@@ -168,37 +209,34 @@ export function TutorialOverlay({
           </Tooltip>
         </Box>
 
-        <ModalBody pt={6} pb={4}>
-          <Text fontSize="xs" color="text.muted" mb={1} letterSpacing="0.05em" textTransform="uppercase">
-            Schritt {stepIndex + 1} / {totalSteps}
-          </Text>
-          <Heading as="h2" size="md" mb={3} color="text.primary">
+        <DrawerBody pt={5} pb={4}>
+          <StepDots current={stepIndex} total={totalSteps} onJump={onJump} />
+
+          <Heading as="h2" size="md" mt={3} mb={2} color="text.primary">
             {step.title}
           </Heading>
-          <Text color="text.secondary" mb={5} lineHeight="1.6">
+          <Text color="text.secondary" mb={4} lineHeight="1.5" maxW="40rem" mx="auto">
             {step.body}
           </Text>
           <DemoBoard highlightedCells={highlightedCells} cages={demoLevelCages} />
-        </ModalBody>
+        </DrawerBody>
 
-        <ModalFooter pt={2}>
-          <HStack spacing={2} w="100%" justify="space-between">
-            <Button variant="ghost" onClick={onSkip} size="sm">
-              Überspringen
-            </Button>
-            <HStack spacing={2}>
-              {!isFirstStep && (
-                <Button variant="outline" onClick={onPrev} size="sm">
-                  Zurück
-                </Button>
-              )}
-              <Button colorScheme="blue" onClick={onNext} size="sm">
-                {isLastStep ? 'Loslegen' : 'Weiter'}
+        <HStack spacing={2} px={4} pb={4} justify="space-between" maxW="40rem" mx="auto" w="100%">
+          <Button variant="ghost" onClick={onSkip} size="sm">
+            Überspringen
+          </Button>
+          <HStack spacing={2}>
+            {!isFirstStep && (
+              <Button variant="outline" onClick={onPrev} size="sm">
+                Zurück
               </Button>
-            </HStack>
+            )}
+            <Button colorScheme="blue" onClick={onNext} size="sm">
+              {isLastStep ? 'Loslegen' : 'Weiter'}
+            </Button>
           </HStack>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </HStack>
+      </DrawerContent>
+    </Drawer>
   );
 }
