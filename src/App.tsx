@@ -26,6 +26,8 @@ import SwipeableBox from './components/common/SwipeableBox';
 import InstallPrompt from './components/common/InstallPrompt';
 
 import { HomeTab, InfoTab, LevelsTab, StatsTab, SettingsTab } from './components/Tabs';
+import { TutorialOverlay } from './components/common/TutorialOverlay';
+import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
 import { loadLevelByNumber } from './services/levelService';
 import { clearAllGameStates } from './services/storageService';
@@ -51,6 +53,7 @@ function App() {
   const [stats, setStats] = useState<GameStatistics | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
   const toast = useToast();
+  const tutorial = useTutorial();
 
   const headerHeight = useBreakpointValue({ base: '56px', md: '64px' });
   const containerMaxWidth = useBreakpointValue({ base: '100%', xl: 'container.xl' });
@@ -159,6 +162,7 @@ function App() {
               blackAndWhiteMode={blackAndWhiteMode}
               onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
               onOpenResetDialog={() => setIsResetDialogOpen(true)}
+              onRestartTutorial={tutorial.restart}
               transitionDirection={tabTransition}
             />
           )}
@@ -181,6 +185,20 @@ function App() {
       </AlertDialog>
 
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+
+      <TutorialOverlay
+        isOpen={tutorial.active}
+        step={tutorial.step}
+        stepIndex={tutorial.stepIndex}
+        totalSteps={tutorial.totalSteps}
+        isFirstStep={tutorial.isFirstStep}
+        isLastStep={tutorial.isLastStep}
+        highlightedCells={tutorial.step.highlightedCells}
+        demoLevelCages={tutorial.demoLevel.cages}
+        onNext={tutorial.next}
+        onPrev={tutorial.prev}
+        onSkip={tutorial.skip}
+      />
     </ChakraProvider>
   );
 }

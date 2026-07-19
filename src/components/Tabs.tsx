@@ -167,12 +167,14 @@ interface SettingsTabProps extends TabPanelProps {
   blackAndWhiteMode: boolean;
   onToggleBlackAndWhite: () => void;
   onOpenResetDialog: () => void;
+  onRestartTutorial: () => void;
 }
 
 export function SettingsTab({
   blackAndWhiteMode,
   onToggleBlackAndWhite,
   onOpenResetDialog,
+  onRestartTutorial,
   transitionDirection,
 }: SettingsTabProps) {
   const { colorMode, toggleColorMode } = useColorMode();
@@ -207,6 +209,20 @@ export function SettingsTab({
               colorScheme="gray"
             />
           </HStack>
+
+          <Box>
+            <Button
+              variant="outline"
+              colorScheme="blue"
+              onClick={onRestartTutorial}
+              w="100%"
+            >
+              Tutorial erneut ansehen
+            </Button>
+            <Text mt={2} fontSize="sm" color="text.secondary">
+              Spielregeln in 5 Schritten wiederholen.
+            </Text>
+          </Box>
 
           <Box>
             <Button
