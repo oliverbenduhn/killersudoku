@@ -7,14 +7,14 @@ Wants=network-online.target
 Type=simple
 User=oliver
 WorkingDirectory=/home/oliver/killersudoku
-ExecStart=/usr/bin/python3 -m http.server 8083 --bind 0.0.0.0 --directory /home/oliver/killersudoku/build
+# Vite preview schreibt Config-Cache-Temps neben die vite.config.ts, daher
+# kein Filesystem-Hardening möglich. Service läuft als unprivilegierter
+# User, das ist die relevante Härtung.
+ExecStart=/home/oliver/killersudoku/node_modules/.bin/vite preview --port 8083 --host 0.0.0.0 --strictPort
 Restart=on-failure
 RestartSec=3
 
-# PWA liest nur build/ aus, schreibt nirgends hin.
 NoNewPrivileges=true
-ProtectSystem=strict
-ProtectHome=read-only
 
 [Install]
 WantedBy=multi-user.target
