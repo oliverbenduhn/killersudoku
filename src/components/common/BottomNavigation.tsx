@@ -70,11 +70,12 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       left={0}
       right={0}
       height={navHeight}
-      bg="white"
-      boxShadow="0 -1px 6px rgba(0,0,0,0.15)"
+      bg="surface.raised"
+      boxShadow="0 -1px 6px var(--chakra-shadows-color, rgba(0,0,0,0.15))"
       zIndex={1000}
-      pb="env(safe-area-inset-bottom, 0px)" // Für Geräte mit abgerundeten Ecken oder Notch
-      borderTop="1px solid rgba(0,0,0,0.08)"
+      pb="env(safe-area-inset-bottom, 0px)"
+      borderTop="1px solid"
+      borderColor="surface.sunken"
     >
       <Flex
         height="100%"
@@ -95,28 +96,24 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
             gap={1}
             flex={1}
             h="100%"
-            px={0}
-            py={0}
-            minH={0}
+            minH="56px"
             onClick={item.action}
             bg="transparent"
-            _hover={{ bg: "rgba(0,0,0,0.03)" }}
-            _active={{ bg: "rgba(0,0,0,0.05)" }}
+            _hover={{ bg: 'surface.sunken' }}
+            _active={{ bg: 'surface.sunken' }}
             borderRadius={0}
-            color={activeTab === item.id ? "#2196F3" : "gray.500"}
+            color={activeTab === item.id ? 'brand.primary' : 'text.secondary'}
             border="none"
             cursor="pointer"
             position="relative"
-            overflow="hidden"
             aria-label={item.label}
-            aria-current={activeTab === item.id ? "page" : undefined}
+            aria-current={activeTab === item.id ? 'page' : undefined}
+            transition="color 0.15s"
           >
-            <Box>
-              {item.icon}
-            </Box>
+            <Box>{item.icon}</Box>
             <Text
               fontSize={fontSize}
-              fontWeight={activeTab === item.id ? "500" : "normal"}
+              fontWeight={activeTab === item.id ? '600' : '500'}
               lineHeight="1.2"
             >
               {item.label}
@@ -129,7 +126,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
                 right="15%"
                 height="3px"
                 width="70%"
-                bg="#2196F3"
+                bg="brand.primary"
                 borderRadius="3px 3px 0 0"
               />
             )}

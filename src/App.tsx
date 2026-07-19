@@ -1,541 +1,187 @@
+// App.tsx — Layout & State. Tab-Inhalte sind in components/Tabs.tsx.
 import { useState, useEffect, useRef } from 'react';
-import { ChakraProvider, Box, Container, Heading, Text, extendTheme, VStack, Flex, useBreakpointValue, useColorModeValue, Button, useToast, AlertDialog, AlertDialogBody, AlertDialogFooter, AlertDialogHeader, AlertDialogContent, AlertDialogOverlay, IconButton, Tooltip, Link } from '@chakra-ui/react';
-import './App.css';
+import {
+  ChakraProvider,
+  Box,
+  Container,
+  Heading,
+  Flex,
+  useBreakpointValue,
+  useColorModeValue,
+  useToast,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
+  Button,
+} from '@chakra-ui/react';
+
 import Board from './components/Board/Board';
 import LevelSelector from './components/LevelSelector/LevelSelector';
-import { loadLevelByNumber, TOTAL_LEVELS } from './services/levelService';
-import { GameLevel } from './types/gameTypes';
 import BottomNavigation from './components/common/BottomNavigation';
 import FadeInView from './components/common/FadeInView';
 import SwipeableBox from './components/common/SwipeableBox';
 import InstallPrompt from './components/common/InstallPrompt';
-import { clearAllGameStates } from './services/storageService';
-import { RepeatIcon, ViewOffIcon, ViewIcon } from '@chakra-ui/icons';
-import { GameStatistics, loadStatistics } from './services/statisticsService';
 
-// Erweiterte Android-Material Design Farbpalette
-const theme = extendTheme({
-  styles: {
-    global: {
-      body: {
-        fontSize: '1rem',
-        lineHeight: 1.6,
-        bg: '#f5f5f5', // Material Design Grey 100
-        color: '#212121', // Material Design Grey 900
-        transition: 'background-color 0.2s, color 0.2s',
-      },
-      p: {
-        maxWidth: '38rem',
-        marginLeft: 'auto',
-        marginRight: 'auto',
-      }
-    }
-  },
-  fonts: {
-    body: "Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-    heading: "Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-  },
-  colors: {
-    android: {
-      primary: "#2196F3",       // Material Design Blue 500
-      primaryDark: "#1976D2",   // Material Design Blue 700
-      primaryLight: "#BBDEFB",  // Material Design Blue 100
-      accent: "#FF4081",        // Material Design Pink A200
-      accentDark: "#F50057",    // Material Design Pink A400
-      accentLight: "#FF80AB",   // Material Design Pink A100
-      background: "#F5F5F5",    // Material Design Grey 100
-      surface: "#FFFFFF",
-      text: "#212121",          // Material Design Grey 900
-      secondaryText: "#757575", // Material Design Grey 600
-      divider: "#BDBDBD",       // Material Design Grey 400
-      success: "#4CAF50",       // Material Design Green 500
-      warning: "#FFC107",       // Material Design Amber 500
-      error: "#F44336",         // Material Design Red 500
-      info: "#2196F3"           // Material Design Blue 500
-    }
-  }
-});
+import { HomeTab, InfoTab, LevelsTab, StatsTab, SettingsTab } from './components/Tabs';
+import { theme } from './theme';
+import { loadLevelByNumber } from './services/levelService';
+import { clearAllGameStates } from './services/storageService';
+import { GameStatistics, loadStatistics } from './services/statisticsService';
+import { GameLevel } from './types/gameTypes';
+
+const TAB_ORDER = ['home', 'levels', 'stats', 'info', 'settings'] as const;
+type TabName = typeof TAB_ORDER[number];
+
+function calcTransition(newTab: TabName, currentTab: TabName): 'left' | 'right' {
+  return TAB_ORDER.indexOf(newTab) > TAB_ORDER.indexOf(currentTab) ? 'left' : 'right';
+}
 
 function App() {
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>("home");
+  const [activeTab, setActiveTab] = useState<TabName>('home');
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
   const [stats, setStats] = useState<GameStatistics | null>(null);
-  const cancelRef = useRef<any>(null);
+  const cancelRef = useRef<HTMLButtonElement | null>(null);
   const toast = useToast();
 
-  // Responsive Layout-Einstellungen
-  const headerHeight = useBreakpointValue({ base: "56px", md: "64px" });
-  const navBarHeight = useBreakpointValue({ base: "56px", md: "64px" });
-  const containerMaxWidth = useBreakpointValue({ base: "100%", xl: "container.xl" });
-  const statusBarBg = useColorModeValue("android.primaryDark", "gray.900");
-  const headerBg = useColorModeValue("android.primary", "gray.800");
+  const headerHeight = useBreakpointValue({ base: '56px', md: '64px' });
+  const containerMaxWidth = useBreakpointValue({ base: '100%', xl: 'container.xl' });
+  const headerBg = useColorModeValue('brand.primary', 'gray.800');
 
-  // Bugfix: requestNotificationPermission entfernt. Browser fragen den User
-  // nur einmal pro Origin; ein ungefragter Aufruf bei jedem Mount verschwendet
-  // diese Chance und triggert auf iOS ins Leere. PWA-Update-Benachrichtigungen
-  // sollten explizit über einen Settings-Toggle aktiviert werden.
-
-  // Lädt das aktuelle Level basierend auf der Level-Nummer
   useEffect(() => {
+    let cancelled = false;
     const fetchLevel = async () => {
       setIsLoading(true);
       setError(null);
-      
       try {
         const level = await loadLevelByNumber(currentLevel);
-        setLevelData(level);
+        if (!cancelled) setLevelData(level);
       } catch (err) {
-        console.error('Fehler beim Laden des Levels:', err);
-        setError(`Level ${currentLevel} konnte nicht geladen werden. Bitte versuchen Sie es mit einem anderen Level.`);
-        setLevelData(null);
+        if (!cancelled) {
+          console.error('Fehler beim Laden des Levels:', err);
+          setError(`Level ${currentLevel} konnte nicht geladen werden.`);
+          setLevelData(null);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
-
     fetchLevel();
+    return () => { cancelled = true; };
   }, [currentLevel]);
 
   useEffect(() => {
     if (activeTab !== 'stats') return;
     let isMounted = true;
-
-    const fetchStats = async () => {
-      const loadedStats = await loadStatistics();
-      if (isMounted) {
-        setStats(loadedStats);
-      }
-    };
-
-    fetchStats();
-    return () => {
-      isMounted = false;
-    };
+    loadStatistics().then((s) => { if (isMounted) setStats(s); });
+    return () => { isMounted = false; };
   }, [activeTab]);
-
-  const formatDuration = (durationMs: number) => {
-    const totalSeconds = Math.max(0, Math.floor(durationMs / 1000));
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
-  const handleLevelChange = (level: number) => {
-    setCurrentLevel(level);
-  };
-
-  // Berechnet die Richtung für die Tab-Übergangsanimation
-  const calculateTransitionDirection = (newTab: string, currentTab: string) => {
-    const tabOrder = ["home", "levels", "stats", "info", "settings"];
-    const currentIndex = tabOrder.indexOf(currentTab);
-    const newIndex = tabOrder.indexOf(newTab);
-    
-    if (newIndex > currentIndex) {
-      return 'left';
-    } else {
-      return 'right';
-    }
-  };
 
   const handleTabChange = (tabName: string) => {
     if (tabName === activeTab) return;
-
-    setTabTransition(calculateTransitionDirection(tabName, activeTab));
-    setActiveTab(tabName);
-    
-    // Wechsle automatisch zur Level-Auswahl im "levels" Tab
-    if (tabName === "levels") {
-      // Hier könnten wir eine Level-Auswahl anzeigen
-    }
+    setTabTransition(calcTransition(tabName as TabName, activeTab));
+    setActiveTab(tabName as TabName);
   };
 
-  // Swipe-Handler für Tab-Wechsel
-  const handleSwipeLeft = () => {
-    const tabOrder = ["home", "levels", "stats", "info", "settings"];
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex < tabOrder.length - 1) {
-      handleTabChange(tabOrder[currentIndex + 1]);
-    }
+  const handleSwipe = (dir: 'left' | 'right') => {
+    const i = TAB_ORDER.indexOf(activeTab);
+    const next = dir === 'left' ? TAB_ORDER[i + 1] : TAB_ORDER[i - 1];
+    if (next) handleTabChange(next);
   };
 
-  const handleSwipeRight = () => {
-    const tabOrder = ["home", "levels", "stats", "info", "settings"];
-    const currentIndex = tabOrder.indexOf(activeTab);
-    if (currentIndex > 0) {
-      handleTabChange(tabOrder[currentIndex - 1]);
-    }
-  };
-
-  // Funktion zum Zurücksetzen aller Level
   const handleResetAllLevels = async () => {
     try {
       await clearAllGameStates();
-      toast({
-        title: "Erfolgreich zurückgesetzt",
-        description: "Alle Spielstände wurden zurückgesetzt.",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
+      toast({ title: 'Erfolgreich zurückgesetzt', status: 'success', duration: 3000, isClosable: true });
       setIsResetDialogOpen(false);
     } catch (error) {
-      console.error("Fehler beim Zurücksetzen der Spielstände:", error);
-      toast({
-        title: "Fehler",
-        description: "Beim Zurücksetzen der Spielstände ist ein Fehler aufgetreten.",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
-
-  // Content basierend auf dem aktiven Tab anzeigen
-  const renderContent = (): React.ReactElement => {
-    switch(activeTab) {
-      case "home":
-        return (
-          <FadeInView
-            direction={tabTransition === 'left' ? 'left' : 'right'}
-            duration={300}
-            mb={4}
-            key="home-tab"
-          >
-            <Box 
-              className="game-container" 
-              bg="android.surface"
-              borderRadius="md"
-              overflow="hidden"
-              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            >
-              <Board 
-                puzzleId={`level-${currentLevel}`}
-                levelData={levelData}
-                isLoading={isLoading}
-                error={error}
-                blackAndWhiteMode={blackAndWhiteMode}
-              />
-            </Box>
-          </FadeInView>
-        );
-      case "info":
-        return (
-          <FadeInView
-            direction={tabTransition === 'left' ? 'left' : 'right'}
-            duration={300}
-            key="info-tab"
-          >
-            <Box 
-              className="content-container" 
-              mt={4}
-              bg="android.surface"
-              p={4}
-              borderRadius="md"
-              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            >
-              <Heading as="h2" size="lg" mb={4} color="android.text">
-                Spielanleitung
-              </Heading>
-              <Text className="readable-text" mb={4} color="android.secondaryText">
-                Killer Sudoku kombiniert klassisches Sudoku mit mathematischen Herausforderungen. 
-                Zusätzlich zu den bekannten Sudoku-Regeln müssen auch die vorgegebenen Summen in 
-                jedem "Käfig" erreicht werden.
-              </Text>
-              <Text className="readable-text" color="android.secondaryText">
-                Wie bei normalem Sudoku müssen Sie jede Zahl von 1-9 in jeder Zeile, Spalte und 
-                3x3-Region genau einmal platzieren. Darüber hinaus müssen die Zahlen in jedem farbigen 
-                Käfig (durch gestrichelte Linien angezeigt) die angegebene Summe ergeben. 
-                Innerhalb eines Käfigs darf keine Zahl wiederholt werden.
-              </Text>
-            </Box>
-          </FadeInView>
-        );
-      case "levels":
-        return (
-          <FadeInView
-            direction={tabTransition === 'left' ? 'left' : 'right'}
-            duration={300}
-            key="levels-tab"
-          >
-            <Box 
-              className="content-container" 
-              mt={4}
-              bg="android.surface"
-              p={4}
-              borderRadius="md"
-              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            >
-              <Heading as="h2" size="lg" mb={4} color="android.text">
-                Level-Auswahl
-              </Heading>
-              <LevelSelector 
-                currentLevel={currentLevel} 
-                onLevelChange={(level) => {
-                  handleLevelChange(level);
-                  setActiveTab("home"); // Wechsle zurück zum Spiel nach Level-Auswahl
-                }}
-                fullWidth={true}
-              />
-            </Box>
-          </FadeInView>
-        );
-      case "stats":
-        return (
-          <FadeInView
-            direction={tabTransition === 'left' ? 'left' : 'right'}
-            duration={300}
-            key="stats-tab"
-          >
-            <Box 
-              className="content-container" 
-              mt={4}
-              bg="android.surface"
-              p={4}
-              borderRadius="md"
-              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            >
-              <Heading as="h2" size="lg" mb={4} color="android.text">
-                Statistiken
-              </Heading>
-              {!stats || stats.totalSolved === 0 ? (
-                <Text className="readable-text" color="android.secondaryText">
-                  Noch keine gelösten Rätsel. Sobald du eines abschließt, erscheinen hier deine Stats.
-                </Text>
-              ) : (
-                <VStack spacing={4} align="stretch">
-                  <Box>
-                    <Text fontWeight="600" color="android.text">Gelöste Rätsel</Text>
-                    <Text color="android.secondaryText">{stats.totalSolved}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="600" color="android.text">Gesamtspielzeit</Text>
-                    <Text color="android.secondaryText">{formatDuration(stats.totalTimeMs)}</Text>
-                  </Box>
-                  <Box>
-                    <Text fontWeight="600" color="android.text">Gelöst nach Schwierigkeit</Text>
-                    {Object.keys(stats.solvedByDifficulty).length === 0 ? (
-                      <Text color="android.secondaryText">Keine Daten verfügbar.</Text>
-                    ) : (
-                      Object.entries(stats.solvedByDifficulty).map(([difficulty, count]) => (
-                        <Text key={difficulty} color="android.secondaryText">
-                          {difficulty}: {count}
-                        </Text>
-                      ))
-                    )}
-                  </Box>
-                  <Box>
-                    <Text fontWeight="600" color="android.text">Beste Zeiten</Text>
-                    {Object.keys(stats.bestTimeMsByDifficulty).length === 0 ? (
-                      <Text color="android.secondaryText">Keine Daten verfügbar.</Text>
-                    ) : (
-                      Object.entries(stats.bestTimeMsByDifficulty).map(([difficulty, timeMs]) => (
-                        <Text key={difficulty} color="android.secondaryText">
-                          {difficulty}: {formatDuration(timeMs)}
-                        </Text>
-                      ))
-                    )}
-                  </Box>
-                  {stats.lastSolvedAt && (
-                    <Box>
-                      <Text fontWeight="600" color="android.text">Zuletzt gelöst</Text>
-                      <Text color="android.secondaryText">
-                        {new Date(stats.lastSolvedAt).toLocaleString()}
-                      </Text>
-                    </Box>
-                  )}
-                </VStack>
-              )}
-            </Box>
-          </FadeInView>
-        );
-      case "settings":
-        return (
-          <FadeInView
-            direction={tabTransition === 'left' ? 'left' : 'right'}
-            duration={300}
-            key="settings-tab"
-          >
-            <Box 
-              className="content-container" 
-              mt={4}
-              bg="android.surface"
-              p={4}
-              borderRadius="md"
-              boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            >
-              <Heading as="h2" size="lg" mb={4} color="android.text">
-                Einstellungen
-              </Heading>
-              
-              <VStack spacing={4} align="stretch">
-                <Box>
-                  <Button
-                    colorScheme="red"
-                    variant="outline"
-                    onClick={() => setIsResetDialogOpen(true)}
-                    w="100%"
-                  >
-                    Alle Level zurücksetzen
-                  </Button>
-                  <Text mt={2} fontSize="sm" color="android.secondaryText">
-                    Setzt den Fortschritt aller Level zurück. Statistiken bleiben erhalten.
-                  </Text>
-                </Box>
-              </VStack>
-
-              <Box as="footer" textAlign="center" pt={6} pb={2} fontSize="sm" color="gray.500" borderTop="1px solid" borderColor="gray.200" mt={6}>
-                <Link href="https://legal.benduhn.de/impressum/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Impressum</Link>
-                {" · "}
-                <Link href="https://legal.benduhn.de/datenschutz/" target="_blank" rel="noopener" color="gray.500" _hover={{ color: "blue.500" }}>Datenschutz</Link>
-              </Box>
-            </Box>
-          </FadeInView>
-        );
-      default:
-        return renderContent();
+      toast({ title: 'Fehler', description: 'Zurücksetzen fehlgeschlagen.', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
   return (
     <ChakraProvider theme={theme}>
-      {/* Bugfix: TouchRipple entfernt - RippleButton-Komponenten liefern bereits
-          Ripple-Feedback. Globaler TouchRipple auf document-Ebene führte zu
-          Doppel-Animationen und GPU-Last auf mobilen Geräten. */}
+      <InstallPrompt />
 
-      {/* PWA Installations-Aufforderung */}
-      <InstallPrompt 
-        onInstall={() => console.log("App erfolgreich installiert!")}
-        onDismiss={() => console.log("Installation abgelehnt")}
-      />
-      
-      {/* Android Status Bar */}
-      <Box 
-        bg={statusBarBg} 
-        h="24px" 
-        position="fixed" 
-        top={0} 
-        left={0} 
-        right={0} 
-        zIndex={1000}
-      />
-      
-      {/* Android App Bar */}
-      <Box 
-        as="header" 
-        bg={headerBg}
-        py={0}
-        position="fixed"
-        top="24px"
-        left={0}
-        right={0}
-        height={headerHeight}
-        boxShadow="0 2px 4px rgba(0,0,0,0.2)"
-        zIndex={999}
-      >
-        <Container maxW={containerMaxWidth} h="100%" px={2}>
-          <Flex 
-            direction="row"
-            align="center"
-            justify="space-between"
-            h="100%"
-            gap={2}
-          >
-            <Heading 
-              as="h1" 
-              color="white" 
-              fontSize={{ base: "20px", md: "22px" }}
-              fontWeight="500"
-            >
+      <Box as="header" bg={headerBg} position="sticky" top={0} zIndex={999} boxShadow="sm">
+        <Container maxW={containerMaxWidth} h={headerHeight} px={4}>
+          <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
+            <Heading as="h1" color="brand.onPrimary" fontSize={{ base: '18px', md: '20px' }} fontWeight="600" letterSpacing="-0.01em">
               Killer Sudoku
             </Heading>
-            
-            <Box display={activeTab === "home" ? "flex" : "none"} alignItems="center" gap={2}>
-              <Tooltip label={blackAndWhiteMode ? "Farbmodus aktivieren" : "Schwarzweiß-Modus aktivieren"} placement="bottom">
-                <IconButton
-                  aria-label={blackAndWhiteMode ? "Farbmodus aktivieren" : "Schwarzweiß-Modus aktivieren"}
-                  icon={blackAndWhiteMode ? <ViewIcon /> : <ViewOffIcon />}
-                  variant="ghost"
-                  colorScheme="whiteAlpha"
-                  size="sm"
-                  onClick={() => setBlackAndWhiteMode(!blackAndWhiteMode)}
-                />
-              </Tooltip>
-              <LevelSelector 
-                currentLevel={currentLevel} 
-                onLevelChange={handleLevelChange}
-              />
-            </Box>
+            {activeTab === 'home' && (
+              <Flex align="center" gap={2}>
+                <LevelSelector currentLevel={currentLevel} onLevelChange={setCurrentLevel} />
+              </Flex>
+            )}
           </Flex>
         </Container>
       </Box>
-      
-      {/* Main Content mit Padding für Header und Bottom Navigation */}
+
       <SwipeableBox
-        onSwipeLeft={handleSwipeLeft}
-        onSwipeRight={handleSwipeRight}
+        onSwipeLeft={() => handleSwipe('left')}
+        onSwipeRight={() => handleSwipe('right')}
         animateSwipe={true}
         swipeThreshold={70}
-        pt={{ base: "80px", md: "88px" }} // Status Bar + Header Height
-        pb={{ base: "80px", md: "88px" }} // Erhöhung des Padding-Bottom für die größere Navigationsleiste
-        minH="100vh"
-        bg="android.background"
+        minH="calc(100vh - 56px)"
+        bg="surface.canvas"
       >
-        <Container 
-          maxW={containerMaxWidth} 
-          px={2}
-          mx="auto"
-          w="100%"
-        >
-          {renderContent()}
-          
-          </Container>
+        <Container maxW={containerMaxWidth} px={3} py={4} mx="auto" w="100%">
+          {activeTab === 'home' && (
+            <HomeTab
+              currentLevel={currentLevel}
+              levelData={levelData}
+              isLoading={isLoading}
+              error={error}
+              blackAndWhiteMode={blackAndWhiteMode}
+              transitionDirection={tabTransition}
+            />
+          )}
+          {activeTab === 'levels' && (
+            <LevelsTab
+              currentLevel={currentLevel}
+              onLevelChange={(l) => { setCurrentLevel(l); handleTabChange('home'); }}
+              transitionDirection={tabTransition}
+            />
+          )}
+          {activeTab === 'stats' && <StatsTab stats={stats} transitionDirection={tabTransition} />}
+          {activeTab === 'info' && <InfoTab transitionDirection={tabTransition} />}
+          {activeTab === 'settings' && (
+            <SettingsTab
+              blackAndWhiteMode={blackAndWhiteMode}
+              onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
+              onOpenResetDialog={() => setIsResetDialogOpen(true)}
+              transitionDirection={tabTransition}
+            />
+          )}
+        </Container>
       </SwipeableBox>
-      
-      {/* Reset-Bestätigungsdialog */}
-      <AlertDialog
-        isOpen={isResetDialogOpen}
-        leastDestructiveRef={cancelRef}
-        onClose={() => setIsResetDialogOpen(false)}
-      >
+
+      <AlertDialog isOpen={isResetDialogOpen} leastDestructiveRef={cancelRef} onClose={() => setIsResetDialogOpen(false)}>
         <AlertDialogOverlay>
           <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Alle Level zurücksetzen
-            </AlertDialogHeader>
-
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">Alle Level zurücksetzen</AlertDialogHeader>
             <AlertDialogBody>
               Bist du sicher? Diese Aktion wird den Fortschritt aller Level zurücksetzen und kann nicht rückgängig gemacht werden.
             </AlertDialogBody>
-
             <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={() => setIsResetDialogOpen(false)}>
-                Abbrechen
-              </Button>
-              <Button colorScheme="red" onClick={handleResetAllLevels} ml={3}>
-                Zurücksetzen
-              </Button>
+              <Button ref={cancelRef} onClick={() => setIsResetDialogOpen(false)}>Abbrechen</Button>
+              <Button colorScheme="red" onClick={handleResetAllLevels} ml={3}>Zurücksetzen</Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
 
-      {/* Bottom Navigation */}
       <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
-</ChakraProvider>
+    </ChakraProvider>
   );
 }
 

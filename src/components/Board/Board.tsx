@@ -298,25 +298,27 @@ export const Board: React.FC<BoardProps> = ({
     const isLastEntered =
       animation.lastEnteredCell?.row === row && animation.lastEnteredCell?.col === col;
 
-    let bgColor = "white";
+    let bgColor: string = 'surface.raised';
     if (cage) {
       if (blackAndWhiteMode) {
         const idx = cages.indexOf(cage);
         const grayLevel = 100 - (idx % 4) * 10;
         bgColor = `gray.${grayLevel}`;
       } else {
-        bgColor = cage.color;
+        // cage.color ist 'blue.100'|'green.100'|'pink.100'|'yellow.100'.
+        // Mapping auf semantisches Token aus theme.ts.
+        const base = cage.color.split('.')[0] as 'blue' | 'green' | 'pink' | 'yellow';
+        bgColor = `cage.${base}.100`;
       }
     } else if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue) {
-      bgColor = blackAndWhiteMode ? "gray.50" : "blue.50";
+      bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
 
-    let valueColor = isInitialValue ? "black" : (blackAndWhiteMode ? "gray.800" : "blue.700");
-    if (!valid && value !== 0) {
-      valueColor = blackAndWhiteMode ? "gray.800" : "red.500";
-    } else if (cageComplete && cage) {
-      valueColor = blackAndWhiteMode ? "gray.900" : "green.700";
-    }
+    const valueColor: string = isInitialValue
+      ? 'cell.given.text'
+      : (blackAndWhiteMode ? 'gray.300' : 'cell.user.text');
+    const errorColor: string = blackAndWhiteMode ? 'gray.200' : 'cell.error.text';
+    const successColor: string = blackAndWhiteMode ? 'gray.50' : 'status.success';
 
     const isSameValue = hasSameValue(row, col);
 
@@ -344,9 +346,12 @@ export const Board: React.FC<BoardProps> = ({
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
-        border={isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)"}
-        borderRight={col % 3 === 2 ? (isSelected ? "2px solid rgba(0,0,0,0.75)" : "2px solid rgba(0,0,0,0.4)") : (isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)")}
-        borderBottom={row % 3 === 2 ? (isSelected ? "2px solid rgba(0,0,0,0.75)" : "2px solid rgba(0,0,0,0.4)") : (isSelected ? "2px solid rgba(0,0,0,0.75)" : "1px solid rgba(0,0,0,0.2)")}
+        border={isSelected ? '2px solid' : '1px solid'}
+        borderColor={isSelected ? 'brand.primary' : 'surface.sunken'}
+        borderRightWidth={col % 3 === 2 ? '2px' : undefined}
+        borderBottomWidth={row % 3 === 2 ? '2px' : undefined}
+        borderRightColor={col % 3 === 2 ? 'surface.raised' : undefined}
+        borderBottomColor={row % 3 === 2 ? 'surface.raised' : undefined}
         bg={bgColor}
         onMouseDown={() => handleDragStart(row, col)}
         onMouseEnter={() => handleDragEnter(row, col)}
@@ -371,14 +376,14 @@ export const Board: React.FC<BoardProps> = ({
         }}
         onTouchEnd={handleDragEnd}
         cursor="pointer"
-        _hover={{ borderColor: "rgba(0,0,0,0.5)" }}
+        _hover={{ borderColor: 'brand.primary' }}
         boxShadow={boxShadow}
-        transition="all 0.3s ease"
+        transition="background-color 0.15s, border-color 0.15s"
         zIndex={isSelected ? 1 : 0}
         style={{
           animation: cellAnimation,
           boxShadow: elevation,
-          transform: isSelected && !isInitialValue ? "translateZ(1px)" : "none"
+          transform: isSelected && !isInitialValue ? 'translateZ(1px)' : 'none'
         }}
       >
         {cage && (
@@ -388,13 +393,14 @@ export const Board: React.FC<BoardProps> = ({
             left="3px"
             right="3px"
             bottom="3px"
-            border="1px dashed rgba(0,0,0,0.7)"
-            borderTop={hasTopSameCage ? "none" : undefined}
-            borderLeft={hasLeftSameCage ? "none" : undefined}
-            borderRight={hasRightSameCage ? "none" : undefined}
-            borderBottom={hasBottomSameCage ? "none" : undefined}
+            border="1px dashed"
+            borderColor={blackAndWhiteMode ? 'gray.600' : `cage.${(cage.color.split('.')[0])}.border`}
+            borderTop={hasTopSameCage ? 'none' : undefined}
+            borderLeft={hasLeftSameCage ? 'none' : undefined}
+            borderRight={hasRightSameCage ? 'none' : undefined}
+            borderBottom={hasBottomSameCage ? 'none' : undefined}
             pointerEvents="none"
-            transition="background-color 0.3s"
+            transition="border-color 0.3s"
           />
         )}
 
@@ -405,7 +411,7 @@ export const Board: React.FC<BoardProps> = ({
             left="2px"
             fontSize={sumFontSize}
             fontWeight="bold"
-            color={cageComplete ? "green.600" : "gray.700"}
+            color={cageComplete ? 'status.success' : 'text.primary'}
             zIndex="2"
             bg="rgba(255,255,255,0.7)"
             lineHeight="1"
@@ -423,7 +429,7 @@ export const Board: React.FC<BoardProps> = ({
           transform="translate(-50%, -50%)"
           fontSize={isSameValue ? `calc(${valueFontSize} * 0.85)` : valueFontSize}
           fontWeight={(!valid && value !== 0) || isSameValue ? "bold" : "normal"}
-          color={cageComplete ? "green.600" : (!valid && value !== 0) ? "red.500" : (isInitialValue ? "black" : "blue.700")}
+          color={cageComplete ? successColor : (!valid && value !== 0) ? errorColor : (isInitialValue ? 'cell.given.text' : 'cell.user.text')}
           userSelect="none"
           transition="color 0.3s, font-size 0.2s"
         >
