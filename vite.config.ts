@@ -49,10 +49,28 @@ export default defineConfig({
       // Vendor bleibt warm. Bei 561 KB Bundle ist das noch nicht zwingend, aber
       // billig genug zum Mitnehmen.
       output: {
-        manualChunks: {
-          'vendor.chakra': ['@chakra-ui/react', '@chakra-ui/icons', '@emotion/react', '@emotion/styled'],
-          'vendor.motion': ['framer-motion'],
-          'vendor.storage': ['localforage'],
+        // Manueller Chunk-Split. Cache-Granularität: ein App-Code-Update
+        // invalidiert nur das App-Bundle. Vendor bleibt im Browser-Cache.
+        //
+        // Vorher hatten wir react und chakra getrennt — das führte zu
+        // Zirkelimporten zwischen den Chunks, weil Chakra React nutzt und
+        // React (über jsx-runtime) Chakra-Komponenten referenziert.
+        // Symptom war "Cannot read properties of undefined (reading
+        // 'jsxs'/'ForwardRef')" beim Boot. Ein einziger vendor-Chunk
+        // für React + Chakra + framer-motion ist die robuste Lösung.
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('node_modules/react') ||
+              id.includes('node_modules/scheduler') ||
+              id.includes('node_modules/@chakra-ui') ||
+              id.includes('node_modules/@emotion') ||
+              id.includes('node_modules/framer-motion')) {
+            return 'vendor.ui';
+          }
+          if (id.includes('node_modules/localforage')) {
+            return 'vendor.storage';
+          }
+          return undefined;
         },
       },
     },

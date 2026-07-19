@@ -39,3 +39,5 @@ yarn-error.log*
 
 # Vite-Validator-Build-Artefakt
 /.validate-build/
+# Diagnostic scripts (nicht Teil der App)
+scripts/
