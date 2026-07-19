@@ -7,7 +7,7 @@ Wants=network-online.target
 Type=simple
 User=oliver
 WorkingDirectory=/home/oliver/killersudoku
-ExecStart=/usr/bin/python3 -m http.server 8084 --bind 0.0.0.0 --directory /home/oliver/killersudoku/build
+ExecStart=/usr/bin/python3 -m http.server 8083 --bind 0.0.0.0 --directory /home/oliver/killersudoku/build
 Restart=on-failure
 RestartSec=3
 
