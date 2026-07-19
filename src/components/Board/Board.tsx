@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
 
-import useGameState from '../../hooks/useGameState';
+import { useGameState } from '../../hooks/useGameState';
 import { useCellSelection } from '../../hooks/useCellSelection';
 import { useBoardResize } from '../../hooks/useBoardResize';
 import { useCellAnimation } from '../../hooks/useCellAnimation';

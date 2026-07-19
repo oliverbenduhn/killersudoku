@@ -1,6 +1,5 @@
 import localforage from 'localforage';
-
-const STORAGE_PREFIX = process.env.REACT_APP_STORAGE_PREFIX || 'killersudoku_';
+import { STORAGE_PREFIX } from '../config';
 const STATS_KEY = `${STORAGE_PREFIX}stats`;
 
 // Bugfix: Type-Safety für Schwierigkeitsstufen.
@@ -48,11 +47,13 @@ export const recordSolve = async (
   // Echte Solver brauchen mindestens eine Sekunde.
   const normalizedElapsed = Math.max(1, Math.floor(elapsedMs));
 
-  const previousBest = stats.bestTimeMsByDifficulty[difficultyKey];
+  const previousBest = stats.bestTimeMsByDifficulty[difficultyKey as Difficulty];
   const newBest =
     previousBest === undefined || previousBest > normalizedElapsed
       ? normalizedElapsed
       : previousBest;
+
+  const prevSolved = stats.solvedByDifficulty[difficultyKey as Difficulty] ?? 0;
 
   const updatedStats: GameStatistics = {
     ...stats,
@@ -60,7 +61,7 @@ export const recordSolve = async (
     totalTimeMs: stats.totalTimeMs + normalizedElapsed,
     solvedByDifficulty: {
       ...stats.solvedByDifficulty,
-      [difficultyKey]: (stats.solvedByDifficulty[difficultyKey] || 0) + 1
+      [difficultyKey]: prevSolved + 1
     },
     bestTimeMsByDifficulty: {
       ...stats.bestTimeMsByDifficulty,

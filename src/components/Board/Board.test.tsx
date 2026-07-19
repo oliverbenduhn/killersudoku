@@ -2,16 +2,17 @@ import React from 'react';
 import { fireEvent, screen } from '@testing-library/react';
 import { render } from '../../test-utils';
 import { Board } from './Board';
+import { GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
 
 // Mock useGameState
 jest.mock('../../hooks/useGameState', () => ({
-  __esModule__: true,
-  default: () => ({
+  __esModule: true,
+  useGameState: () => ({
     gameState: {
       cellValues: Array.from({ length: 9 }, () => Array(9).fill(0)),
       id: 'test-game',
-      levelId: 'test-level',
+      levelId: 'default',
       mistakesUsed: 0,
       hintsUsed: 0,
       gameOver: false,
@@ -27,8 +28,8 @@ jest.mock('../../hooks/useCellSelection', () => {
   const actual = jest.requireActual('../../hooks/useCellSelection');
   return {
     __esModule: true,
-    default: () => {
-      const hook = actual.default([]);
+    useCellSelection: () => {
+      const hook = actual.useCellSelection([]);
       return { ...hook };
     }
   };
@@ -36,12 +37,12 @@ jest.mock('../../hooks/useCellSelection', () => {
 
 jest.mock('../../hooks/useBoardResize', () => ({
   __esModule: true,
-  default: () => ({ cellSize: 50 })
+  useBoardResize: () => ({ cellSize: 50 })
 }));
 
 jest.mock('../../hooks/useCellAnimation', () => ({
   __esModule: true,
-  default: () => ({
+  useCellAnimation: () => ({
     lastEnteredCell: null,
     lastEnteredValue: 0,
     lastEnteredValid: true,
@@ -53,7 +54,7 @@ jest.mock('../../hooks/useCellAnimation', () => ({
 
 jest.mock('../../hooks/useHints', () => ({
   __esModule: true,
-  default: () => ({
+  useHints: () => ({
     showHints: false,
     possibleValues: [],
     toggleHints: jest.fn(),
@@ -63,7 +64,7 @@ jest.mock('../../hooks/useHints', () => ({
 
 jest.mock('../../hooks/useBoardGameLogic', () => ({
   __esModule: true,
-  default: () => ({
+  useBoardGameLogic: () => ({
     handleNumberSelect: jest.fn(),
     handleClear: jest.fn(),
     handleReset: jest.fn(),
@@ -81,16 +82,18 @@ jest.mock('../../services/gameLogicService', () => ({
 }));
 
 describe('Board Component', () => {
-  const mockLevelData = {
+  const emptyBoard: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  const mockLevelData: GameLevel = {
     levelNumber: 1,
     id: 'test-level',
-    initialValues: Array.from({ length: 9 }, () => Array(9).fill(0)),
+    initialValues: emptyBoard,
+    solution: emptyBoard.map((row) => [...row]),
     cages: [
       {
         id: 'cage-1',
         cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
         sum: 3,
-        color: 'rgba(255, 0, 0, 0.1)'
+        color: 'blue.100'
       }
     ]
   };

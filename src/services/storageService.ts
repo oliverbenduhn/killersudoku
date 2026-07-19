@@ -1,7 +1,7 @@
 import localforage from 'localforage';
+import { STORAGE_PREFIX, GAME_STATE_PREFIX } from '../config';
 
-const STORAGE_PREFIX = process.env.REACT_APP_STORAGE_PREFIX || 'killersudoku_';
-export const GAME_STATE_PREFIX = `${STORAGE_PREFIX}level-`;
+export { GAME_STATE_PREFIX };
 
 export const saveGameState = async (key: string, state: any) => {
   await localforage.setItem(STORAGE_PREFIX + key, state);

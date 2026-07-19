@@ -40,7 +40,7 @@ window.cancelAnimationFrame = jest.fn();
 
 // Set up customElements mock (used by some Chakra components)
 if (!window.customElements) {
-  window.customElements = {
+  (window as unknown as { customElements: unknown }).customElements = {
     define: jest.fn(),
     get: jest.fn(),
     whenDefined: jest.fn()
@@ -49,11 +49,16 @@ if (!window.customElements) {
 
 // Mock the Intersection Observer
 class IntersectionObserverMock {
-  observe() { return null; }
-  unobserve() { return null; }
-  disconnect() { return null; }
+  observe(): null { return null; }
+  unobserve(): null { return null; }
+  disconnect(): null { return null; }
+  takeRecords(): IntersectionObserverEntry[] { return []; }
+  root = null;
+  rootMargin = '';
+  thresholds: ReadonlyArray<number> = [];
 }
-window.IntersectionObserver = IntersectionObserverMock;
+(window as unknown as { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver =
+  IntersectionObserverMock as unknown as typeof IntersectionObserver;
 
 // Mock localforage with an in-memory store so tests can verify persistence
 // without hitting IndexedDB (which jsdom does not provide).

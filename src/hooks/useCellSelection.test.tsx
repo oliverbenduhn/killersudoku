@@ -1,5 +1,5 @@
-import React, { act } from 'react';
-import { renderHook } from '@testing-library/react';
+import React from 'react';
+import { act, renderHook } from '@testing-library/react';
 import { useCellSelection } from './useCellSelection';
 import { Cage } from '../types/gameTypes';
 

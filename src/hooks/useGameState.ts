@@ -61,12 +61,12 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                 if (levelData && levelData.initialValues) {
                   console.log('useGameState: Gefundene initialValues:', levelData.initialValues);
                   // Wenn Level-Daten gefunden wurden, verwende die initialValues
-                  const newGameState = {
+                  const newGameState: GameState = {
                     id: `game_${puzzleId}_${Date.now()}`,
                     cellValues: JSON.parse(JSON.stringify(levelData.initialValues)),
                     startTime: Date.now(),
                     elapsedTime: 0,
-                    difficulty: 'normal',
+                    difficulty: levelData.difficulty,
                     hintsUsed: 0,
                     mistakesUsed: 0,
                     gameOver: false,
@@ -102,12 +102,12 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     
     // Hilfsfunktion zum Erstellen eines leeren Spielstands
     const createEmptyGameState = () => {
-      const emptyState = {
+      const emptyState: GameState = {
         id: `game_${puzzleId}_${Date.now()}`,
         cellValues: createEmptyBoard(size),
         startTime: Date.now(),
         elapsedTime: 0,
-        difficulty: 'normal',
+        difficulty: undefined,
         hintsUsed: 0,
         mistakesUsed: 0,
         gameOver: false,
