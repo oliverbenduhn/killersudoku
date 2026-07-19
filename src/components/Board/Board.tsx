@@ -17,6 +17,8 @@ import {
 import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
 
 import { useGameState } from '../../hooks/useGameState';
+import { useStrategicHint } from '../../hooks/useStrategicHint';
+import type { HintTechnique } from '../../services/hintEngine';
 import { useCellSelection } from '../../hooks/useCellSelection';
 import { useBoardResize } from '../../hooks/useBoardResize';
 import { useCellAnimation } from '../../hooks/useCellAnimation';
@@ -78,6 +80,7 @@ export const Board: React.FC<BoardProps> = ({
 }) => {
   const toast = useToast();
   const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId, size);
+  const strategicHint = useStrategicHint();
   const [cages, setCages] = useState<Cage[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
   const solveRecordedRef = useRef<string | null>(null);
@@ -616,6 +619,51 @@ export const Board: React.FC<BoardProps> = ({
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
         >
+          <RippleButton
+            bg="purple.500"
+            color="white"
+            onClick={() => {
+              if (!gameState) return;
+              if (cages.length === 0) {
+                toast({ title: 'Hinweis nicht verfügbar', description: 'Level noch nicht geladen.', status: 'warning', duration: 2500, isClosable: true });
+                return;
+              }
+              const hint = strategicHint.requestHint(gameState.cellValues, cages);
+              if (!hint) {
+                toast({
+                  title: 'Kein einfacher Hinweis',
+                  description: 'Die Engine hat nichts gefunden — versuch eine andere Technik.',
+                  status: 'info',
+                  duration: 3000,
+                  isClosable: true
+                });
+                return;
+              }
+              const techLabels: Record<typeof hint.technique, string> = {
+                'naked-single-cage': 'Käfig-Naked Single',
+                'hidden-single-cage': 'Käfig-Hidden Single',
+                'naked-single-sudoku': 'Sudoku-Naked Single',
+              };
+              toast({
+                title: `${techLabels[hint.technique]} → ${hint.value}`,
+                description: hint.explanation,
+                status: 'info',
+                duration: 8000,
+                isClosable: true,
+                position: 'top',
+              });
+              // Markiere die Zelle visuell durch Selection, damit der
+              // User die Stelle sofort findet.
+              setSelectedCell(hint.cell);
+            }}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            _hover={{ bg: "purple.600" }}
+            _active={{ bg: "purple.700" }}
+            isDisabled={!gameState || isGameOver || cages.length === 0}
+          >
+            Tipp
+          </RippleButton>
           <RippleButton
             bg="teal.500"
             color="white"
