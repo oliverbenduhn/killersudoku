@@ -3,6 +3,7 @@
 // Quelle der Wahrheit: src/types/gameTypes.ts.
 
 import { Cage, CageColor, CAGE_COLORS, GameLevel, BOARD_SIZE } from '../types/gameTypes';
+import { countSolutions } from './killerSolver';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -21,7 +22,11 @@ export type ValidationErrorType =
   | 'INVALID_SOLUTION'
   | 'MISSING_INITIAL_VALUES'
   | 'INITIAL_VALUES_MISMATCH'
-  | 'ADJACENT_SAME_COLOR';
+  | 'ADJACENT_SAME_COLOR'
+  | 'DUPLICATE_VALUES_IN_CAGE'
+  | 'CAGE_SUM_SOLUTION_MISMATCH'
+  | 'NO_SOLUTION'
+  | 'MULTIPLE_SOLUTIONS';
 
 export interface ValidationError {
   levelId: string;
@@ -163,6 +168,22 @@ export function validateLevel(level: unknown): ValidationResult {
     }
   }
 
+  // 1.5 Käfig-Duplikate in der Lösung
+  for (const cage of cages) {
+    const values = cage.cells.map(c => solution[c.row][c.col]);
+    if (new Set(values).size !== values.length) {
+      errors.push({ levelId, errorType: 'DUPLICATE_VALUES_IN_CAGE', message: `Käfig ${cage.id}: Werte ${JSON.stringify(values)} enthalten Duplikate`, details: { cageId: cage.id, values } });
+    }
+  }
+
+  // 1.6 Käfig-Summen müssen mit der gespeicherten Lösung übereinstimmen
+  for (const cage of cages) {
+    const sum = cage.cells.reduce((s, c) => s + solution[c.row][c.col], 0);
+    if (sum !== cage.sum) {
+      errors.push({ levelId, errorType: 'CAGE_SUM_SOLUTION_MISMATCH', message: `Käfig ${cage.id}: Summe ${cage.sum} widerspricht Lösung (${sum})`, details: { cageId: cage.id, expected: cage.sum, actual: sum } });
+    }
+  }
+
   // 2. Käfig-Überlappung & Coverage
   const cellMap = new Map<string, string>();
   const overlapping: Array<{ row: number; col: number; cageIds: string[] }> = [];
@@ -237,6 +258,18 @@ export function validateLevel(level: unknown): ValidationResult {
   }
   if (colorConflicts.length > 0) {
     errors.push({ levelId, errorType: 'ADJACENT_SAME_COLOR', message: `${colorConflicts.length} benachbarte Käfig-Paare mit gleicher Farbe`, details: colorConflicts.slice(0, 10) });
+  }
+
+  // 6. Eindeutigkeit: Das Rätsel (Käfige + Vorgaben) muss genau eine Lösung
+  // haben. Nur prüfen, wenn alles Vorherige sauber ist — der Solver setzt
+  // vollständige, überlappungsfreie Käfig-Abdeckung voraus.
+  if (errors.length === 0) {
+    const n = countSolutions(cages, initialValues, 2);
+    if (n === 0) {
+      errors.push({ levelId, errorType: 'NO_SOLUTION', message: 'Rätsel hat keine Lösung' });
+    } else if (n > 1) {
+      errors.push({ levelId, errorType: 'MULTIPLE_SOLUTIONS', message: 'Rätsel hat mehr als eine Lösung — Eindeutigkeit verletzt' });
+    }
   }
 
   return { levelId, valid: errors.length === 0, errors };

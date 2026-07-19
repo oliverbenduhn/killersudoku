@@ -65,6 +65,58 @@ describe('levelValidator — kanonisches Schema', () => {
       expect(r.errors.map(e => e.errorType)).toContain('INVALID_CAGE_SUM');
     });
 
+    test('lehnt Käfig-Summe ab, die der gespeicherten Lösung widerspricht', () => {
+      const solution = makeBaseSudoku();
+      const palette = ['blue.100', 'green.100', 'pink.100', 'yellow.100'] as const;
+      // Einzel-Käfige überall, außer (0,0)+(0,1) als Zweier-Käfig mit
+      // möglicher, aber zur Lösung (1+2=3) widersprüchlicher Summe 4.
+      const cages = solution.flatMap((row, r) => row.map((_, c) => ({
+        id: `c-${r}-${c}`,
+        cells: [{ row: r, col: c }],
+        sum: solution[r][c],
+        color: palette[(r + c) % 4],
+      }))).filter((cage) => cage.id !== 'c-0-0' && cage.id !== 'c-0-1');
+      cages.push({
+        id: 'c-wrong-sum',
+        cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+        sum: 4,
+        color: 'blue.100',
+      });
+      const broken = {
+        id: 'sum-vs-solution',
+        levelNumber: 1,
+        cages,
+        initialValues: solution.map((row) => [...row]),
+        solution
+      };
+      const r = validateLevel(broken);
+      expect(r.valid).toBe(false);
+      expect(r.errors.map(e => e.errorType)).toContain('CAGE_SUM_SOLUTION_MISMATCH');
+    });
+
+    test('lehnt Level mit mehreren Lösungen ab (MULTIPLE_SOLUTIONS)', () => {
+      const solution = makeBaseSudoku();
+      const palette = ['blue.100', 'green.100', 'pink.100', 'yellow.100'] as const;
+      // Jede Zeile als 9er-Käfig mit Summe 45: strukturell valide, aber
+      // hochgradig mehrdeutig (jede gültige Sudoku-Lösung passt).
+      const cages = solution.map((_, r) => ({
+        id: `row-${r}`,
+        cells: Array.from({ length: 9 }, (_, c) => ({ row: r, col: c })),
+        sum: 45,
+        color: palette[r % 4],
+      }));
+      const ambiguous = {
+        id: 'ambiguous',
+        levelNumber: 1,
+        cages,
+        initialValues: solution.map((row) => row.map(() => 0)),
+        solution
+      };
+      const r = validateLevel(ambiguous);
+      expect(r.valid).toBe(false);
+      expect(r.errors.map(e => e.errorType)).toContain('MULTIPLE_SOLUTIONS');
+    });
+
     test('lehnt Käfig-Farbe außerhalb der Vier-Farben-Palette ab', () => {
       const solution = makeBaseSudoku();
       const broken = {
