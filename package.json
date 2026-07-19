@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "serve": "python3 -m http.server 8084 --bind 0.0.0.0 --directory build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "validate": "npm run typecheck && npm run lint:levels",
