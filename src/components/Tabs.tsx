@@ -5,6 +5,7 @@ import { Box, Heading, Text, VStack, Link, Button, useColorMode, SimpleGrid, Sta
 import { GameStatistics } from '../services/statisticsService';
 import { formatDuration } from '../utils/formatDuration';
 import LevelSelector from './LevelSelector/LevelSelector';
+import { Difficulty } from '../types/gameTypes';
 
 interface TabPanelProps {
   transitionDirection: 'left' | 'right' | null;
@@ -19,12 +20,14 @@ interface HomeTabProps {
   error: string | null;
   blackAndWhiteMode: boolean;
   transitionDirection: 'left' | 'right' | null;
+  /** Überschreibt die Storage-Id (z. B. für generierte Zufallslevel). */
+  puzzleId?: string;
 }
 
 import { Board } from './Board/Board';
 import FadeInView from './common/FadeInView';
 
-export function HomeTab({ currentLevel, levelData, isLoading, error, blackAndWhiteMode, transitionDirection }: HomeTabProps) {
+export function HomeTab({ currentLevel, levelData, isLoading, error, blackAndWhiteMode, transitionDirection, puzzleId }: HomeTabProps) {
   return (
     <FadeInView
       direction={transitionDirection === 'left' ? 'left' : 'right'}
@@ -39,7 +42,7 @@ export function HomeTab({ currentLevel, levelData, isLoading, error, blackAndWhi
         boxShadow="sm"
       >
         <Board
-          puzzleId={`level-${currentLevel}`}
+          puzzleId={puzzleId ?? `level-${currentLevel}`}
           levelData={levelData}
           isLoading={isLoading}
           error={error}
@@ -80,11 +83,40 @@ export function InfoTab({ transitionDirection }: TabPanelProps) {
 interface LevelsTabProps extends TabPanelProps {
   currentLevel: number;
   onLevelChange: (level: number) => void;
+  onGenerateLevel: (difficulty: Exclude<Difficulty, 'unknown'>) => void;
 }
 
-export function LevelsTab({ currentLevel, onLevelChange, transitionDirection }: LevelsTabProps) {
+const GENERATOR_DIFFICULTIES: Array<{ key: Exclude<Difficulty, 'unknown'>; label: string; color: string }> = [
+  { key: 'easy', label: 'Einfach', color: 'green' },
+  { key: 'medium', label: 'Mittel', color: 'blue' },
+  { key: 'hard', label: 'Schwer', color: 'orange' },
+  { key: 'expert', label: 'Experte', color: 'red' },
+];
+
+export function LevelsTab({ currentLevel, onLevelChange, onGenerateLevel, transitionDirection }: LevelsTabProps) {
   return (
     <FadeInView direction={transitionDirection === 'left' ? 'left' : 'right'} duration={300} key="levels-tab">
+      <Box bg="surface.raised" p={5} borderRadius="xl" boxShadow="sm" mb={4}>
+        <Heading as="h2" size="lg" mb={2} color="text.primary">
+          Zufallslevel
+        </Heading>
+        <Text fontSize="sm" color="text.secondary" mb={3}>
+          Erzeugt ein frisches Rätsel mit garantiert eindeutiger Lösung.
+        </Text>
+        <SimpleGrid columns={[2, 4]} spacing={3}>
+          {GENERATOR_DIFFICULTIES.map(({ key, label, color }) => (
+            <Button
+              key={key}
+              aria-label={`Zufallslevel ${label}`}
+              colorScheme={color}
+              variant="outline"
+              onClick={() => onGenerateLevel(key)}
+            >
+              {label}
+            </Button>
+          ))}
+        </SimpleGrid>
+      </Box>
       <Box bg="surface.raised" p={5} borderRadius="xl" boxShadow="sm">
         <Heading as="h2" size="lg" mb={4} color="text.primary">
           Level-Auswahl

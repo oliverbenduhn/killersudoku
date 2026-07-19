@@ -30,9 +30,10 @@ import { TutorialOverlay } from './components/common/TutorialOverlay';
 import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
 import { loadLevelByNumber } from './services/levelService';
+import { generateLevel } from './services/puzzleGeneratorService';
 import { clearAllGameStates } from './services/storageService';
 import { GameStatistics, loadStatistics } from './services/statisticsService';
-import { GameLevel } from './types/gameTypes';
+import { Difficulty, GameLevel } from './types/gameTypes';
 
 const TAB_ORDER = ['home', 'levels', 'stats', 'info', 'settings'] as const;
 type TabName = typeof TAB_ORDER[number];
@@ -44,6 +45,8 @@ function calcTransition(newTab: TabName, currentTab: TabName): 'left' | 'right' 
 function App() {
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
+  // Generiertes Zufallslevel; hat Vorrang vor dem geladenen Standard-Level.
+  const [generatedLevel, setGeneratedLevel] = useState<GameLevel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('home');
@@ -101,6 +104,28 @@ function App() {
     if (next) handleTabChange(next);
   };
 
+  const handleSelectLevel = (level: number) => {
+    setGeneratedLevel(null);
+    setCurrentLevel(level);
+  };
+
+  const handleGenerateLevel = (difficulty: Exclude<Difficulty, 'unknown'>) => {
+    handleTabChange('home');
+    setIsLoading(true);
+    // setTimeout, damit der Lade-Spinner rendert, bevor die (synchrone)
+    // Generierung den Main-Thread beansprucht (Expert: einige Sekunden).
+    setTimeout(() => {
+      try {
+        setGeneratedLevel(generateLevel({ difficulty }));
+      } catch (err) {
+        console.error('Fehler beim Generieren des Levels:', err);
+        toast({ title: 'Fehler', description: 'Zufallslevel konnte nicht erzeugt werden.', status: 'error', duration: 3000, isClosable: true });
+      } finally {
+        setIsLoading(false);
+      }
+    }, 50);
+  };
+
   const handleResetAllLevels = async () => {
     try {
       await clearAllGameStates();
@@ -123,7 +148,7 @@ function App() {
             </Heading>
             {activeTab === 'home' && (
               <Flex align="center" gap={2}>
-                <LevelSelector currentLevel={currentLevel} onLevelChange={setCurrentLevel} />
+                <LevelSelector currentLevel={currentLevel} onLevelChange={handleSelectLevel} />
               </Flex>
             )}
           </Flex>
@@ -142,7 +167,8 @@ function App() {
           {activeTab === 'home' && (
             <HomeTab
               currentLevel={currentLevel}
-              levelData={levelData}
+              levelData={generatedLevel ?? levelData}
+              puzzleId={generatedLevel ? `generated-${generatedLevel.id}` : undefined}
               isLoading={isLoading}
               error={error}
               blackAndWhiteMode={blackAndWhiteMode}
@@ -152,7 +178,8 @@ function App() {
           {activeTab === 'levels' && (
             <LevelsTab
               currentLevel={currentLevel}
-              onLevelChange={(l) => { setCurrentLevel(l); handleTabChange('home'); }}
+              onLevelChange={(l) => { handleSelectLevel(l); handleTabChange('home'); }}
+              onGenerateLevel={handleGenerateLevel}
               transitionDirection={tabTransition}
             />
           )}

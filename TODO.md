@@ -42,7 +42,7 @@
 1.  [x] Hebe ungültige Einträge hervor.
 2.  [x] Schlage mögliche Werte für die ausgewählte Zelle vor (F5).
 3.  [x] Enthülle einen korrekten Zellenwert (begrenzte Nutzung).
-4.  [ ] Gib strategische Tipps basierend auf dem aktuellen Board-Status.
+4.  [x] Gib strategische Tipps basierend auf dem aktuellen Board-Status (hintEngine: Naked/Hidden Singles, 45er-Regel Innies/Outies).
 
 ## Game State Management (F6)
 
@@ -60,10 +60,11 @@
 
 ## Puzzle Generation (F8)
 
-1.  [ ] Generiere zufällige Rätsel mit eindeutigen Lösungen (nur statische Levels vorhanden).
-2.  [ ] Steuere den Schwierigkeitsgrad der generierten Rätsel.
-3.  [ ] Stelle angemessene Käfiggrößen und -konfigurationen sicher.
+1.  [x] Generiere zufällige Rätsel mit eindeutigen Lösungen (puzzleGeneratorService.generateLevel, Eindeutigkeit via killerSolver).
+2.  [x] Steuere den Schwierigkeitsgrad der generierten Rätsel (easy/medium/hard/expert-Profile).
+3.  [x] Stelle angemessene Käfiggrößen und -konfigurationen sicher (Größen-Pools pro Schwierigkeit, No-Duplicate-in-Cage).
 4.  [ ] Biete die Möglichkeit, benutzerdefinierte Rätsel einzugeben.
+5.  [x] UI-Anbindung: Zufallslevel aus dem Levels-Tab heraus starten (vier Schwierigkeits-Buttons).
 
 ## Offline Functionality (F9)
 
@@ -155,7 +156,7 @@
 5.  [x] Hinweise-System (AC5, ohne strategische Tipps).
 6.  [x] Auto-Save und Resume (AC6).
 7.  [x] Responsives Layout (AC7, Basis).
-8.  [ ] Puzzle-Generator mit eindeutigen Lösungen (AC8, statische Levels).
+8.  [x] Puzzle-Generator mit eindeutigen Lösungen (AC8; Service-Ebene, alle 100 statischen Levels eindeutig verifiziert).
 9.  [x] PWA-Offline-Fähigkeit (AC9).
 10. [ ] Interaktives Tutorial (AC10).
 11. [x] Spielstatistiken (AC11).
