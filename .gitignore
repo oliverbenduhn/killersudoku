@@ -36,3 +36,6 @@ yarn-error.log*
 # Logs
 /logs/*
 !/logs/.gitkeep
+
+# Vite-Validator-Build-Artefakt
+/.validate-build/
