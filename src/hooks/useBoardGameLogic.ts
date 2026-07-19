@@ -96,7 +96,7 @@ export const useBoardGameLogic = ({
         : previousMistakes;
       const gameOverNow = updatedMistakes >= maxMistakes;
 
-      updateGameState({
+      applyMove({
         cellValues: newValues,
         mistakesUsed: updatedMistakes,
         gameOver: gameOverNow

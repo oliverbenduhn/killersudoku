@@ -30,43 +30,30 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
   const undo = useUndoRedo<GameState>();
 
   useEffect(() => {
-    // Aktualisiere die aktuelle puzzleId Referenz
     currentPuzzleIdRef.current = puzzleId;
-    console.log('useGameState: Lade Spielstand für puzzleId:', puzzleId);
-    
+
     const loadState = async () => {
       try {
         setIsLoading(true);
-        
-        // Warte auf die Fertigstellung der letzten Speicheroperation, bevor ein neuer Zustand geladen wird
+
         await saveOperationRef.current;
-        
+
         const savedState = await loadGameState(puzzleId);
-        console.log('useGameState: Geladener Spielstand:', savedState);
-        
+
         if (savedState) {
-          // Nur setzen, wenn die puzzleId noch aktuell ist (um Race-Conditions zu vermeiden)
           if (currentPuzzleIdRef.current === puzzleId) {
-            console.log('useGameState: Setze vorhandenen Spielstand');
             setGameState(savedState as GameState);
           }
         } else {
-          // Initialisiere einen neuen Spielstand, versuche Level-Daten zu laden
           if (currentPuzzleIdRef.current === puzzleId) {
-            // Versuche die Level-Nummer aus der puzzleId zu extrahieren (Format: "level-X")
             const levelMatch = puzzleId.match(/level-(\d+)/);
-            console.log('useGameState: Level-Match:', levelMatch);
-            
+
             if (levelMatch && levelMatch[1]) {
               try {
                 const levelNumber = parseInt(levelMatch[1], 10);
-                console.log('useGameState: Lade Level:', levelNumber);
                 const levelData = await loadLevelByNumber(levelNumber);
-                console.log('useGameState: Geladene Level-Daten:', levelData);
-                
+
                 if (levelData && levelData.initialValues) {
-                  console.log('useGameState: Gefundene initialValues:', levelData.initialValues);
-                  // Wenn Level-Daten gefunden wurden, verwende die initialValues
                   const newGameState: GameState = {
                     id: `game_${puzzleId}_${Date.now()}`,
                     cellValues: JSON.parse(JSON.stringify(levelData.initialValues)),
@@ -78,10 +65,8 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                     gameOver: false,
                     levelId: puzzleId
                   };
-                  console.log('useGameState: Neuer Spielstand mit initialValues:', newGameState);
                   setGameState(newGameState);
                 } else {
-                  console.log('useGameState: Keine initialValues gefunden, erstelle leeren Spielstand');
                   createEmptyGameState();
                 }
               } catch (error) {
@@ -89,7 +74,6 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                 createEmptyGameState();
               }
             } else {
-              console.log('useGameState: Kein Level-Match, erstelle leeren Spielstand');
               createEmptyGameState();
             }
           }
@@ -105,8 +89,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         }
       }
     };
-    
-    // Hilfsfunktion zum Erstellen eines leeren Spielstands
+
     const createEmptyGameState = () => {
       const emptyState: GameState = {
         id: `game_${puzzleId}_${Date.now()}`,
@@ -119,14 +102,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         gameOver: false,
         levelId: puzzleId
       };
-      console.log('useGameState: Erstelle leeren Spielstand:', emptyState);
       setGameState(emptyState);
     };
 
     loadState();
-    // Level-Wechsel setzt die History-Stacks zurück. Sonst könnte der
-    // User auf Level 5 zurück und auf Level 3 vorwärts — das wäre
-    // semantisch kaputt.
     undo.reset();
   }, [puzzleId]);
 
@@ -186,7 +165,6 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
       ...newState
     };
 
-    console.log('useGameState: Aktualisiere Spielstand:', updatedState);
     setGameState(updatedState);
 
     // Bugfix: Sofort persistieren statt auf den 15s-Timer zu warten.

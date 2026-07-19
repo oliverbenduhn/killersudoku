@@ -84,7 +84,6 @@ export const Board: React.FC<BoardProps> = ({
   const [cages, setCages] = useState<Cage[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
   const solveRecordedRef = useRef<string | null>(null);
-  const lastInitializedLevelIdRef = useRef<string | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const boardFocusRef = useRef<HTMLDivElement | null>(null);
 
@@ -120,7 +119,14 @@ export const Board: React.FC<BoardProps> = ({
   const animation = useCellAnimation();
 
   // Hints
-  const { showHints, possibleValues, toggleHints } = useHints();
+  const { showHints, possibleValues, toggleHints, refreshHints } = useHints();
+
+  // Hint-Overlay aktualisieren bei Zellwechsel
+  useEffect(() => {
+    if (gameState && selectedCell && cages.length > 0) {
+      refreshHints(selectedCell, gameState, cages, size);
+    }
+  }, [selectedCell, gameState, cages, size, refreshHints]);
 
   // Toast-Helfer
   const showError = useCallback(
@@ -164,7 +170,7 @@ export const Board: React.FC<BoardProps> = ({
     resetSelection: clearSelection,
     animation,
     onGameOver: () => {
-      /* Toast bereits in Hook gezeigt */
+      /* Toast zeigt bereits den Fehler an; das Banner wird via gameState.gameOver gerendert */
     },
     onSolveRecorded: handleSolveRecorded,
     showError
@@ -185,19 +191,7 @@ export const Board: React.FC<BoardProps> = ({
   useEffect(() => {
     if (levelData && levelData.cages) {
       setCages(levelData.cages);
-
-      if (
-        levelData.initialValues &&
-        gameState &&
-        lastInitializedLevelIdRef.current !== puzzleId
-      ) {
-        lastInitializedLevelIdRef.current = puzzleId;
-        const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
-        updateGameState({
-          cellValues: initialValuesCopy,
-          levelId: puzzleId
-        });
-      }
+      setHasError(false);
     } else if (!levelData && !externalLoading) {
       setHasError(true);
     } else {
@@ -534,6 +528,7 @@ export const Board: React.FC<BoardProps> = ({
           boardFocusRef.current = el;
         }}
         data-board-root="true"
+        role="grid"
         p={[1, 2, 4]}
         display="flex"
         justifyContent="center"

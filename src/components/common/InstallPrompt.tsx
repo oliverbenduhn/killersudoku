@@ -12,11 +12,13 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   useEffect(() => {
-    // Speichere das PWA-Installationsereignis für später
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      // Bereits abgelehnt? Dann nicht mehr nerven.
+      const dismissed = localStorage.getItem('installPromptDismissed');
+      if (dismissed && parseInt(dismissed, 10) > Date.now()) return;
       setDeferredPrompt(e);
-      onOpen(); // Zeige die Installationsaufforderung an
+      onOpen();
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -74,7 +76,7 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
         bottom="70px" // Platz für die Bottom Navigation lassen
         left="0"
         right="0"
-        bg="android.primary"
+        bg="brand.primary"
         boxShadow="0px -2px 10px rgba(0,0,0,0.2)"
         p={3}
         color="white"

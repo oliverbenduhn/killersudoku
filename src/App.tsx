@@ -138,7 +138,7 @@ function App() {
         minH="calc(100vh - 56px)"
         bg="surface.canvas"
       >
-        <Container maxW={containerMaxWidth} px={3} py={4} mx="auto" w="100%">
+        <Container maxW={containerMaxWidth} px={3} py={4} pb="64px" mx="auto" w="100%">
           {activeTab === 'home' && (
             <HomeTab
               currentLevel={currentLevel}

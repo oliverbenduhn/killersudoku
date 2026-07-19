@@ -6,7 +6,6 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
-  useToast,
   Badge,
   Text,
   useBreakpointValue,
@@ -29,7 +28,6 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({
   fullWidth = false
 }) => {
   const [inputValue, setInputValue] = useState<string>(currentLevel.toString());
-  const toast = useToast();
   
   // Responsive Anpassungen
   const showLevelText = useBreakpointValue({ base: true, md: true });
@@ -42,34 +40,19 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({
 
   const handleInputChange = (valueAsString: string) => {
     setInputValue(valueAsString);
-    const level = parseInt(valueAsString, 10);
+  };
+
+  const handleInputSubmit = () => {
+    const level = parseInt(inputValue, 10);
     if (!isNaN(level) && level >= 1 && level <= TOTAL_LEVELS) {
       onLevelChange(level);
+    } else {
+      setInputValue(currentLevel.toString());
     }
   };
 
   const handleInputBlur = () => {
-    const level = parseInt(inputValue, 10);
-    if (isNaN(level) || level < 1 || level > TOTAL_LEVELS) {
-      toast({
-        title: 'Ungültige Eingabe',
-        description: `Bitte geben Sie eine Zahl zwischen 1 und ${TOTAL_LEVELS} ein.`,
-        status: 'error',
-        duration: 3000,
-        isClosable: true,
-        position: "bottom",
-        variant: "subtle",
-        containerStyle: {
-          marginBottom: '60px',
-          maxWidth: '90%',
-          bg: 'rgba(0,0,0,0.9)',
-          color: 'white',
-          borderRadius: '4px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)'
-        }
-      });
-      setInputValue(currentLevel.toString());
-    }
+    handleInputSubmit();
   };
 
   // Berechnet die ungefähre Schwierigkeit basierend auf der Level-Nummer
@@ -109,14 +92,14 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({
             <RippleButton
               key={level}
               onClick={() => onLevelChange(level)}
-              bg={level === currentLevel ? "#2196F3" : "white"}
-              color={level === currentLevel ? "white" : "gray.700"}
+              bg={level === currentLevel ? 'brand.primary' : 'surface.raised'}
+              color={level === currentLevel ? 'brand.onPrimary' : 'text.primary'}
               size="md"
               height="48px"
               borderRadius="md"
               boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
               _hover={{ 
-                bg: level === currentLevel ? "#1976D2" : "gray.100",
+                bg: level === currentLevel ? 'brand.primary.hover' : 'surface.sunken',
                 transform: "translateY(-2px)",
                 boxShadow: "0 4px 6px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.12)"
               }}
@@ -165,6 +148,7 @@ const LevelSelector: React.FC<LevelSelectorProps> = ({
         width={inputWidth}
         size="sm"
         onBlur={handleInputBlur}
+        onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter') handleInputSubmit(); }}
       >
         <NumberInputField
           textAlign="center"

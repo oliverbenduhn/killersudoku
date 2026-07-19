@@ -50,7 +50,7 @@ export interface GameState {
   elapsedTime?: number;
 }
 
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'unknown';
 
 /**
  * Level-Datei-Schema (public/assets/levels/level_<n>.json).

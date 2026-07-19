@@ -1,9 +1,7 @@
 import localforage from 'localforage';
 import { STORAGE_PREFIX } from '../config';
+import type { Difficulty } from '../types/gameTypes';
 const STATS_KEY = `${STORAGE_PREFIX}stats`;
-
-// Bugfix: Type-Safety für Schwierigkeitsstufen.
-export type Difficulty = 'easy' | 'medium' | 'hard' | 'expert' | 'unknown';
 
 export interface GameStatistics {
   totalSolved: number;
