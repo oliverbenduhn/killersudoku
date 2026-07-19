@@ -1,0 +1,20 @@
+[Unit]
+Description=Killer Sudoku PWA (static build)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=oliver
+WorkingDirectory=/home/oliver/killersudoku
+ExecStart=/usr/bin/python3 -m http.server 8084 --bind 0.0.0.0 --directory /home/oliver/killersudoku/build
+Restart=on-failure
+RestartSec=3
+
+# PWA liest nur build/ aus, schreibt nirgends hin.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target
