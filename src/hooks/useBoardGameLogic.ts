@@ -15,6 +15,8 @@ export interface UseBoardGameLogicOptions {
   maxMistakes: number;
   isGameOver: boolean;
   updateGameState: (newState: Partial<GameState>) => Promise<void>;
+  applyMove: (newState: Partial<GameState>) => Promise<void>;
+  clearHistory: () => void;
   resetSelection: () => void;
   animation: UseCellAnimationResult;
   onGameOver: () => void;
@@ -45,6 +47,8 @@ export const useBoardGameLogic = ({
   maxMistakes,
   isGameOver,
   updateGameState,
+  applyMove,
+  clearHistory,
   resetSelection,
   animation,
   onGameOver,
@@ -133,8 +137,8 @@ export const useBoardGameLogic = ({
       }
     });
 
-    updateGameState({ cellValues: newValues });
-  }, [gameState, levelData, selectedCells, isGameOver, updateGameState, showError]);
+    applyMove({ cellValues: newValues });
+  }, [gameState, levelData, selectedCells, isGameOver, applyMove, showError]);
 
   const handleReset = useCallback(() => {
     if (!gameState || !levelData) return;
@@ -154,7 +158,10 @@ export const useBoardGameLogic = ({
     resetSelection();
     animation.resetAnimation();
     onSolveRecorded(''); // solveRecordedRef zurücksetzen
-  }, [gameState, levelData, updateGameState, resetSelection, animation, onSolveRecorded]);
+    clearHistory(); // Reset verwirft die Undo-History, sonst könnte
+                    // der User nach Reset auf „Undo" drücken und wäre
+                    // wieder vor dem Reset.
+  }, [gameState, levelData, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory]);
 
   const handleRevealHint = useCallback(() => {
     if (!gameState || !levelData) return;
@@ -240,7 +247,7 @@ export const useBoardGameLogic = ({
     const newValues = gameState.cellValues.map(row => [...row]);
     newValues[target.row][target.col] = correctValue;
 
-    updateGameState({
+    applyMove({
       cellValues: newValues,
       hintsUsed: hintsUsed + 1
     });
@@ -254,7 +261,7 @@ export const useBoardGameLogic = ({
       size
     );
     animation.triggerAnimation(target, correctValue, isValid);
-  }, [gameState, levelData, selectedCells, cages, size, maxHints, isGameOver, updateGameState, animation, showError]);
+  }, [gameState, levelData, selectedCells, cages, size, maxHints, isGameOver, applyMove, animation, showError]);
 
   const isCageComplete = useCallback(
     (cage: Cage): boolean => {

@@ -17,7 +17,7 @@ describe('useStrategicHint', () => {
 
   test('requestHint ohne aktives Brett → null', () => {
     const { result } = renderHook(() => useStrategicHint());
-    let returned: ReturnType<typeof result.current.requestHint> = undefined;
+    let returned: ReturnType<typeof result.current.requestHint> = null;
     act(() => {
       returned = result.current.requestHint(emptyBoard(), []);
     });
@@ -37,7 +37,7 @@ describe('useStrategicHint', () => {
       color: 'blue.100',
     }];
 
-    let returned: ReturnType<typeof result.current.requestHint> = undefined;
+    let returned: ReturnType<typeof result.current.requestHint> = null;
     act(() => {
       returned = result.current.requestHint(cellValues, cages);
     });

@@ -79,7 +79,7 @@ export const Board: React.FC<BoardProps> = ({
   blackAndWhiteMode = false
 }) => {
   const toast = useToast();
-  const { gameState, isLoading: stateLoading, updateGameState } = useGameState(puzzleId, size);
+  const { gameState, isLoading: stateLoading, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size);
   const strategicHint = useStrategicHint();
   const [cages, setCages] = useState<Cage[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
@@ -159,6 +159,8 @@ export const Board: React.FC<BoardProps> = ({
     maxMistakes: MAX_MISTAKES,
     isGameOver: (gameState?.mistakesUsed || 0) >= MAX_MISTAKES,
     updateGameState,
+    applyMove,
+    clearHistory,
     resetSelection: clearSelection,
     animation,
     onGameOver: () => {
@@ -686,6 +688,32 @@ export const Board: React.FC<BoardProps> = ({
             _active={{ bg: "#1565C0" }}
           >
             <RepeatIcon mr={2} /> Reset
+          </RippleButton>
+          <RippleButton
+            bg="gray.500"
+            color="white"
+            onClick={() => { void undo(); }}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            _hover={{ bg: "gray.600" }}
+            _active={{ bg: "gray.700" }}
+            isDisabled={!gameState || isGameOver || !canUndo}
+            aria-label="Rückgängig"
+          >
+            ↶ Undo
+          </RippleButton>
+          <RippleButton
+            bg="gray.500"
+            color="white"
+            onClick={() => { void redo(); }}
+            borderRadius="md"
+            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
+            _hover={{ bg: "gray.600" }}
+            _active={{ bg: "gray.700" }}
+            isDisabled={!gameState || isGameOver || !canRedo}
+            aria-label="Wiederherstellen"
+          >
+            ↷ Redo
           </RippleButton>
         </Stack>
       </Box>

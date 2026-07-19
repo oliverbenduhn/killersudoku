@@ -3,6 +3,7 @@ import { saveGameState, loadGameState } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
 import { createEmptyBoard } from '../services/puzzleGeneratorService';
+import { useUndoRedo } from './useUndoRedo';
 
 // Lokale Erweiterung des GameState-Interfaces mit zusätzlichen Eigenschaften für den Hook
 interface GameState extends GlobalGameState {
@@ -22,6 +23,11 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
   const currentPuzzleIdRef = useRef<string>(puzzleId);
   const gameStateRef = useRef<GameState | null>(null);
   const lastAutoSaveRef = useRef<number>(0);
+
+  // Undo/Redo über getrennten Mini-Hook. Stacks leben nur im RAM — bei
+  // Reload ist die History leer (acceptable: Auto-Save speichert den
+  // aktuellen Stand, nicht den Stack).
+  const undo = useUndoRedo<GameState>();
 
   useEffect(() => {
     // Aktualisiere die aktuelle puzzleId Referenz
@@ -118,6 +124,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     };
 
     loadState();
+    // Level-Wechsel setzt die History-Stacks zurück. Sonst könnte der
+    // User auf Level 5 zurück und auf Level 3 vorwärts — das wäre
+    // semantisch kaputt.
+    undo.reset();
   }, [puzzleId]);
 
   useEffect(() => {
@@ -199,10 +209,75 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     return saveOperation;
   };
 
+  /**
+   * Wendet einen User-Move an UND macht vorher einen Snapshot in die
+   * Undo-History. Aufrufer, die echte Brett-Mutationen sind
+   * (Zahleneingabe, Hinweis-Reveal), MÜSSEN dies statt updateGameState
+   * nutzen. Aufrufer, die nur Metadaten ändern (Timer-Tick), bleiben bei
+   * updateGameState.
+   */
+  const applyMove = async (newState: Partial<GameState>) => {
+    if (!gameState) return;
+    // Snapshot vor der Mutation. Wenn gameStateRef.current veraltet ist
+    // (React-StrictMode-Doppeleffekt), nutzen wir den State-Snapshot aus
+    // gameStateRef als Fallback.
+    const snapshotSource = gameStateRef.current ?? gameState;
+    undo.commit(snapshotSource);
+    await updateGameState(newState);
+  };
+
+  /**
+   * Macht den letzten Move rückgängig. Setzt den GameState auf den
+   * vorherigen Snapshot zurück, persistiert, leert Redo-Logik intern.
+   */
+  const performUndo = async () => {
+    const previous = undo.undo();
+    if (!previous) return;
+    setGameState(previous);
+    const saveOperation = (async () => {
+      try {
+        const targetPuzzleId = currentPuzzleIdRef.current;
+        await saveOperationRef.current;
+        if (targetPuzzleId === currentPuzzleIdRef.current) {
+          await saveGameState(targetPuzzleId, previous);
+        }
+      } catch (error) {
+        console.error('Fehler beim Speichern nach Undo:', error);
+      }
+    })();
+    saveOperationRef.current = saveOperation;
+    lastAutoSaveRef.current = Date.now();
+  };
+
+  const performRedo = async () => {
+    const next = undo.redo();
+    if (!next) return;
+    setGameState(next);
+    const saveOperation = (async () => {
+      try {
+        const targetPuzzleId = currentPuzzleIdRef.current;
+        await saveOperationRef.current;
+        if (targetPuzzleId === currentPuzzleIdRef.current) {
+          await saveGameState(targetPuzzleId, next);
+        }
+      } catch (error) {
+        console.error('Fehler beim Speichern nach Redo:', error);
+      }
+    })();
+    saveOperationRef.current = saveOperation;
+    lastAutoSaveRef.current = Date.now();
+  };
+
   return {
     gameState,
     isLoading,
-    updateGameState
+    updateGameState,
+    applyMove,
+    undo: performUndo,
+    redo: performRedo,
+    canUndo: undo.canUndo,
+    canRedo: undo.canRedo,
+    clearHistory: undo.reset,
   };
 };
 
