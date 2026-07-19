@@ -9,54 +9,44 @@ interface NumberPadProps {
   remainingDigits?: { [key: number]: number };
 }
 
-export const NumberPad: React.FC<NumberPadProps> = ({ 
-  onNumberSelect, 
+// Mindest-Touch-Target 44px (WCAG 2.5.5 / Apple HIG). NumberPad ist die
+// primäre Eingabe auf Mobile — Buttons müssen sicher tippen lassen.
+const MIN_TOUCH = '44px';
+
+export const NumberPad: React.FC<NumberPadProps> = ({
+  onNumberSelect,
   onClear,
   disabledNumbers = [],
   remainingDigits = {}
 }) => {
-  // Material Design inspirierte Farben
-  const buttonBg = '#2196F3';         // Material Blue 500
-  const buttonHoverBg = '#1976D2';    // Material Blue 700
-  const deleteButtonBg = '#F44336';   // Material Red 500
-  const deleteButtonHoverBg = '#D32F2F'; // Material Red 700
-
-  // Responsive Größe für die Buttons und den Nummernblock
+  // Buttons wachsen mit dem Viewport, gehen aber nie unter das Touch-Minimum.
   const buttonSize = useBreakpointValue({
-    base: "40px", // Mobil
-    sm: "45px",   // Tablet klein
-    md: "55px",   // Tablet
-    lg: "60px"    // Desktop
-  }) || "50px";
+    base: MIN_TOUCH,
+    sm: '52px',
+    md: '60px',
+    lg: '64px'
+  }) ?? MIN_TOUCH;
 
   const fontSize = useBreakpointValue({
-    base: "lg",   // Mobil
-    sm: "xl",     // Tablet klein
-    md: "xl",     // Tablet
-    lg: "2xl"     // Desktop
-  }) || "xl";
+    base: 'lg',
+    sm: 'xl',
+    md: 'xl',
+    lg: '2xl'
+  }) ?? 'xl';
 
   const padWidth = useBreakpointValue({
-    base: "180px", // Mobil
-    sm: "200px",   // Tablet klein
-    md: "220px",   // Tablet
-    lg: "240px"    // Desktop
-  }) || "220px";
+    base: '100%',
+    sm: '220px',
+    md: '240px',
+    lg: '260px'
+  }) ?? '100%';
 
-  const gap = useBreakpointValue({
-    base: 2,       // Mobil
-    sm: 2,         // Tablet klein
-    md: 2,         // Tablet
-    lg: 3          // Desktop
-  }) || 2;
+  const gap = useBreakpointValue({ base: 2, lg: 3 }) ?? 2;
 
-  // Schriftgröße für die Anzeige der verbleibenden Ziffern
   const remainingDigitsFontSize = useBreakpointValue({
-    base: "10px",  // Mobil
-    sm: "11px",    // Tablet klein
-    md: "12px",    // Tablet
-    lg: "12px"     // Desktop
-  }) || "11px";
+    base: '2xs',
+    md: 'xs'
+  }) ?? '2xs';
 
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={gap} width={padWidth}>
@@ -64,24 +54,23 @@ export const NumberPad: React.FC<NumberPadProps> = ({
         <Box key={number} position="relative">
           <RippleButton
             onClick={() => onNumberSelect(number)}
-            bg={buttonBg}
-            color="white"
+            bg="brand.primary"
+            color="brand.onPrimary"
             size="lg"
             height={buttonSize}
             fontSize={fontSize}
             fontWeight="bold"
-            _hover={{ bg: buttonHoverBg }}
-            _active={{ bg: buttonHoverBg }}
+            _hover={{ bg: 'brand.primary.hover', _disabled: { bg: 'surface.sunken' } }}
+            _active={{ bg: 'brand.primary.hover' }}
             disabled={disabledNumbers.includes(number)}
-            borderRadius="md"
-            boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-            rippleColor="rgba(255, 255, 255, 0.4)"
+            borderRadius="lg"
+            boxShadow="sm"
+            rippleColor="whiteAlpha.400"
             width="100%"
             aria-label={`Zahl ${number}`}
           >
             {number}
           </RippleButton>
-          {/* Anzeige der verbleibenden Ziffern */}
           {remainingDigits[number] !== undefined && (
             <Text
               position="absolute"
@@ -89,8 +78,9 @@ export const NumberPad: React.FC<NumberPadProps> = ({
               left="4px"
               fontSize={remainingDigitsFontSize}
               fontWeight="bold"
-              color="white"
+              color="brand.onPrimary"
               lineHeight="1"
+              pointerEvents="none"
             >
               {remainingDigits[number]}
             </Text>
@@ -100,17 +90,17 @@ export const NumberPad: React.FC<NumberPadProps> = ({
       <RippleButton
         gridColumn="1 / span 3"
         onClick={onClear}
-        bg={deleteButtonBg}
+        bg="status.error"
         color="white"
         size="lg"
-        height={useBreakpointValue({ base: "40px", md: "45px", lg: "50px" })}
-        fontSize={useBreakpointValue({ base: "md", md: "lg" })}
+        height={useBreakpointValue({ base: MIN_TOUCH, md: '52px', lg: '56px' }) ?? MIN_TOUCH}
+        fontSize={useBreakpointValue({ base: 'md', md: 'lg' }) ?? 'md'}
         fontWeight="bold"
-        _hover={{ bg: deleteButtonHoverBg }}
-        _active={{ bg: deleteButtonHoverBg }}
-        borderRadius="md"
-        boxShadow="0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)"
-        rippleColor="rgba(255, 255, 255, 0.4)"
+        _hover={{ bg: 'red.600' }}
+        _active={{ bg: 'red.600' }}
+        borderRadius="lg"
+        boxShadow="sm"
+        rippleColor="whiteAlpha.400"
         aria-label="Auswahl löschen"
       >
         Löschen
