@@ -2,6 +2,7 @@
 // Stellt Funktionen für die Spielregeln, Validierung und Gewinnbedingungen bereit
 
 import { Cage, CellPosition } from '../types/gameTypes';
+import { canReachSum } from '../utils/killerSolver';
 
 // Standard-Sudoku-Regeln: Keine Duplikate in Zeilen, Spalten, Blöcken
 export const isCellValidForSudokuRules = (
@@ -213,17 +214,10 @@ export const getPossibleValues = (
       continue;
     }
 
-    // Wenn dies die letzte leere Zelle im Käfig ist
-    if (remainingCells === 1) {
-      // Die Zahl muss exakt die verbleibende Summe ergeben
-      if (value !== remainingSum) {
-        continue;
-      }
-    } else {
-      // Für andere Zellen: Die Zahl darf nicht größer sein als die verbleibende Summe
-      if (value > remainingSum) {
-        continue;
-      }
+    // Die Restzellen müssen die Restsumme mit verschiedenen Ziffern
+    // noch erreichen können (Min/Max-Schranken).
+    if (!canReachSum(remainingCells - 1, remainingSum - value)) {
+      continue;
     }
 
     possibleValues.push(value);

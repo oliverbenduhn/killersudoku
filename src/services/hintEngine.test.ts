@@ -47,6 +47,83 @@ describe('hintEngine', () => {
     });
   });
 
+  describe('Naked Single (Sudoku) via Summen-Schranken', () => {
+    test('3er-Käfig Summe 24 ({7,8,9}) mit 8 und 9 in der Spalte verboten → Zelle muss 7 sein', () => {
+      const cellValues = emptyBoard();
+      cellValues[3][0] = 8;
+      cellValues[4][0] = 9;
+      const cages = [{
+        id: 'c1',
+        cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }],
+        sum: 24,
+        color: 'blue.100' as const,
+      }];
+
+      const hint = findNextHint(cellValues, cages);
+      expect(hint).not.toBeNull();
+      expect(hint!.technique).toBe('naked-single-sudoku');
+      expect(hint!.cell).toEqual({ row: 0, col: 0 });
+      expect(hint!.value).toBe(7);
+    });
+  });
+
+  describe('45er-Regel: Innies und Outies', () => {
+    test('Innie: Box zu 8/9 von internen Käfigen abgedeckt → Restzelle = 45 − Summe', () => {
+      const cellValues = emptyBoard();
+      // Box 0: zwei Käfige komplett innen (Summen 20 + 17 = 37),
+      // die neunte Zelle (2,2) gehört zu einem Käfig, der herausragt.
+      const cages = [
+        { id: 'a', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }], sum: 20, color: 'blue.100' as const },
+        { id: 'b', cells: [{ row: 1, col: 1 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }], sum: 17, color: 'green.100' as const },
+        { id: 'c', cells: [{ row: 2, col: 2 }, { row: 2, col: 3 }], sum: 12, color: 'pink.100' as const },
+      ];
+
+      const hint = findNextHint(cellValues, cages);
+      expect(hint).not.toBeNull();
+      expect(hint!.technique).toBe('innie');
+      expect(hint!.cell).toEqual({ row: 2, col: 2 });
+      expect(hint!.value).toBe(8); // 45 − 37
+    });
+
+    test('Outie: Käfige über Box summieren 49, eine Zelle ragt heraus → Zelle = 4', () => {
+      const cellValues = emptyBoard();
+      // Beispiel aus dem Leitfaden: Box-Summe 45, beteiligte Käfige 49,
+      // herausragende Zelle muss 49 − 45 = 4 sein.
+      const cages = [
+        { id: 'a', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 1 }], sum: 21, color: 'blue.100' as const },
+        { id: 'b', cells: [{ row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 1 }, { row: 2, col: 2 }, { row: 0, col: 3 }], sum: 28, color: 'green.100' as const },
+      ];
+
+      const hint = findNextHint(cellValues, cages);
+      expect(hint).not.toBeNull();
+      expect(hint!.technique).toBe('outie');
+      expect(hint!.cell).toEqual({ row: 0, col: 3 });
+      expect(hint!.value).toBe(4); // 49 − 45
+    });
+
+    test('Innie über zwei Zeilen (Multiple-45-Regel, N=2)', () => {
+      const cellValues = emptyBoard();
+      // Zeilen 0+1 (Soll 90): 2x2-Käfige über beide Zeilen decken 17 der
+      // 18 Zellen ab (Summe 82); nur (1,8) gehört zu einem Käfig, der nach
+      // Zeile 2 herausragt → 90 − 82 = 8. Keine Einzel-Zeile/-Box liefert
+      // hier schon einen Schluss.
+      const cages = [
+        { id: 'a', cells: [{ row: 0, col: 0 }, { row: 1, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 1 }], sum: 20, color: 'blue.100' as const },
+        { id: 'b', cells: [{ row: 0, col: 2 }, { row: 1, col: 2 }, { row: 0, col: 3 }, { row: 1, col: 3 }], sum: 18, color: 'green.100' as const },
+        { id: 'c', cells: [{ row: 0, col: 4 }, { row: 1, col: 4 }, { row: 0, col: 5 }, { row: 1, col: 5 }], sum: 17, color: 'pink.100' as const },
+        { id: 'd', cells: [{ row: 0, col: 6 }, { row: 1, col: 6 }, { row: 1, col: 7 }], sum: 15, color: 'yellow.100' as const },
+        { id: 'g', cells: [{ row: 0, col: 7 }, { row: 0, col: 8 }], sum: 12, color: 'blue.100' as const },
+        { id: 'h', cells: [{ row: 1, col: 8 }, { row: 2, col: 8 }], sum: 12, color: 'green.100' as const },
+      ];
+
+      const hint = findNextHint(cellValues, cages);
+      expect(hint).not.toBeNull();
+      expect(hint!.technique).toBe('innie');
+      expect(hint!.cell).toEqual({ row: 1, col: 8 });
+      expect(hint!.value).toBe(8); // 90 − 82
+    });
+  });
+
   describe('Hidden Single (Cage)', () => {
     // Hinweis: Ein direkter Unit-Test für Hidden Single ist trickreich:
     // Beide Zellen eines 2er-Käfigs liegen meist im selben 3x3-Block,

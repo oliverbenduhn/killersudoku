@@ -211,6 +211,22 @@ describe('gameLogicService', () => {
       expect(getPossibleValues(board, 5, 5, [])).toEqual([]);
     });
 
+    test('Min-Schranke: 3er-Käfig Summe 6 erlaubt nur {1,2,3}', () => {
+      const board = emptyBoard();
+      const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }], 6);
+      const result = getPossibleValues(board, 0, 0, [c]);
+      const values = Array.isArray(result) ? result : result.values;
+      expect(values).toEqual([1, 2, 3]);
+    });
+
+    test('Max-Schranke: 2er-Käfig Summe 17 erlaubt nur {8,9}', () => {
+      const board = emptyBoard();
+      const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 17);
+      const result = getPossibleValues(board, 0, 0, [c]);
+      const values = Array.isArray(result) ? result : result.values;
+      expect(values).toEqual([8, 9]);
+    });
+
     test('currentValueInvalid=true bei ungültigem aktuellem Wert', () => {
       const board = emptyBoard();
       board[0][0] = 9; // Käfig-Summe 5 → 9 ist ungültig

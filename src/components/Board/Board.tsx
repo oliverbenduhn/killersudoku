@@ -643,6 +643,8 @@ export const Board: React.FC<BoardProps> = ({
                 'naked-single-cage': 'Käfig-Naked Single',
                 'hidden-single-cage': 'Käfig-Hidden Single',
                 'naked-single-sudoku': 'Sudoku-Naked Single',
+                'innie': '45er-Regel (Innie)',
+                'outie': '45er-Regel (Outie)',
               };
               toast({
                 title: `${techLabels[hint.technique]} → ${hint.value}`,
