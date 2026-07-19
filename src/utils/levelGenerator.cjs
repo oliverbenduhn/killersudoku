@@ -125,6 +125,12 @@ const validateCageMath = (cage) => {
   return possibleSums.includes(cage.sum);
 };
 
+// Prüft, ob ein Käfig in der Lösung doppelte Werte hätte
+const validateCageNoDuplicates = (cage, solution) => {
+  const values = cage.cells.map(c => solution[c.row][c.col]);
+  return new Set(values).size === values.length;
+};
+
 // Generiert zufällige Käfige basierend auf der Schwierigkeitskonfiguration
 const generateRandomCages = (size, config, solution) => {
   const cages = [];
@@ -157,9 +163,11 @@ const generateRandomCages = (size, config, solution) => {
     cells.push({ row: startRow, col: startCol });
     usedCells.add(`${startRow},${startCol}`);
     
-    // Erweitere den Käfig
+    // Erweitere den Käfig — vermeide Duplikate in der Lösung
     for (let i = 1; i < cageSize; i++) {
       const neighbors = [];
+      // Bereits im Käfig enthaltene Lösungs-Werte
+      const usedValues = new Set(cells.map(c => solution[c.row][c.col]));
       
       // Sammle alle möglichen Nachbarzellen
       for (const cell of cells) {
@@ -173,7 +181,8 @@ const generateRandomCages = (size, config, solution) => {
         for (const neighbor of possibleNeighbors) {
           if (neighbor.row >= 0 && neighbor.row < size &&
               neighbor.col >= 0 && neighbor.col < size &&
-              !usedCells.has(`${neighbor.row},${neighbor.col}`)) {
+              !usedCells.has(`${neighbor.row},${neighbor.col}`) &&
+              !usedValues.has(solution[neighbor.row][neighbor.col])) {
             neighbors.push(neighbor);
           }
         }
@@ -436,6 +445,13 @@ const validateLevel = (level) => {
   // 1. Prüfen der Käfig-Mathematik
   if (!validateCages(level.cages)) {
     return { valid: false, error: 'INVALID_CAGE_SUM' };
+  }
+  
+  // 1b. Prüfen auf Duplikate in Käfigen (Killer-Sudoku-Regel)
+  for (const cage of level.cages) {
+    if (!validateCageNoDuplicates(cage, level.solution)) {
+      return { valid: false, error: 'DUPLICATE_VALUES_IN_CAGE' };
+    }
   }
   
   // 2. Prüfen der Sudoku-Lösung
