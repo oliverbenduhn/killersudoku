@@ -74,8 +74,9 @@ export const NumberPad: React.FC<NumberPadProps> = ({
           {remainingDigits[number] !== undefined && (
             <Text
               position="absolute"
-              top="3px"
-              left="4px"
+              top="50%"
+              left="calc(100% - 14px)"
+              transform="translateY(-50%)"
               fontSize={remainingDigitsFontSize}
               fontWeight="bold"
               color="brand.onPrimary"

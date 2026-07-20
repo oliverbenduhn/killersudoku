@@ -388,10 +388,10 @@ export const Board: React.FC<BoardProps> = ({
         {cage && (
           <Box
             position="absolute"
-            top="3px"
-            left="3px"
-            right="3px"
-            bottom="3px"
+            top="8%"
+            left="8%"
+            right="8%"
+            bottom="8%"
             border="1px dashed"
             borderColor={blackAndWhiteMode ? 'gray.600' : `cage.${(cage.color.split('.')[0])}.border`}
             borderTop={hasTopSameCage ? 'none' : undefined}
@@ -412,10 +412,8 @@ export const Board: React.FC<BoardProps> = ({
             fontWeight="bold"
             color={cageComplete ? 'status.success' : 'text.primary'}
             zIndex="2"
-            bg="rgba(255,255,255,0.7)"
             lineHeight="1"
             px="1px"
-            borderRadius="2px"
           >
             {cage.sum}
           </Text>
@@ -538,6 +536,8 @@ export const Board: React.FC<BoardProps> = ({
         bg="surface.raised"
         position="relative"
         flexGrow={1}
+        flexShrink={1}
+        flexBasis={flexDirection === "row" ? "0" : "auto"}
         maxW={flexDirection === "column" ? "95%" : "70%"}
         h={["auto", "auto", "65vh"]}
         overflowX="hidden"
@@ -617,6 +617,7 @@ export const Board: React.FC<BoardProps> = ({
           mt={4}
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
+          flexWrap="wrap"
         >
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton

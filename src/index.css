@@ -27,3 +27,18 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/*
+ * Touch-Geräte zeigen den harten Chakra-Outline dauerhaft nach
+ * jedem Tap. Reset auf `:focus`; `:focus-visible` (Tastatur / a11y-
+ * Navigation per Tab) behält weiterhin einen sichtbaren Ring.
+ * ponytail: ersetzt inline mobile-Overrides pro Komponente, ein
+ * Selektor deckt alle Buttons + Cells ab.
+ */
+:where(button, [role="button"], [role="gridcell"], a, input, select, textarea):focus {
+  outline: none;
+}
+:where(button, [role="button"], [role="gridcell"], a, input, select, textarea):focus-visible {
+  outline: 2px solid var(--chakra-colors-brand-primary, #3182ce);
+  outline-offset: 2px;
+}
