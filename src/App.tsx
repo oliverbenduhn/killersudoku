@@ -53,15 +53,18 @@ function App() {
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
-  const [bottomNavHidden, setBottomNavHidden] = useState<boolean>(() => {
-    try { return localStorage.getItem('killersudoku_bottom_nav_hidden') === '1'; } catch { return false; }
-  });
   const [stats, setStats] = useState<GameStatistics | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
   const toast = useToast();
   const tutorial = useTutorial();
 
   const headerHeight = useBreakpointValue({ base: '52px', md: '60px' });
+  // Device-Layout:
+  //   mobile  (base/md)  — Hamburger-Menü komplett weg, Aktionen icon-only,
+  //                        Level-Wechsel über Header.
+  //   desktop (lg+)      — volle Bottom-Nav, Aktionen mit Text.
+  // ponytail: ein MediaQuery, kein User-Toggle. Settings-Switch entfällt.
+  const isDesktop = useBreakpointValue({ base: false, lg: true }) || false;
   // Header im Sidebar-Modus (md+, Phone-Landscape quer / Tablet) ausblenden,
   // damit das Brett die volle Höhe nutzen kann. Synchron mit der
   // flexDirection-Breakpoint-Entscheidung in Board.tsx.
@@ -203,13 +206,7 @@ function App() {
           {activeTab === 'settings' && (
             <SettingsTab
               blackAndWhiteMode={blackAndWhiteMode}
-              bottomNavHidden={bottomNavHidden}
               onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
-              onToggleBottomNav={() => setBottomNavHidden((v) => {
-                const next = !v;
-                try { localStorage.setItem('killersudoku_bottom_nav_hidden', next ? '1' : '0'); } catch {}
-                return next;
-              })}
               onOpenResetDialog={() => setIsResetDialogOpen(true)}
               onRestartTutorial={tutorial.restart}
               transitionDirection={tabTransition}
@@ -233,7 +230,7 @@ function App() {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} hidden={bottomNavHidden} />
+      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} isDesktop={isDesktop} />
 
       <TutorialOverlay
         isOpen={tutorial.active}

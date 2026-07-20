@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Flex, Text, useBreakpointValue, Icon, IconButton } from '@chakra-ui/react';
+import { Box, Flex, Text, useBreakpointValue, Icon } from '@chakra-ui/react';
 import {
   ViewIcon,
   SettingsIcon,
@@ -17,14 +17,18 @@ interface NavItem {
 interface BottomNavigationProps {
   activeTab: string;
   onTabChange: (tabName: string) => void;
-  hidden?: boolean;
+  isDesktop: boolean;
 }
 
 export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   activeTab,
   onTabChange,
-  hidden = false,
-}) => {
+  isDesktop,
+}): React.ReactElement | null => {
+  // Mobile: Bottom-Nav ist weg (User wechselt Tabs stattdessen im Header
+  // oder direkt im Content). Nur Desktop zeigt die volle Nav.
+  if (!isDesktop) return null;
+
   // Responsive Design für die Navigation
   const iconSize = useBreakpointValue({ base: 5, md: 6 }) || 5;
   const fontSize = useBreakpointValue({ base: "xs", md: "sm" }) || "xs";
@@ -62,8 +66,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
     }
   ];
 
-  // Vollständiges Layout
-  const renderFullNav = () => (
+  return (
     <Box
       as="nav"
       position="fixed"
@@ -140,74 +143,6 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
       </Flex>
     </Box>
   );
-
-  // Im versteckten Modus eine kleine FAB anbieten — öffnet die volle
-  // Navigation als temporären Schwebebereich, damit der User Tab-Wechsel
-  // nicht verliert. Ponytail: vereitelt eine Sackgasse bei hidden=true.
-  const [open, setOpen] = React.useState(false);
-
-  if (hidden) {
-    return (
-      <>
-        <IconButton
-          aria-label="Menü öffnen"
-          icon={<HamburgerIcon />}
-          position="fixed"
-          bottom="env(safe-area-inset-bottom, 0px)"
-          right={4}
-          zIndex={1000}
-          colorScheme="blue"
-          borderRadius="full"
-          size="lg"
-          boxShadow="lg"
-          onClick={() => setOpen((v) => !v)}
-        />
-        {open && (
-          <Box
-            position="fixed"
-            bottom="calc(env(safe-area-inset-bottom, 0px) + 60px)"
-            right={4}
-            zIndex={1000}
-            bg="surface.raised"
-            borderRadius="lg"
-            boxShadow="lg"
-            p={2}
-            minW="180px"
-          >
-            <Flex direction="column" gap={1}>
-              {navItems.map((item) => {
-                const isActive = activeTab === item.id;
-                return (
-                  <Flex
-                    key={item.id}
-                    as="button"
-                    type="button"
-                    alignItems="center"
-                    gap={3}
-                    px={3}
-                    py={2}
-                    borderRadius="md"
-                    bg={isActive ? 'nav.active.bg' : 'transparent'}
-                    color={isActive ? 'nav.active.text' : 'text.primary'}
-                    _hover={{ bg: 'surface.sunken' }}
-                    border="none"
-                    cursor="pointer"
-                    aria-current={isActive ? 'page' : undefined}
-                    onClick={() => { item.action(); setOpen(false); }}
-                  >
-                    {item.icon}
-                    <Text fontSize="sm" fontWeight={isActive ? '600' : '500'}>{item.label}</Text>
-                  </Flex>
-                );
-              })}
-            </Flex>
-          </Box>
-        )}
-      </>
-    );
-  }
-
-  return renderFullNav();
-};
+}
 
 export default BottomNavigation;

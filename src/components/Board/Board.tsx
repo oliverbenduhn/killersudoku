@@ -14,7 +14,7 @@ import {
   keyframes,
   useToast
 } from '@chakra-ui/react';
-import { RepeatIcon, AddIcon } from '@chakra-ui/icons';
+import { AddIcon, RepeatIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, RepeatClockIcon } from '@chakra-ui/icons';
 
 import { useGameState } from '../../hooks/useGameState';
 import { useStrategicHint } from '../../hooks/useStrategicHint';
@@ -105,6 +105,9 @@ export const Board: React.FC<BoardProps> = ({
   // Brett-Höhe an der kürzeren Viewport-Seite, sodass Cell-Größe jetzt
   // quadratisch an die verfügbare Höhe des linken Bereichs gebunden ist.
   const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as "column" | "row";
+  // Mobile (base/md): Aktionen icon-only (kompakt). Desktop (lg+): mit
+  // Text-Beschriftung. Synchron mit Bottom-Nav-Switch in App.tsx.
+  const isMobile = useBreakpointValue({ base: true, lg: false }) ?? true;
 
   // Cell Selection
   const {
@@ -678,24 +681,27 @@ export const Board: React.FC<BoardProps> = ({
               setSelectedCell(hint.cell);
             }}
             isDisabled={!gameState || isGameOver || cages.length === 0}
+            aria-label="Tipp"
           >
-            Tipp
+            {isMobile ? <BellIcon /> : 'Tipp'}
           </RippleButton>
           {/* Direkter Reveal-Hinweis: brand primary, klar als primäre Aktion. */}
           <RippleButton
             colorScheme="blue"
             onClick={handleRevealHint}
             isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
+            aria-label={`Hinweis (${MAX_HINTS - (gameState?.hintsUsed || 0)})`}
           >
-            <AddIcon mr={2} /> Hinweis ({MAX_HINTS - (gameState?.hintsUsed || 0)})
+            {isMobile ? <AddIcon /> : <><AddIcon mr={2} /> Hinweis ({MAX_HINTS - (gameState?.hintsUsed || 0)})</>}
           </RippleButton>
           {/* Reset: tonal, nicht akzent. */}
           <RippleButton
             variant="ghost"
             onClick={handleReset}
             isDisabled={!gameState || isGameOver}
+            aria-label="Reset"
           >
-            <RepeatIcon mr={2} /> Reset
+            {isMobile ? <RepeatClockIcon /> : <><RepeatIcon mr={2} /> Reset</>}
           </RippleButton>
           <RippleButton
             variant="ghost"
@@ -703,7 +709,8 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || !canUndo}
             aria-label="Rückgängig"
           >
-            ↶ Undo
+            {isMobile ? <ArrowBackIcon /> : <ArrowBackIcon mr={2} />}
+            {!isMobile && 'Undo'}
           </RippleButton>
           <RippleButton
             variant="ghost"
@@ -711,7 +718,8 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || !canRedo}
             aria-label="Wiederherstellen"
           >
-            ↷ Redo
+            {isMobile ? <ArrowForwardIcon /> : <ArrowForwardIcon mr={2} />}
+            {!isMobile && 'Redo'}
           </RippleButton>
         </Box>
       </Box>
