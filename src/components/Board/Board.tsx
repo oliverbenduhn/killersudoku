@@ -100,10 +100,11 @@ export const Board: React.FC<BoardProps> = ({
   // Schriftgrößen
   const valueFontSize = useBreakpointValue({ base: "md", sm: "lg", md: "xl", lg: "xl" }) || "lg";
   const sumFontSize = useBreakpointValue({ base: "2xs", sm: "xs", md: "xs", lg: "xs" }) || "xs";
-  // Phone-Landscape bleibt Column-Stacking; erst bei echt breiten Viewports
-  // (≥1024, d. h. Tablet/Desktop quer) gibt's eine echte Sidebar mit
-  // NumberPad rechts vom Brett.
-  const flexDirection = useBreakpointValue({ base: "column", xl: "row" }) as "column" | "row";
+  // Phone-Landscape (≥ md, d. h. ≥ 768 px) bekommt Sidebar — Brett links
+  // nutzt die Höhe, NumberPad+Aktionen rechts. Cell-Resize kappte die
+  // Brett-Höhe an der kürzeren Viewport-Seite, sodass Cell-Größe jetzt
+  // quadratisch an die verfügbare Höhe des linken Bereichs gebunden ist.
+  const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as "column" | "row";
 
   // Cell Selection
   const {
@@ -542,7 +543,11 @@ export const Board: React.FC<BoardProps> = ({
         flexShrink={1}
         flexBasis={flexDirection === "row" ? "0" : "auto"}
         maxW={flexDirection === "column" ? "100%" : "70%"}
-        h={["auto", "auto", "65vh"]}
+        // Im Sidebar-Modus (md+) nutzt das Brett die verfügbare Höhe.
+        // 90vh lässt Cell ~ 35 px auf Landscape-Tablets, sodass das Brett
+        // wirklich groß wirkt. Im Column-Modus (Phone portrait) bleibt
+        // die Höhe auto, weil NumberPad+Aktionen darunter Platz brauchen.
+        h={flexDirection === "row" ? "90vh" : ["auto", "auto", "65vh"]}
         overflowX="hidden"
         overflowY="hidden"
         tabIndex={0}
@@ -601,15 +606,17 @@ export const Board: React.FC<BoardProps> = ({
 
       <Box
         p={2}
-        alignSelf={flexDirection === "column" ? "center" : "start"}
+        alignSelf={flexDirection === "column" ? "center" : "stretch"}
         mt={flexDirection === "column" ? 4 : 0}
         pt={flexDirection === "row" ? "16px" : 2}
-        // Bottom-Padding sitzt bereits am äußeren App-Container (64px);
-        // im Column-Modus reicht das, weil die Inhalts-Box oben beginnt.
+        // Im Sidebar-Modus die volle verfügbare Breite rechts vom Brett
+        // einnehmen, damit NumberPad+Aktionen gleichmäßig verteilt sind.
         width={flexDirection === "column" ? "100%" : "auto"}
+        flex={flexDirection === "row" ? "1" : undefined}
         display="flex"
         flexDirection="column"
-        alignItems={flexDirection === "column" ? "center" : "start"}
+        alignItems={flexDirection === "column" ? "center" : "stretch"}
+        overflowY="hidden"
       >
         <NumberPad
           onNumberSelect={handleNumberSelect}
@@ -618,12 +625,14 @@ export const Board: React.FC<BoardProps> = ({
           remainingDigits={remainingDigits}
         />
         <Stack
-          direction="row"
-          gap={4}
-          mt={4}
+          // Im Sidebar-Modus (md+, Landscape) vertikal anordnen, damit
+          // die Aktions-Buttons die volle Sidebar-Breite füllen statt
+          // nur in einer Zeile neben NumberPad zu sitzen.
+          direction={flexDirection === "row" ? "column" : "row"}
+          gap={flexDirection === "row" ? 2 : 4}
+          mt={flexDirection === "column" ? 4 : 2}
           justify={flexDirection === "column" ? "center" : "start"}
           width="100%"
-          flexWrap="wrap"
         >
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
