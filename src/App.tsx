@@ -53,6 +53,9 @@ function App() {
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   const [isResetDialogOpen, setIsResetDialogOpen] = useState<boolean>(false);
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
+  const [bottomNavHidden, setBottomNavHidden] = useState<boolean>(() => {
+    try { return localStorage.getItem('killersudoku_bottom_nav_hidden') === '1'; } catch { return false; }
+  });
   const [stats, setStats] = useState<GameStatistics | null>(null);
   const cancelRef = useRef<HTMLButtonElement | null>(null);
   const toast = useToast();
@@ -188,7 +191,13 @@ function App() {
           {activeTab === 'settings' && (
             <SettingsTab
               blackAndWhiteMode={blackAndWhiteMode}
+              bottomNavHidden={bottomNavHidden}
               onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
+              onToggleBottomNav={() => setBottomNavHidden((v) => {
+                const next = !v;
+                try { localStorage.setItem('killersudoku_bottom_nav_hidden', next ? '1' : '0'); } catch {}
+                return next;
+              })}
               onOpenResetDialog={() => setIsResetDialogOpen(true)}
               onRestartTutorial={tutorial.restart}
               transitionDirection={tabTransition}
@@ -212,7 +221,7 @@ function App() {
         </AlertDialogOverlay>
       </AlertDialog>
 
-      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+      <BottomNavigation activeTab={activeTab} onTabChange={handleTabChange} hidden={bottomNavHidden} />
 
       <TutorialOverlay
         isOpen={tutorial.active}

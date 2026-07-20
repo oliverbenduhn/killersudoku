@@ -547,7 +547,8 @@ export const Board: React.FC<BoardProps> = ({
         overflowY="hidden"
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        _focus={{ outline: "3px dashed", outlineColor: "brand.primary", outlineOffset: "4px" }}
+        _focus={{ outline: "none" }}
+        _focusVisible={{ outline: "none" }}
       >
         <Box>{renderGrid()}</Box>
 

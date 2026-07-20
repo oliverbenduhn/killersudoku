@@ -197,14 +197,18 @@ export function StatsTab({ stats, transitionDirection }: StatsTabProps) {
 
 interface SettingsTabProps extends TabPanelProps {
   blackAndWhiteMode: boolean;
+  bottomNavHidden: boolean;
   onToggleBlackAndWhite: () => void;
+  onToggleBottomNav: () => void;
   onOpenResetDialog: () => void;
   onRestartTutorial: () => void;
 }
 
 export function SettingsTab({
   blackAndWhiteMode,
+  bottomNavHidden,
   onToggleBlackAndWhite,
+  onToggleBottomNav,
   onOpenResetDialog,
   onRestartTutorial,
   transitionDirection,
@@ -239,6 +243,18 @@ export function SettingsTab({
               isChecked={blackAndWhiteMode}
               onChange={onToggleBlackAndWhite}
               colorScheme="gray"
+            />
+          </HStack>
+
+          <HStack justify="space-between">
+            <FormLabel htmlFor="bottom-nav-hidden" mb={0} color="text.primary">
+              Menüleiste ausblenden
+            </FormLabel>
+            <Switch
+              id="bottom-nav-hidden"
+              isChecked={bottomNavHidden}
+              onChange={onToggleBottomNav}
+              colorScheme="blue"
             />
           </HStack>
 
