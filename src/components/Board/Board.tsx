@@ -543,11 +543,13 @@ export const Board: React.FC<BoardProps> = ({
         flexShrink={1}
         flexBasis={flexDirection === "row" ? "0" : "auto"}
         maxW={flexDirection === "column" ? "100%" : "70%"}
-        // Im Sidebar-Modus (md+) nutzt das Brett die verfügbare Höhe.
-        // 90vh lässt Cell ~ 35 px auf Landscape-Tablets, sodass das Brett
-        // wirklich groß wirkt. Im Column-Modus (Phone portrait) bleibt
-        // die Höhe auto, weil NumberPad+Aktionen darunter Platz brauchen.
-        h={flexDirection === "row" ? "90vh" : ["auto", "auto", "65vh"]}
+        // Im Sidebar-Modus (md+) nutzt das Brett 80vh der Höhe — das
+        // lässt in der Sidebar Platz für NumberPad+Löschen+Aktionen
+        // ohne dass sie hinter der Bottom-Nav verschwinden.
+        // ponytail: 90vh überlappte mit Bottom-Nav (57 px), 80vh ist
+        // der empirisch ermittelte Wert, bei dem alles in den sichtbaren
+        // Bereich passt.
+        h={flexDirection === "row" ? "80vh" : ["auto", "auto", "65vh"]}
         overflowX="hidden"
         overflowY="hidden"
         tabIndex={0}
@@ -609,6 +611,9 @@ export const Board: React.FC<BoardProps> = ({
         alignSelf={flexDirection === "column" ? "center" : "stretch"}
         mt={flexDirection === "column" ? 4 : 0}
         pt={flexDirection === "row" ? "16px" : 2}
+        // Im Landscape keine Bottom-Nav-Overlap-Risk: Inhalt vor
+        // Bottom-Nav enden lassen (Bottom-Nav ist 57 px + Safe-Area).
+        pb={flexDirection === "row" ? "72px" : 2}
         // Im Sidebar-Modus die volle verfügbare Breite rechts vom Brett
         // einnehmen, damit NumberPad+Aktionen gleichmäßig verteilt sind.
         width={flexDirection === "column" ? "100%" : "auto"}
@@ -616,7 +621,7 @@ export const Board: React.FC<BoardProps> = ({
         display="flex"
         flexDirection="column"
         alignItems={flexDirection === "column" ? "center" : "stretch"}
-        overflowY="hidden"
+        overflowY="auto"
       >
         <NumberPad
           onNumberSelect={handleNumberSelect}
@@ -624,15 +629,14 @@ export const Board: React.FC<BoardProps> = ({
           disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
           remainingDigits={remainingDigits}
         />
-        <Stack
-          // Im Sidebar-Modus (md+, Landscape) vertikal anordnen, damit
-          // die Aktions-Buttons die volle Sidebar-Breite füllen statt
-          // nur in einer Zeile neben NumberPad zu sitzen.
-          direction={flexDirection === "row" ? "column" : "row"}
-          gap={flexDirection === "row" ? 2 : 4}
-          mt={flexDirection === "column" ? 4 : 2}
-          justify={flexDirection === "column" ? "center" : "start"}
-          width="100%"
+        <Box
+          // Im Landscape Action-Bar in zwei Gruppen teilen: primäre
+          // Aktionen (Tipp + Hinweis) oben, sekundäre (Reset, Undo, Redo)
+          // unten in einer kompakten Reihe — spart vertikalen Platz.
+          display={flexDirection === "row" ? "flex" : "block"}
+          flexDirection={flexDirection === "row" ? "column" : undefined}
+          gap={flexDirection === "row" ? 2 : undefined}
+          mt={flexDirection === "row" ? 2 : 4}
         >
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
@@ -709,7 +713,7 @@ export const Board: React.FC<BoardProps> = ({
           >
             ↷ Redo
           </RippleButton>
-        </Stack>
+        </Box>
       </Box>
     </Flex>
   );

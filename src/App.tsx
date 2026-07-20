@@ -62,6 +62,10 @@ function App() {
   const tutorial = useTutorial();
 
   const headerHeight = useBreakpointValue({ base: '52px', md: '60px' });
+  // Header im Sidebar-Modus (md+, Phone-Landscape quer / Tablet) ausblenden,
+  // damit das Brett die volle Höhe nutzen kann. Synchron mit der
+  // flexDirection-Breakpoint-Entscheidung in Board.tsx.
+  const isSidebarLayout = useBreakpointValue({ base: false, md: true }) || false;
   const containerMaxWidth = useBreakpointValue({ base: '100%', xl: 'container.xl' });
   const headerBg = useColorModeValue('surface.header', 'surface.header');
   const headerTextColor = useColorModeValue('surface.header.text', 'surface.header.text');
@@ -143,7 +147,15 @@ function App() {
     <ChakraProvider theme={theme}>
       <InstallPrompt />
 
-      <Box as="header" bg={headerBg} position="sticky" top={0} zIndex={999} boxShadow="sm">
+      <Box
+        as="header"
+        bg={headerBg}
+        position="sticky"
+        top={0}
+        zIndex={999}
+        boxShadow="sm"
+        display={isSidebarLayout ? 'none' : 'block'}
+      >
         <Container maxW={containerMaxWidth} h={headerHeight} px={4}>
           <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
             <Heading as="h1" color={headerTextColor} fontSize={{ base: '18px', md: '20px' }} fontWeight="700" letterSpacing="-0.02em">
