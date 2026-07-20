@@ -27,6 +27,16 @@ function makeBaseSudoku(): number[][] {
   ];
 }
 
+function makeSingleCages(solution: number[][]) {
+  const palette = ['blue.100', 'green.100', 'pink.100', 'yellow.100'] as const;
+  return solution.flatMap((row, r) => row.map((_, c) => ({
+    id: `c-${r}-${c}`,
+    cells: [{ row: r, col: c }],
+    sum: solution[r][c],
+    color: palette[(r + c) % 4],
+  })));
+}
+
 describe('levelValidator — kanonisches Schema', () => {
   describe('Synthetische Edge-Cases', () => {
     test('akzeptiert leeres Minimum-Level (alle Einzel-Käfige, gültige Lösung)', () => {
@@ -129,6 +139,34 @@ describe('levelValidator — kanonisches Schema', () => {
       const r = validateLevel(broken);
       expect(r.valid).toBe(false);
       expect(r.errors.map(e => e.errorType)).toContain('INVALID_CAGE_COLOR');
+    });
+
+    test('lehnt nicht zusammenhängende Käfige ab', () => {
+      const solution = makeBaseSudoku();
+      const cages = makeSingleCages(solution)
+        .filter((entry) => entry.id !== 'c-0-0' && entry.id !== 'c-8-8');
+      cages.push({
+        id: 'disconnected',
+        cells: [{ row: 0, col: 0 }, { row: 8, col: 8 }],
+        sum: 9,
+        color: 'blue.100',
+      });
+      const result = validateLevel({
+        id: 'disconnected-level', levelNumber: 1, cages,
+        initialValues: solution.map((row) => [...row]), solution,
+      });
+      expect(result.errors.map((error) => error.errorType)).toContain('DISCONNECTED_CAGE');
+    });
+
+    test('lehnt doppelte Käfig-IDs ab', () => {
+      const solution = makeBaseSudoku();
+      const cages = makeSingleCages(solution);
+      cages[1].id = cages[0].id;
+      const result = validateLevel({
+        id: 'duplicate-cage-id', levelNumber: 1, cages,
+        initialValues: solution.map((row) => [...row]), solution,
+      });
+      expect(result.errors.map((error) => error.errorType)).toContain('DUPLICATE_CAGE_ID');
     });
   });
 

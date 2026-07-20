@@ -17,13 +17,13 @@ describe('LevelsTab — Zufallslevel', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: 'Zufallslevel Experte' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Neues Zufallslevel erstellen: Experte' }));
     expect(onGenerate).toHaveBeenCalledWith('expert');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Zufallslevel Einfach' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Neues Zufallslevel erstellen: Einfach' }));
     expect(onGenerate).toHaveBeenCalledWith('easy');
 
-    expect(screen.getByRole('button', { name: 'Zufallslevel Mittel' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Zufallslevel Schwer' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Neues Zufallslevel erstellen: Mittel' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Neues Zufallslevel erstellen: Schwer' })).toBeInTheDocument();
   });
 });

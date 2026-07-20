@@ -1,11 +1,13 @@
 // Killer-Sudoku-Solver für die Eindeutigkeitsprüfung.
 //
 // Backtracking mit Bitmasken pro Haus (Zeile/Spalte/Block) und pro Käfig,
-// Käfig-Summen-Pruning über Min/Max-Schranken der Restbelegung sowie
-// MRV-Heuristik (Zelle mit wenigsten Kandidaten zuerst). Zählt Lösungen
+// exakter Kombinationstabelle, Multiple-45-Vorgaben sowie MRV-Heuristik
+// (Zelle mit wenigsten Kandidaten zuerst). Zählt Lösungen
 // nur bis `limit` — für die Eindeutigkeitsfrage reicht limit=2.
 
 import { Cage, BOARD_SIZE } from '../types/gameTypes';
+import { hasCageCombination } from './killerCombinations';
+import { find45Deductions } from './killerRegions';
 
 const CELLS = BOARD_SIZE * BOARD_SIZE;
 
@@ -18,28 +20,12 @@ export function canReachSum(cellsLeft: number, sum: number): boolean {
   return sum >= (cellsLeft * (cellsLeft + 1)) / 2 && sum <= (cellsLeft * (19 - cellsLeft)) / 2;
 }
 
-// Exakte Kombinatorik-Prüfung (memoisierte Look-up Table): Existiert eine
-// k-elementige Teilmenge der noch verfügbaren Ziffern (Bitmaske, Bits 1..9)
-// mit exakt dieser Summe? Deutlich schärferes Pruning als die reinen
-// Min/Max-Schranken — entscheidend bei großen Käfigen auf leeren Brettern.
+// Exakte Kombinatorik-Prüfung über die zentrale, memoisiert abgefragte LUT.
 const AVAIL_ALL = 0b1111111110;
-const subsetMemo = new Map<number, boolean>();
-
 function subsetSumExists(k: number, sum: number, availMask: number): boolean {
   if (k === 0) return sum === 0;
   if (sum < 0 || !canReachSum(k, sum)) return false;
-  const key = (k << 16) | (sum << 10) | (availMask >> 1);
-  const hit = subsetMemo.get(key);
-  if (hit !== undefined) return hit;
-  let ok = false;
-  // d = kleinste gewählte Ziffer; danach nur größere zulassen, damit jede
-  // Teilmenge genau einmal geprüft wird.
-  for (let d = 1; d <= 9 && !ok; d++) {
-    if (!(availMask & (1 << d))) continue;
-    ok = subsetSumExists(k - 1, sum - d, availMask & ~((1 << (d + 1)) - 1));
-  }
-  subsetMemo.set(key, ok);
-  return ok;
+  return hasCageCombination(k, sum, availMask);
 }
 
 /**
@@ -81,6 +67,14 @@ export function findSolutions(
   limit: number = 2,
   maxNodes?: number
 ): number[][][] {
+  const forcedBy45 = new Map<number, number>();
+  for (const deduction of find45Deductions(initialValues, cages)) {
+    const idx = deduction.cell.row * BOARD_SIZE + deduction.cell.col;
+    const previous = forcedBy45.get(idx);
+    if (previous !== undefined && previous !== deduction.value) return [];
+    forcedBy45.set(idx, deduction.value);
+  }
+
   const cageOfCell = new Int16Array(CELLS).fill(-1);
   cages.forEach((cage, i) => {
     for (const c of cage.cells) cageOfCell[c.row * BOARD_SIZE + c.col] = i;
@@ -149,6 +143,8 @@ export function findSolutions(
     // i. d. R. in anderen Zeilen/Spalten/Blöcken als diese Zelle).
     const cageAvail = AVAIL_ALL & ~cageMask[g];
     for (let v = 1; v <= 9; v++) {
+      const forced = forcedBy45.get(idx);
+      if (forced !== undefined && v !== forced) continue;
       if (used & (1 << v)) continue;
       if (subsetSumExists(left - 1, sumLeft - v, cageAvail & ~(1 << v))) out.push(v);
     }

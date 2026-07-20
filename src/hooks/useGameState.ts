@@ -3,6 +3,7 @@ import { saveGameState, loadGameState } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
 import { createEmptyBoard } from '../services/puzzleGeneratorService';
+import { sanitizePlayerBoard } from '../services/gameLogicService';
 import { useUndoRedo } from './useUndoRedo';
 
 // Lokale Erweiterung des GameState-Interfaces mit zusätzlichen Eigenschaften für den Hook
@@ -42,7 +43,24 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
 
         if (savedState) {
           if (currentPuzzleIdRef.current === puzzleId) {
-            setGameState(savedState as GameState);
+            let restored = savedState as GameState;
+            const levelMatch = puzzleId.match(/level-(\d+)/);
+            if (levelMatch?.[1]) {
+              try {
+                const levelData = await loadLevelByNumber(parseInt(levelMatch[1], 10));
+                const cellValues = sanitizePlayerBoard(
+                  restored.cellValues,
+                  levelData.initialValues,
+                  levelData.cages,
+                  size
+                );
+                restored = { ...restored, cellValues };
+                await saveGameState(puzzleId, restored);
+              } catch (error) {
+                console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
+              }
+            }
+            setGameState(restored);
           }
         } else {
           if (currentPuzzleIdRef.current === puzzleId) {

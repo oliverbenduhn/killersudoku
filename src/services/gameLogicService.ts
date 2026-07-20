@@ -2,7 +2,7 @@
 // Stellt Funktionen für die Spielregeln, Validierung und Gewinnbedingungen bereit
 
 import { Cage, CellPosition } from '../types/gameTypes';
-import { canReachSum } from '../utils/killerSolver';
+import { analyzeCage, getLegalValuesForCell, isBoardValueInRange } from '../utils/killerConstraints';
 
 // Standard-Sudoku-Regeln: Keine Duplikate in Zeilen, Spalten, Blöcken
 export const isCellValidForSudokuRules = (
@@ -13,6 +13,7 @@ export const isCellValidForSudokuRules = (
   size: number = 9
 ): boolean => {
   if (!value) return true; // Leere Zellen sind immer gültig
+  if (!isBoardValueInRange(value)) return false;
   
   // Zeile überprüfen
   for (let c = 0; c < size; c++) {
@@ -109,16 +110,9 @@ export const isCellValid = (
   const tempValues = cellValues.map(row => [...row]);
   tempValues[row][col] = value;
   
-  // Keine doppelten Zahlen im Käfig erlaubt
-  if (hasDuplicatesInCage(tempValues, cage)) return false;
-  
-  // Wenn alle Zellen im Käfig gefüllt sind, prüfe ob Summe stimmt
-  if (isCageFilled(tempValues, cage)) {
-    const sum = calculateCageSum(tempValues, cage);
-    if (sum !== cage.sum) return false;
-  }
-  
-  return true;
+  // Exakte Cage-Analyse: Summe, No-Duplicate und eine vollständige
+  // Fortsetzung des teilgefüllten Käfigs müssen gleichzeitig möglich sein.
+  return analyzeCage(tempValues, cage).valid;
 };
 
 // Hilfsfunktion zum Finden des Käfigs für eine Zelle
@@ -186,42 +180,7 @@ export const getPossibleValues = (
   const currentValueInvalid =
     currentValue !== 0 && !isCellValid(cellValues, row, col, currentValue, cages, size);
 
-  // Bereits verwendete Zahlen im Käfig (aktuelle Zelle ausgeschlossen)
-  const usedInCage = cage.cells
-    .filter(cell => !(cell.row === row && cell.col === col))
-    .map(cell => cellValues[cell.row][cell.col])
-    .filter(value => value !== 0);
-
-  // Berechne die verbleibende Summe für den Käfig
-  const currentSum = calculateCageSum(cellValues, cage);
-  const remainingSum = cage.sum - currentSum;
-  
-  // Anzahl der noch zu füllenden Zellen im Käfig
-  const remainingCells = cage.cells.filter(cell => 
-    cellValues[cell.row][cell.col] === 0
-  ).length;
-
-  const possibleValues = [];
-  
-  for (let value = 1; value <= size; value++) {
-    // Prüfe Standard Sudoku-Regeln
-    if (!isCellValidForSudokuRules(cellValues, row, col, value, size)) {
-      continue;
-    }
-
-    // Prüfe, ob die Zahl bereits im Käfig verwendet wurde
-    if (usedInCage.includes(value)) {
-      continue;
-    }
-
-    // Die Restzellen müssen die Restsumme mit verschiedenen Ziffern
-    // noch erreichen können (Min/Max-Schranken).
-    if (!canReachSum(remainingCells - 1, remainingSum - value)) {
-      continue;
-    }
-
-    possibleValues.push(value);
-  }
+  const possibleValues = getLegalValuesForCell(cellValues, { row, col }, cages);
 
   return { values: possibleValues, currentValueInvalid };
 };
@@ -238,4 +197,72 @@ export const areCellsInSameCage = (
   if (!cage) return false;
   
   return cage.cells.some(cell => cell.row === row2 && cell.col === col2);
+};
+
+export interface PlayerEntryResult {
+  cellValues: number[][];
+  acceptedCells: CellPosition[];
+  rejectedCells: CellPosition[];
+}
+
+/**
+ * Wendet eine Eingabe nur dort an, wo danach weiterhin alle Hard
+ * Constraints erfüllbar sind. Bei Mehrfachauswahl wird deterministisch in
+ * Auswahlreihenfolge gearbeitet; eine abgelehnte Zelle verändert das Brett
+ * nicht.
+ */
+export const applyPlayerEntry = (
+  cellValues: number[][],
+  initialValues: number[][],
+  selectedCells: CellPosition[],
+  value: number,
+  cages: Cage[],
+  size: number = 9
+): PlayerEntryResult => {
+  const next = cellValues.map((row) => [...row]);
+  const acceptedCells: CellPosition[] = [];
+  const rejectedCells: CellPosition[] = [];
+
+  for (const cell of selectedCells) {
+    if (initialValues[cell.row]?.[cell.col] !== 0 || next[cell.row]?.[cell.col] === value) continue;
+    const candidate = next.map((row) => [...row]);
+    candidate[cell.row][cell.col] = value;
+    if (isCellValid(candidate, cell.row, cell.col, value, cages, size)) {
+      next[cell.row][cell.col] = value;
+      acceptedCells.push(cell);
+    } else {
+      rejectedCells.push(cell);
+    }
+  }
+
+  return { cellValues: next, acceptedCells, rejectedCells };
+};
+
+/**
+ * Migriert alte Auto-Saves auf die aktuellen Hard Constraints. Vorgaben
+ * kommen immer aus dem Level; gültige Benutzereinträge werden in stabiler
+ * Zeilenreihenfolge erneut angewendet, widersprüchliche Einträge verworfen.
+ */
+export const sanitizePlayerBoard = (
+  savedValues: number[][],
+  initialValues: number[][],
+  cages: Cage[],
+  size: number = 9
+): number[][] => {
+  let sanitized = initialValues.map((row) => [...row]);
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      const value = savedValues[row]?.[col] ?? 0;
+      if (initialValues[row]?.[col] !== 0 || value === 0) continue;
+      sanitized = applyPlayerEntry(
+        sanitized,
+        initialValues,
+        [{ row, col }],
+        value,
+        cages,
+        size
+      ).cellValues;
+    }
+  }
+  return sanitized;
 };

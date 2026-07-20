@@ -8,7 +8,9 @@ import {
   getCageForCell,
   isBoardComplete,
   getPossibleValues,
-  areCellsInSameCage
+  areCellsInSameCage,
+  applyPlayerEntry,
+  sanitizePlayerBoard
 } from './gameLogicService';
 import { Cage } from '../types/gameTypes';
 
@@ -47,10 +49,11 @@ describe('gameLogicService', () => {
       expect(isCellValidForSudokuRules(board, 0, 0, 3)).toBe(false);
     });
 
-    test('Wert außerhalb 1-9 abgelehnt (gibt es keine Logik für → einfach true)', () => {
+    test('Wert außerhalb 1-9 wird abgelehnt', () => {
       const board = emptyBoard();
-      // Implementation gibt 0 als "leer" zurück, andere Werte ohne Konflikt: true
       expect(isCellValidForSudokuRules(board, 4, 4, 9)).toBe(true);
+      expect(isCellValidForSudokuRules(board, 4, 4, 10)).toBe(false);
+      expect(isCellValidForSudokuRules(board, 4, 4, -1)).toBe(false);
     });
   });
 
@@ -152,6 +155,12 @@ describe('gameLogicService', () => {
       const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 8);
       expect(isCellValid(board, 0, 0, 5, [c])).toBe(false);
     });
+
+    test('unmögliche Teilsumme wird sofort abgelehnt', () => {
+      const board = emptyBoard();
+      const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 3);
+      expect(isCellValid(board, 0, 0, 9, [c])).toBe(false);
+    });
   });
 
   describe('getCageForCell', () => {
@@ -227,12 +236,60 @@ describe('gameLogicService', () => {
       expect(values).toEqual([8, 9]);
     });
 
+    test('schließt bereits im Käfig verwendete Restziffern exakt aus', () => {
+      const board = emptyBoard();
+      board[0][0] = 1;
+      const c = cage('c1', [{ row: 0, col: 0 }, { row: 3, col: 1 }, { row: 6, col: 2 }], 6);
+      const result = getPossibleValues(board, 3, 1, [c]);
+      const values = Array.isArray(result) ? result : result.values;
+      expect(values).toEqual([2, 3]);
+    });
+
     test('currentValueInvalid=true bei ungültigem aktuellem Wert', () => {
       const board = emptyBoard();
       board[0][0] = 9; // Käfig-Summe 5 → 9 ist ungültig
       const c = cage('c1', [{ row: 0, col: 0 }], 5);
       const result = getPossibleValues(board, 0, 0, [c]) as { values: number[]; currentValueInvalid: boolean };
       expect(result.currentValueInvalid).toBe(true);
+    });
+  });
+
+  describe('applyPlayerEntry', () => {
+    test('Level-27-Fall: speichert niemals zwei Neunen im 24er-Dreierkäfig', () => {
+      const board = emptyBoard();
+      const initial = emptyBoard();
+      board[8][4] = 7;
+      initial[8][4] = 7;
+      const c = cage('x923yb', [
+        { row: 8, col: 5 },
+        { row: 8, col: 4 },
+        { row: 8, col: 6 },
+      ], 24);
+
+      const result = applyPlayerEntry(
+        board,
+        initial,
+        [{ row: 8, col: 5 }, { row: 8, col: 6 }],
+        9,
+        [c]
+      );
+
+      expect(result.cellValues[8].filter((value) => value === 9)).toHaveLength(1);
+      expect(result.acceptedCells).toHaveLength(1);
+      expect(result.rejectedCells).toHaveLength(1);
+    });
+
+    test('bereinigt einen alten Level-27-Spielstand mit zwei Neunen', () => {
+      const initial = emptyBoard();
+      initial[8][4] = 7;
+      const saved = initial.map((row) => [...row]);
+      saved[8][5] = 9;
+      saved[8][6] = 9;
+      const c = cage('x923yb', [
+        { row: 8, col: 5 }, { row: 8, col: 4 }, { row: 8, col: 6 },
+      ], 24);
+
+      expect(sanitizePlayerBoard(saved, initial, [c])[8].filter((value) => value === 9)).toHaveLength(1);
     });
   });
 });

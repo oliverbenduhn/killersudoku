@@ -2,7 +2,8 @@
 //
 // Workflow (vgl. technischer Leitfaden, §7):
 //   1. Vollständige, zufällige Sudoku-Lösung per Backtracking erzeugen.
-//   2. Brett in orthogonal zusammenhängende Käfige partitionieren —
+//   2. Multiple-45-/Outie- und Extremkombinations-Anker platzieren, danach
+//      Brett in orthogonal zusammenhängende Käfige partitionieren —
 //      No-Duplicate-in-Cage als Hard Constraint (Käfig darf keine Ziffer
 //      der Lösung doppelt enthalten), Käfiggröße nach Schwierigkeit.
 //   3. Käfig-Summen aus der Lösung ableiten.
@@ -10,9 +11,13 @@
 //   5. Vorgaben nach Schwierigkeit setzen, dann Eindeutigkeit erzwingen:
 //      solange der Solver zwei Lösungen findet, eine Vorgabe an einer
 //      Differenz-Zelle ergänzen. Schlägt das Budget fehl → neu generieren.
+//   6. Den vollständigen Lösungsweg mit den unterstützten logischen
+//      Techniken durchspielen; bei Stillstand neu generieren.
 
 import { Cage, CageColor, CAGE_COLORS, Difficulty, GameLevel, BOARD_SIZE } from '../types/gameTypes';
 import { findSolutions, SolverBudgetExceededError } from '../utils/killerSolver';
+import { find45Deductions } from '../utils/killerRegions';
+import { evaluateLogicalSolvability } from './hintEngine';
 
 /**
  * Erstellt ein leeres Spielfeld mit der angegebenen Größe.
@@ -36,13 +41,15 @@ interface DifficultyProfile {
   /** Obergrenze an Gesamt-Vorgaben; darüber wird neu generiert. */
   maxGivens: number;
   difficultyRating: number;
+  /** Mindestzahl gezielt platzierter Käfige mit eindeutiger Kombination. */
+  entropyAnchors: number;
 }
 
 const PROFILES: Record<Exclude<Difficulty, 'unknown'>, DifficultyProfile> = {
-  easy:   { cageSizes: [1, 2, 2, 3, 3, 4], baseGivens: 14, maxGivens: 22, difficultyRating: 2 },
-  medium: { cageSizes: [2, 2, 3, 3, 4, 5], baseGivens: 8,  maxGivens: 14, difficultyRating: 5 },
-  hard:   { cageSizes: [2, 3, 3, 4, 5, 6], baseGivens: 4,  maxGivens: 9,  difficultyRating: 7 },
-  expert: { cageSizes: [3, 4, 4, 5, 6, 7], baseGivens: 0,  maxGivens: 6,  difficultyRating: 9 },
+  easy:   { cageSizes: [1, 2, 2, 3, 3, 4], baseGivens: 14, maxGivens: 22, difficultyRating: 2, entropyAnchors: 4 },
+  medium: { cageSizes: [2, 2, 3, 3, 4, 5], baseGivens: 8,  maxGivens: 14, difficultyRating: 5, entropyAnchors: 3 },
+  hard:   { cageSizes: [2, 3, 3, 4, 5, 6], baseGivens: 4,  maxGivens: 9,  difficultyRating: 7, entropyAnchors: 2 },
+  expert: { cageSizes: [3, 4, 4, 5, 6, 7], baseGivens: 0,  maxGivens: 6,  difficultyRating: 9, entropyAnchors: 1 },
 };
 
 const MAX_ATTEMPTS = 60;
@@ -57,7 +64,9 @@ export function generateLevel(options: GenerateOptions): GameLevel {
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const solution = generateSolvedGrid();
-    const cages = partitionIntoCages(solution, profile.cageSizes);
+    const cages = partitionIntoCages(solution, profile.cageSizes, profile.entropyAnchors);
+    if (!hasUniqueCombinationAnchor(cages)) continue;
+    if (find45Deductions(createEmptyBoard(), cages).length === 0) continue;
     if (!colorCages(cages)) continue;
 
     const initialValues = createEmptyBoard();
@@ -68,6 +77,7 @@ export function generateLevel(options: GenerateOptions): GameLevel {
     }
 
     if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) continue;
+    if (!evaluateLogicalSolvability(initialValues, cages).solved) continue;
 
     const now = new Date().toISOString();
     return {
@@ -123,9 +133,44 @@ function fits(grid: number[][], row: number, col: number, v: number): boolean {
 
 // ---------- 2.+3. Käfig-Partition mit Summen ----------
 
-function partitionIntoCages(solution: number[][], sizePool: number[]): Cage[] {
+function partitionIntoCages(solution: number[][], sizePool: number[], entropyAnchors: number): Cage[] {
   const assigned = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(false));
   const cages: Cage[] = [];
+
+  const addCage = (cells: Array<{ row: number; col: number }>): void => {
+    for (const cell of cells) assigned[cell.row][cell.col] = true;
+    cages.push({
+      id: randomId(),
+      cells,
+      sum: cells.reduce((sum, cell) => sum + solution[cell.row][cell.col], 0),
+      color: CAGE_COLORS[0],
+    });
+  };
+
+  // Multiple-45-Anker: Vier interne Zweierkäfige decken acht Zellen der
+  // ersten Zeile ab; der fünfte Käfig ragt genau eine Zelle heraus.
+  // Damit besitzt jedes generierte Layout mindestens einen echten Outie.
+  for (let col = 0; col < 8; col += 2) {
+    addCage([{ row: 0, col }, { row: 0, col: col + 1 }]);
+  }
+  addCage([{ row: 0, col: 8 }, { row: 1, col: 8 }]);
+
+  // Low-/High-Entropy-Anker gezielt statt zufällig platzieren.
+  const extremeSums = new Set([3, 4, 16, 17]);
+  const extremePairs = shuffle(allCells().flatMap((cell) =>
+    neighbors(cell)
+      .filter((neighbor) => cell.row * BOARD_SIZE + cell.col < neighbor.row * BOARD_SIZE + neighbor.col)
+      .map((neighbor) => [cell, neighbor] as Array<{ row: number; col: number }>)
+  ));
+  let anchors = 0;
+  for (const pair of extremePairs) {
+    if (anchors >= entropyAnchors) break;
+    if (pair.some((cell) => assigned[cell.row][cell.col])) continue;
+    const sum = pair.reduce((total, cell) => total + solution[cell.row][cell.col], 0);
+    if (!extremeSums.has(sum)) continue;
+    addCage(pair);
+    anchors++;
+  }
 
   for (const start of shuffle(allCells())) {
     if (assigned[start.row][start.col]) continue;
@@ -154,6 +199,13 @@ function partitionIntoCages(solution: number[][], sizePool: number[]): Cage[] {
     });
   }
   return cages;
+}
+
+function hasUniqueCombinationAnchor(cages: Cage[]): boolean {
+  return cages.some((cage) =>
+    (cage.cells.length === 2 && [3, 4, 16, 17].includes(cage.sum)) ||
+    (cage.cells.length === 3 && [6, 7, 23, 24].includes(cage.sum))
+  );
 }
 
 // ---------- 4. Vier-Färbung ----------

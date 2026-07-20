@@ -98,7 +98,7 @@ export function LevelsTab({ currentLevel, onLevelChange, onGenerateLevel, transi
     <FadeInView direction={transitionDirection === 'left' ? 'left' : 'right'} duration={300} key="levels-tab">
       <Box bg="surface.raised" p={5} borderRadius="xl" boxShadow="sm" mb={4}>
         <Heading as="h2" size="lg" mb={2} color="text.primary">
-          Zufallslevel
+          Zufallslevel erstellen
         </Heading>
         <Text fontSize="sm" color="text.secondary" mb={3}>
           Erzeugt ein frisches Rätsel mit garantiert eindeutiger Lösung.
@@ -107,12 +107,12 @@ export function LevelsTab({ currentLevel, onLevelChange, onGenerateLevel, transi
           {GENERATOR_DIFFICULTIES.map(({ key, label, color }) => (
             <Button
               key={key}
-              aria-label={`Zufallslevel ${label}`}
+              aria-label={`Neues Zufallslevel erstellen: ${label}`}
               colorScheme={color}
               variant="outline"
               onClick={() => onGenerateLevel(key)}
             >
-              {label}
+              Zufall · {label}
             </Button>
           ))}
         </SimpleGrid>

@@ -6,12 +6,20 @@ export interface CellPosition {
   col: number; // 0..8
 }
 
+/** Laufzeitmodell einer Zelle für Solver- und Erklärungsansichten. */
+export interface Cell extends CellPosition {
+  /** 0 = noch unbelegt, sonst 1..9. */
+  value: number;
+  /** Aktuell unter allen Hard Constraints mögliche Werte. */
+  candidates: number[];
+}
+
 export interface Cage {
   /** Stabile, eindeutige ID (base36-Kurzstring, vom Generator vergeben). */
   id: string;
   /** Käfigzellen, mindestens 1, höchstens 9. */
   cells: CellPosition[];
-  /** Pflichtsumme. Kleinster Wert = 1, größter = 45 (Käfig = ganzes Brett). */
+  /** Pflichtsumme. Kleinster Wert = 1, größter = 45 (alle Ziffern 1..9). */
   sum: number;
   /** Chakra-Token wie "blue.100". Siehe CageColor unten. */
   color: CageColor;

@@ -17,6 +17,8 @@ export type ValidationErrorType =
   | 'OVERLAPPING_CAGES'
   | 'UNCOVERED_CELLS'
   | 'DUPLICATE_CELL_IN_CAGE'
+  | 'DUPLICATE_CAGE_ID'
+  | 'DISCONNECTED_CAGE'
   | 'CAGE_TOO_LARGE'
   | 'MISSING_SOLUTION'
   | 'INVALID_SOLUTION'
@@ -77,6 +79,24 @@ function areCagesAdjacent(a: Cage, b: Cage): boolean {
   return a.cells.some((ca) => b.cells.some((cb) => areCellsAdjacent(ca, cb)));
 }
 
+function isCageConnected(cells: Array<{ row: number; col: number }>): boolean {
+  if (cells.length === 0) return false;
+  const remaining = new Set(cells.map((cell) => `${cell.row},${cell.col}`));
+  const queue = [cells[0]];
+  remaining.delete(`${cells[0].row},${cells[0].col}`);
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    for (const candidate of cells) {
+      const candidateKey = `${candidate.row},${candidate.col}`;
+      if (remaining.has(candidateKey) && areCellsAdjacent(current, candidate)) {
+        remaining.delete(candidateKey);
+        queue.push(candidate);
+      }
+    }
+  }
+  return remaining.size === 0;
+}
+
 function getPossibleSums(size: number): Set<number> {
   if (size < 1 || size > BOARD_SIZE) return new Set();
   // Alle Kombinationen ohne Wiederholung aus {1..9} der Länge size.
@@ -132,10 +152,15 @@ export function validateLevel(level: unknown): ValidationResult {
   const solution = lvl.solution as number[][];
 
   // 1. Käfige einzeln
+  const cageIds = new Set<string>();
   for (const cage of cages) {
     if (typeof cage.id !== 'string' || cage.id.length === 0) {
       errors.push({ levelId, errorType: 'SCHEMA_CAGE', message: 'Käfig ohne gültige "id"', details: cage });
     }
+    if (cageIds.has(cage.id)) {
+      errors.push({ levelId, errorType: 'DUPLICATE_CAGE_ID', message: `Käfig-ID "${cage.id}" ist nicht eindeutig` });
+    }
+    cageIds.add(cage.id);
     if (!Array.isArray(cage.cells) || cage.cells.length === 0) {
       errors.push({ levelId, errorType: 'SCHEMA_CAGE', message: `Käfig ${cage.id}: "cells" fehlt/leer`, details: cage });
       continue;
@@ -155,6 +180,10 @@ export function validateLevel(level: unknown): ValidationResult {
       }
       seenInCage.add(key);
     }
+    const validCells = cage.cells.filter(isCellPosition);
+    if (validCells.length === cage.cells.length && !isCageConnected(validCells)) {
+      errors.push({ levelId, errorType: 'DISCONNECTED_CAGE', message: `Käfig ${cage.id} ist nicht orthogonal zusammenhängend`, details: cage });
+    }
     if (!isValidColor(cage.color)) {
       errors.push({ levelId, errorType: 'INVALID_CAGE_COLOR', message: `Käfig ${cage.id}: ungültige Farbe "${cage.color}"`, details: { validColors: CAGE_COLORS } });
     }
@@ -170,6 +199,7 @@ export function validateLevel(level: unknown): ValidationResult {
 
   // 1.5 Käfig-Duplikate in der Lösung
   for (const cage of cages) {
+    if (!cage.cells.every(isCellPosition)) continue;
     const values = cage.cells.map(c => solution[c.row][c.col]);
     if (new Set(values).size !== values.length) {
       errors.push({ levelId, errorType: 'DUPLICATE_VALUES_IN_CAGE', message: `Käfig ${cage.id}: Werte ${JSON.stringify(values)} enthalten Duplikate`, details: { cageId: cage.id, values } });
@@ -178,6 +208,7 @@ export function validateLevel(level: unknown): ValidationResult {
 
   // 1.6 Käfig-Summen müssen mit der gespeicherten Lösung übereinstimmen
   for (const cage of cages) {
+    if (!cage.cells.every(isCellPosition)) continue;
     const sum = cage.cells.reduce((s, c) => s + solution[c.row][c.col], 0);
     if (sum !== cage.sum) {
       errors.push({ levelId, errorType: 'CAGE_SUM_SOLUTION_MISMATCH', message: `Käfig ${cage.id}: Summe ${cage.sum} widerspricht Lösung (${sum})`, details: { cageId: cage.id, expected: cage.sum, actual: sum } });

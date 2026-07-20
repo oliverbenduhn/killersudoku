@@ -3,6 +3,8 @@
 
 import { generateLevel } from './puzzleGeneratorService';
 import { validateLevel } from '../utils/levelValidator';
+import { find45Deductions } from '../utils/killerRegions';
+import { evaluateLogicalSolvability } from './hintEngine';
 
 const countGivens = (m: number[][]): number =>
   m.flat().filter((v) => v !== 0).length;
@@ -16,6 +18,12 @@ describe('puzzleGeneratorService — generateLevel', () => {
       expect(r.errors).toEqual([]);
       expect(lvl.difficulty).toBe(difficulty);
       expect(lvl.levelNumber).toBe(101);
+      expect(lvl.cages.some((cage) =>
+        (cage.cells.length === 2 && [3, 4, 16, 17].includes(cage.sum)) ||
+        (cage.cells.length === 3 && [6, 7, 23, 24].includes(cage.sum))
+      )).toBe(true);
+      expect(find45Deductions(createEmpty(), lvl.cages).length).toBeGreaterThan(0);
+      expect(evaluateLogicalSolvability(lvl.initialValues, lvl.cages).solved).toBe(true);
     }
   );
 
@@ -33,3 +41,7 @@ describe('puzzleGeneratorService — generateLevel', () => {
     expect(a.solution).not.toEqual(b.solution);
   });
 });
+
+function createEmpty(): number[][] {
+  return Array.from({ length: 9 }, () => Array(9).fill(0));
+}

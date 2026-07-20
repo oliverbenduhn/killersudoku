@@ -69,23 +69,19 @@ export const useBoardGameLogic = ({
         return;
       }
 
-      const newValues = gameState.cellValues.map(row => [...row]);
-      let lastCell: CellPosition | null = null;
-      let lastValid = true;
-      let anyInvalid = false;
-
-      selectedCells.forEach(({ row, col }) => {
-        if (levelData.initialValues[row][col] === 0) {
-          const currentValue = newValues[row][col];
-          if (currentValue === number) return;
-
-          newValues[row][col] = number;
-          lastCell = { row, col };
-          const isValid = GameLogic.isCellValid(newValues, row, col, number, cages, size);
-          lastValid = isValid;
-          if (!isValid) anyInvalid = true;
-        }
-      });
+      const entry = GameLogic.applyPlayerEntry(
+        gameState.cellValues,
+        levelData.initialValues,
+        selectedCells,
+        number,
+        cages,
+        size
+      );
+      const anyInvalid = entry.rejectedCells.length > 0;
+      const lastCell = anyInvalid
+        ? entry.rejectedCells[entry.rejectedCells.length - 1]
+        : entry.acceptedCells[entry.acceptedCells.length - 1] ?? null;
+      const lastValid = !anyInvalid;
 
       if (!lastCell) return;
 
@@ -97,7 +93,7 @@ export const useBoardGameLogic = ({
       const gameOverNow = updatedMistakes >= maxMistakes;
 
       applyMove({
-        cellValues: newValues,
+        cellValues: entry.cellValues,
         mistakesUsed: updatedMistakes,
         gameOver: gameOverNow
       });
@@ -114,7 +110,7 @@ export const useBoardGameLogic = ({
         onGameOver();
       }
     },
-    [gameState, levelData, cages, selectedCells, size, maxMistakes, isGameOver, updateGameState, animation, onGameOver, showError]
+    [gameState, levelData, cages, selectedCells, size, maxMistakes, isGameOver, applyMove, animation, onGameOver, showError]
   );
 
   const handleClear = useCallback(() => {

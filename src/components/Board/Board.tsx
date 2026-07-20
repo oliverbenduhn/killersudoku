@@ -643,6 +643,7 @@ export const Board: React.FC<BoardProps> = ({
                 'naked-single-cage': 'Käfig-Naked Single',
                 'hidden-single-cage': 'Käfig-Hidden Single',
                 'naked-single-sudoku': 'Sudoku-Naked Single',
+                'hidden-single-sudoku': 'Sudoku-Hidden Single',
                 'innie': '45er-Regel (Innie)',
                 'outie': '45er-Regel (Outie)',
               };

@@ -1,12 +1,9 @@
 // Strategische Hint-Engine.
 //
-// Drei Techniken:
-//   1. Naked Single (Cage): Käfig mit einer leeren Zelle, eindeutiger Wert
-//   2. Hidden Single (Cage): Wert kann in Käfig nur an einer Stelle stehen
-//   3. Naked Single (Sudoku): Zelle mit genau einem legalen Wert
+// Strategische Techniken über Käfigkombinationen, Sudoku-Häuser und 45er-Regionen.
 
 import { GameLevel } from '../types/gameTypes';
-import { findNextHint, findFirstHintForLevel } from './hintEngine';
+import { evaluateLogicalSolvability, findNextHint, findFirstHintForLevel } from './hintEngine';
 
 const SIZE = 9;
 
@@ -61,7 +58,7 @@ describe('hintEngine', () => {
 
       const hint = findNextHint(cellValues, cages);
       expect(hint).not.toBeNull();
-      expect(hint!.technique).toBe('naked-single-sudoku');
+      expect(hint!.technique).toBe('hidden-single-cage');
       expect(hint!.cell).toEqual({ row: 0, col: 0 });
       expect(hint!.value).toBe(7);
     });
@@ -125,11 +122,20 @@ describe('hintEngine', () => {
   });
 
   describe('Hidden Single (Cage)', () => {
-    // Hinweis: Ein direkter Unit-Test für Hidden Single ist trickreich:
-    // Beide Zellen eines 2er-Käfigs liegen meist im selben 3x3-Block,
-    // wodurch Block-Verbote beide Zellen symmetrisch blockieren — Hidden
-    // Single entsteht dort fast nie. Die Engine wird stattdessen durch
-    // den End-to-End-Test mit echten Leveln mitgetestet (siehe unten).
+    test('erzwingt keine Ziffer, die der Käfig gar nicht enthalten muss', () => {
+      const cellValues = emptyBoard();
+      cellValues[3][1] = 9;
+      cellValues[6][2] = 9;
+      const cages = [{
+        id: 'c1',
+        cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }],
+        sum: 12,
+        color: 'blue.100' as const,
+      }];
+
+      expect(findNextHint(cellValues, cages)).toBeNull();
+    });
+
     test('Engine liefert _einen_ Hint für Level 1 (deckt alle 3 Techniken indirekt ab)', () => {
       const path = require('path');
       const fs = require('fs');
@@ -176,6 +182,28 @@ describe('hintEngine', () => {
     });
   });
 
+  describe('Hidden Single (Sudoku-Haus)', () => {
+    test('erzwingt eine Ziffer, die in einer Zeile nur noch eine Position hat', () => {
+      const cellValues = Array.from({ length: 9 }, (_, r) =>
+        Array.from({ length: 9 }, (_, c) => ((r * 3 + Math.floor(r / 3) + c) % 9) + 1)
+      );
+      cellValues[0][0] = 0;
+      cellValues[0][1] = 0;
+      const cages = Array.from({ length: 9 }, (_, row) => ({
+        id: `row-${row}`,
+        cells: Array.from({ length: 9 }, (_, col) => ({ row, col })),
+        sum: 45,
+        color: 'blue.100' as const,
+      }));
+
+      expect(findNextHint(cellValues, cages)).toEqual(expect.objectContaining({
+        technique: 'hidden-single-sudoku',
+        cell: { row: 0, col: 0 },
+        value: 1,
+      }));
+    });
+  });
+
   describe('Priorisierung', () => {
     test('Naked Single (Cage) hat Vorrang vor Naked Single (Sudoku)', () => {
       const cellValues = emptyBoard();
@@ -216,6 +244,26 @@ describe('hintEngine', () => {
       }));
       expect(findNextHint(cellValues, cages)).toBeNull();
     });
+  });
+
+  test('bewertet einen vollständigen Lösungsweg mit den unterstützten Techniken', () => {
+    const board = Array.from({ length: 9 }, (_, r) =>
+      Array.from({ length: 9 }, (_, c) => ((r * 3 + Math.floor(r / 3) + c) % 9) + 1)
+    );
+    const expected = board[0][0];
+    board[0][0] = 0;
+    const cages = Array.from({ length: 81 }, (_, index) => {
+      const row = Math.floor(index / 9);
+      const col = index % 9;
+      const value = row === 0 && col === 0 ? expected : board[row][col];
+      return { id: `c-${index}`, cells: [{ row, col }], sum: value, color: 'blue.100' as const };
+    });
+
+    expect(evaluateLogicalSolvability(board, cages)).toEqual(expect.objectContaining({
+      solved: true,
+      remainingCells: 0,
+      steps: 1,
+    }));
   });
 
   describe('echte Level (alle 100)', () => {
