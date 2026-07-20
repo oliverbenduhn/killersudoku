@@ -91,16 +91,19 @@ export const Board: React.FC<BoardProps> = ({
   const cellSizeByBreakpoint = useBreakpointValue({
     base: 36,
     sm: 42,
-    md: 48,
-    lg: 66,
-    xl: 72
+    md: 56,
+    lg: 72,
+    xl: 80
   }) || 48;
   const { cellSize } = useBoardResize({ boardRef, cellSizeByBreakpoint, size });
 
   // Schriftgrößen
   const valueFontSize = useBreakpointValue({ base: "md", sm: "lg", md: "xl", lg: "xl" }) || "lg";
   const sumFontSize = useBreakpointValue({ base: "2xs", sm: "xs", md: "xs", lg: "xs" }) || "xs";
-  const flexDirection = useBreakpointValue({ base: "column", lg: "row" }) as "column" | "row";
+  // Phone-Landscape bleibt Column-Stacking; erst bei echt breiten Viewports
+  // (≥1024, d. h. Tablet/Desktop quer) gibt's eine echte Sidebar mit
+  // NumberPad rechts vom Brett.
+  const flexDirection = useBreakpointValue({ base: "column", xl: "row" }) as "column" | "row";
 
   // Cell Selection
   const {
@@ -527,7 +530,7 @@ export const Board: React.FC<BoardProps> = ({
         }}
         data-board-root="true"
         role="grid"
-        p={[1, 2, 4]}
+        p={flexDirection === "column" ? 2 : [1, 2, 4]}
         display="flex"
         justifyContent="center"
         alignItems="center"
@@ -538,7 +541,7 @@ export const Board: React.FC<BoardProps> = ({
         flexGrow={1}
         flexShrink={1}
         flexBasis={flexDirection === "row" ? "0" : "auto"}
-        maxW={flexDirection === "column" ? "95%" : "70%"}
+        maxW={flexDirection === "column" ? "100%" : "70%"}
         h={["auto", "auto", "65vh"]}
         overflowX="hidden"
         overflowY="hidden"
@@ -600,6 +603,8 @@ export const Board: React.FC<BoardProps> = ({
         alignSelf={flexDirection === "column" ? "center" : "start"}
         mt={flexDirection === "column" ? 4 : 0}
         pt={flexDirection === "row" ? "16px" : 2}
+        // Bottom-Padding sitzt bereits am äußeren App-Container (64px);
+        // im Column-Modus reicht das, weil die Inhalts-Box oben beginnt.
         width={flexDirection === "column" ? "100%" : "auto"}
         display="flex"
         flexDirection="column"

@@ -45,19 +45,13 @@ export const useBoardResize = ({
       const node = boardRef.current;
       if (!node) return;
 
-      const box = node.getBoundingClientRect();
-      const parentWidth = box.width - 16;
-      const parentHeight = box.height - 16;
-
-      const maxByWidth = Math.floor(parentWidth / size);
-      const maxByHeight = Math.floor(parentHeight / size);
-      const maxCellSize = Math.min(maxByWidth, maxByHeight);
-
-      const isMobile = window.innerWidth < 768;
-      const minSize = isMobile ? 24 : 28;
-
-      const optimalSize = Math.min(maxCellSize, cellSizeByBreakpoint);
-      const newCellSize = Math.max(minSize, optimalSize);
+      // Viewport-basiert messen, nicht die Box selbst — sonst Self-Lock auf
+      // kleine Cell-Größen im Landscape, weil die Box nur so groß ist wie
+      // das aktuelle Grid.
+      const viewportSide = Math.min(window.innerWidth, window.innerHeight);
+      const viewportMaxCell = Math.floor((viewportSide * 0.92) / size);
+      const minSize = window.innerWidth < 768 ? 24 : 28;
+      const newCellSize = Math.max(minSize, Math.min(viewportMaxCell, cellSizeByBreakpoint));
 
       if (Math.abs(newCellSize - lastCellSize) < 2 || resizeAttempts >= maxResizeAttempts) {
         if (Math.abs(newCellSize - cellSizeRef.current) >= 2) {
