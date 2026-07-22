@@ -14,7 +14,7 @@ import {
   keyframes,
   useToast
 } from '@chakra-ui/react';
-import { AddIcon, RepeatIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, RepeatClockIcon } from '@chakra-ui/icons';
+import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, RepeatClockIcon } from '@chakra-ui/icons';
 
 import { useGameState } from '../../hooks/useGameState';
 import { useStrategicHint } from '../../hooks/useStrategicHint';
@@ -65,6 +65,9 @@ interface BoardProps {
   isLoading?: boolean;
   error?: string | null;
   blackAndWhiteMode?: boolean;
+  /** Wird nur im Sidebar-Layout (flexDirection "row") unten in der
+   *  Sidebar-Spalte gerendert, unterhalb der Aktions-Buttons. */
+  sidebarFooter?: React.ReactNode;
 }
 
 const MAX_HINTS = 3;
@@ -76,7 +79,8 @@ export const Board: React.FC<BoardProps> = ({
   levelData = null,
   isLoading: externalLoading = false,
   error: externalError = null,
-  blackAndWhiteMode = false
+  blackAndWhiteMode = false,
+  sidebarFooter = null
 }) => {
   const toast = useToast();
   const { gameState, isLoading: stateLoading, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size);
@@ -105,9 +109,6 @@ export const Board: React.FC<BoardProps> = ({
   // Brett-Höhe an der kürzeren Viewport-Seite, sodass Cell-Größe jetzt
   // quadratisch an die verfügbare Höhe des linken Bereichs gebunden ist.
   const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as "column" | "row";
-  // Mobile (base/md): Aktionen icon-only (kompakt). Desktop (lg+): mit
-  // Text-Beschriftung. Synchron mit Bottom-Nav-Switch in App.tsx.
-  const isMobile = useBreakpointValue({ base: true, lg: false }) ?? true;
 
   // Cell Selection
   const {
@@ -683,7 +684,7 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || cages.length === 0}
             aria-label="Tipp"
           >
-            {isMobile ? <BellIcon /> : 'Tipp'}
+            <BellIcon />
           </RippleButton>
           {/* Direkter Reveal-Hinweis: brand primary, klar als primäre Aktion. */}
           <RippleButton
@@ -692,7 +693,7 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
             aria-label={`Hinweis (${MAX_HINTS - (gameState?.hintsUsed || 0)})`}
           >
-            {isMobile ? <AddIcon /> : <><AddIcon mr={2} /> Hinweis ({MAX_HINTS - (gameState?.hintsUsed || 0)})</>}
+            <AddIcon />
           </RippleButton>
           {/* Reset: tonal, nicht akzent. */}
           <RippleButton
@@ -701,7 +702,7 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver}
             aria-label="Reset"
           >
-            {isMobile ? <RepeatClockIcon /> : <><RepeatIcon mr={2} /> Reset</>}
+            <RepeatClockIcon />
           </RippleButton>
           <RippleButton
             variant="ghost"
@@ -709,8 +710,7 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || !canUndo}
             aria-label="Rückgängig"
           >
-            {isMobile ? <ArrowBackIcon /> : <ArrowBackIcon mr={2} />}
-            {!isMobile && 'Undo'}
+            <ArrowBackIcon />
           </RippleButton>
           <RippleButton
             variant="ghost"
@@ -718,10 +718,23 @@ export const Board: React.FC<BoardProps> = ({
             isDisabled={!gameState || isGameOver || !canRedo}
             aria-label="Wiederherstellen"
           >
-            {isMobile ? <ArrowForwardIcon /> : <ArrowForwardIcon mr={2} />}
-            {!isMobile && 'Redo'}
+            <ArrowForwardIcon />
           </RippleButton>
         </Box>
+
+        {flexDirection === "row" && sidebarFooter && (
+          <Box
+            mt={4}
+            pt={3}
+            borderTop="1px solid"
+            borderColor="surface.sunken"
+            display="flex"
+            flexDirection="column"
+            gap={2}
+          >
+            {sidebarFooter}
+          </Box>
+        )}
       </Box>
     </Flex>
   );

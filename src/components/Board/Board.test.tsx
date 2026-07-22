@@ -40,6 +40,19 @@ jest.mock('../../hooks/useBoardResize', () => ({
   useBoardResize: () => ({ cellSize: 50 })
 }));
 
+// Mock useBreakpointValue: Standard = column (Mobil, Test-Viewport).
+// Tests, die Sidebar-Layout brauchen, rufen `setBreakpointMock` auf.
+let breakpointImpl: (values: any) => any = (values: any) => values.base;
+jest.mock('@chakra-ui/react', () => {
+  const actual = jest.requireActual('@chakra-ui/react');
+  return {
+    ...actual,
+    useBreakpointValue: (values: any) => breakpointImpl(values),
+  };
+});
+const setBreakpointMock = (impl: (values: any) => any) => { breakpointImpl = impl; };
+const resetBreakpointMock = () => { breakpointImpl = (values: any) => values.base; };
+
 jest.mock('../../hooks/useCellAnimation', () => ({
   __esModule: true,
   useCellAnimation: () => ({
@@ -131,5 +144,24 @@ describe('Board Component', () => {
     const cell = screen.getByTestId('cell-0-0');
     expect(cell).toHaveAttribute('aria-label');
     expect(cell.getAttribute('aria-label')).toContain('Zeile 1 Spalte 1');
+  });
+
+  test('rendert sidebarFooter NICHT im Column-Modus (Mobil, Standard im Test-Viewport)', () => {
+    render(
+      <Board levelData={mockLevelData} sidebarFooter={<button>Mein Footer</button>} />
+    );
+    expect(screen.queryByText('Mein Footer')).not.toBeInTheDocument();
+  });
+
+  test('rendert sidebarFooter im Sidebar-Modus (Desktop)', () => {
+    setBreakpointMock((values: any) => values.lg ?? values.md ?? values.base);
+    try {
+      render(
+        <Board levelData={mockLevelData} sidebarFooter={<button>Mein Footer</button>} />
+      );
+      expect(screen.getByText('Mein Footer')).toBeInTheDocument();
+    } finally {
+      resetBreakpointMock();
+    }
   });
 });
