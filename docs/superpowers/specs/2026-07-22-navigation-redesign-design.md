@@ -16,112 +16,183 @@ und in beiden Fällen unvollständig:
 - **Desktop** (`lg+`): Volle Bottom-Nav mit Icons + Text-Labels für alle 5
   Tabs, aber keine Kopfzeile. Optisch nicht gewünscht (User-Feedback).
 
-Ziel dieses Redesigns: Navigation, die auf jedem Formfaktor zum verfügbaren
-Platz passt, ohne Wischen als einzigen/versteckten Navigationsweg, und ohne
-die Bottom-Bar auf Desktop.
+Im Zuge der Diskussion hat sich herausgestellt, dass drei der fünf Tabs
+(Statistik, Info, Einstellungen) inhaltlich verzichtbar sind bzw. sich in
+zwei Icon-Toggles auf dem Hauptbildschirm auflösen lassen. Das vereinfacht
+das eigentliche Navigationsproblem erheblich: statt einer 5-Punkte-Navigation
+braucht die App nur noch **zwei Screens** mit einfachem Hin-und-Zurück.
 
 ## Ziel-Design
 
-### Mobil (`base`, < `md`)
+### Screens
 
-Kopfzeile bleibt wie heute (Titel „Killer Sudoku" links, Level-Auswahl auf
-dem Start-Tab), zusätzlich ein Hamburger-Icon rechts. Klick öffnet ein
-Dropdown-Menü (Chakra `Menu`/`MenuList`) mit den 5 Tabs (Icon + Label je
-Eintrag). Auswahl eines Eintrags wechselt den Tab und schließt das Menü.
+Es gibt nur noch zwei Screens:
 
-Wischen zwischen Tabs (`SwipeableBox`, `handleSwipe` in `App.tsx`) wird
-vollständig entfernt — Navigation ausschließlich über das Menü.
+1. **Start** — Spielbrett (bisher `HomeTab`)
+2. **Level** — Zufallslevel-Generator + Level-Auswahl (bisher `LevelsTab`,
+   Inhalt unverändert)
 
-### Desktop / Sidebar-Layout (ab `md`, d. h. Tablet-Quer + Desktop)
+Die Tabs **Statistik**, **Info** und **Einstellungen** entfallen komplett:
 
-Keine Kopfzeile. Die rechte Sidebar-Spalte (aktuell: Zahlenfeld 1–9 +
-Tipp/Hinweis/Reset/Undo/Redo) bekommt unten einen neuen Block:
+- **Statistik**: Tab + zugehöriger State/Fetch in `App.tsx` (`stats`,
+  `loadStatistics`-Effect) werden entfernt. Die zugrunde liegende Aufzeichnung
+  von Solve-Statistiken (`statisticsService`, aufgerufen aus
+  `useBoardGameLogic`/`Board.tsx` beim Lösen eines Levels) bleibt unverändert
+  bestehen — es wird nur die Anzeige entfernt, nicht die Datenerfassung.
+- **Info**: Tab entfällt ersatzlos. Die Spielregeln werden bereits im
+  Tutorial erklärt.
+- **Einstellungen**: Tab entfällt komplett, inklusive:
+  - "Alle Level zurücksetzen" (Button + Bestätigungsdialog
+    `AlertDialog`/`isResetDialogOpen`/`handleResetAllLevels` in `App.tsx`) —
+    ersatzlos entfernt, kein Reset-Zugang mehr in der UI.
+  - "Tutorial erneut ansehen" (`onRestartTutorial`/`tutorial.restart`) —
+    ersatzlos entfernt. Das Tutorial erscheint weiterhin automatisch beim
+    ersten Start (unverändertes Verhalten von `useTutorial`), nur der manuelle
+    Wiederaufruf fällt weg.
+  - Dark Mode und Schwarzweiß-Modus ziehen als Icon-Toggles auf den
+    Start-Screen um (siehe unten) — die zugrunde liegenden Mechanismen
+    (`useColorMode`, `blackAndWhiteMode`-State in `App.tsx`) bleiben
+    unverändert, nur die Bedienelemente wandern.
 
-- Trennlinie
-- Titel „Killer Sudoku"
-- Die 5 Tabs als Buttons (Icon + Label je Eintrag, volle Klickfläche),
-  optisch zurückhaltend/ohne Farbakzent — bewusst abgesetzt von den
-  farbigen Spiel-Aktions-Buttons darüber (Tipp/Hinweis blau, Reset/Undo/Redo
-  ghost)
+### Neue Bedienelemente auf dem Start-Screen
 
-Damit dieser Block nicht zu hoch wird, werden Tipp/Hinweis/Reset/Undo/Redo in
-der Sidebar **immer** icon-only dargestellt (aktuell zeigen sie ab der
-`lg`-Breite noch Text zusätzlich zum Icon — das entfällt). Das Zahlenfeld
-(1–9) bleibt unverändert.
+Drei Elemente kommen zum Start-Screen dazu: **Level-Button** (navigiert zum
+Level-Screen), **Dark-Mode-Toggle** (Icon-Button, `MoonIcon`/`SunIcon` je nach
+`colorMode`), **Schwarzweiß-Toggle** (Icon-Button, `ViewIcon`/`ViewOffIcon` je
+nach `blackAndWhiteMode`).
 
-Da die Sidebar-Spalte bereits ab `md` existiert (nicht erst ab `lg`), ist die
-bisherige Navigations-Lücke im Tablet-Quer-Bereich damit automatisch mit
-gelöst.
+- **Mobil** (`base`, < `md`): in der bestehenden Kopfzeile, an der Stelle, wo
+  aktuell die Level-Auswahl (`LevelSelector`, kompakte Variante) sitzt. Die
+  kompakte Dropdown-Auswahl entfällt dabei — der Level-Button navigiert
+  stattdessen zum vollen Level-Screen.
+- **Desktop/Sidebar-Layout** (ab `md`): in der rechten Sidebar-Spalte
+  (aktuell: Zahlenfeld + Tipp/Hinweis/Reset/Undo/Redo), unterhalb der
+  Aktions-Buttons — an der Stelle, die vorher für das 5-Tab-Nav-Menü
+  vorgesehen war. Damit bleibt die aus der vorherigen Design-Runde
+  beschlossene Vereinfachung bestehen: Tipp/Hinweis/Reset/Undo/Redo sind in
+  der Sidebar immer icon-only (nicht mehr nur bis `md`, auch ab `lg`), damit
+  unten Platz für die drei neuen Buttons ist. Das Zahlenfeld (1–9) bleibt
+  unverändert.
+
+Da Level-Button, Dark-Mode- und Schwarzweiß-Toggle Teil des **Start-Screens**
+sind (nicht Teil von `Board.tsx`s Spiellogik), aber auf Desktop optisch in
+Board's Sidebar-Spalte sitzen sollen, rendert `Board.tsx` sie über einen
+Slot/Children-Mechanismus — siehe Komponenten-Abschnitt. Das löst das in der
+vorherigen Runde gefundene Problem (Sidebar existierte nur auf dem
+Start-Tab) von selbst, weil es jetzt nur noch einen Screen gibt, der
+überhaupt eine Sidebar hat (Level-Screen hat keine).
+
+### Level-Screen
+
+Bekommt oben einen Zurück-Pfeil (führt zurück zu Start) + Titel "Level".
+Inhalt darunter ist unverändert der bisherige `LevelsTab`-Inhalt
+(Zufallslevel-Generator + volle Level-Auswahl-Liste). Auf Mobil und Desktop
+gleich aufgebaut (eigene Kopfzeile mit Zurück-Pfeil, kein Sidebar-Layout
+nötig, da kein Spielbrett).
 
 ## Komponenten
 
-- **`BottomNavigation.tsx`** — wird komplett entfernt (Datei + Import +
-  Verwendung in `App.tsx`).
-- **Gemeinsame Tab-Konfiguration** — neue Datei, z. B.
-  `src/config/navItems.ts`, mit `{ id, label, icon }[]` für die 5 Tabs.
-  Ersetzt die aktuell in `BottomNavigation.tsx` lokal definierte
-  `navItems`-Liste. Wird von beiden neuen Komponenten importiert, damit
-  Icons/Labels nur an einer Stelle gepflegt werden.
-  - Der „Level"-Tab bekommt dabei ein neues Icon (nicht mehr `HamburgerIcon`,
-    da dieses Symbol jetzt für den mobilen Menü-Trigger reserviert ist) —
-    z. B. `StarIcon`/ein Listen-Icon; genaue Wahl in der Umsetzung.
-- **Neue Komponente `MobileHeaderMenu.tsx`** (Name kann in der Umsetzung
-  variieren) — Hamburger-Icon-Button + `Menu`/`MenuList` mit den Tab-Einträgen
-  aus der gemeinsamen Konfiguration. Wird in `App.tsx`s Kopfzeile gerendert,
-  nur sichtbar wenn `!isSidebarLayout` (Mobil).
-- **Neue Komponente `SidebarNav.tsx`** (Name kann variieren) — Titel + Liste
-  der Tab-Buttons aus der gemeinsamen Konfiguration. Wird innerhalb von
-  `Board.tsx` in der Sidebar-Spalte gerendert, unterhalb der
-  Aktions-Buttons, nur wenn `flexDirection === "row"`.
-- **`Board.tsx`** — bekommt zwei neue Props: `activeTab: string` und
-  `onTabChange: (tab: string) => void`, um `SidebarNav` zu befüllen. Die
-  `isMobile`-Unterscheidung für Tipp/Hinweis/Reset/Undo/Redo entfällt, diese
-  Buttons sind grundsätzlich icon-only.
-- **`App.tsx`** — Kopfzeile bekommt `MobileHeaderMenu` rechts vom Titel
-  (bzw. rechts von der Level-Auswahl, wenn die sichtbar ist). `SwipeableBox`
-  und `handleSwipe`/`calcTransition`-Wischlogik werden entfernt (die
-  Tab-Wechsel-Animation selbst — links/rechts-Slide je nach Tab-Reihenfolge —
-  bleibt, die läuft schon heute auch bei Direktklicks in der Bottom-Nav).
-  `BottomNavigation`-Rendering wird entfernt, `Board` bekommt die neuen
-  Props `activeTab`/`onTabChange` durchgereicht.
+- **Entfernt:** `BottomNavigation.tsx`, `SwipeableBox`-Nutzung in `App.tsx`
+  (Datei `SwipeableBox.tsx` selbst kann bleiben falls anderswo genutzt —
+  Prüfung in Task 1), `StatsTab`, `InfoTab`, `SettingsTab` aus `Tabs.tsx`,
+  `AlertDialog`-Reset-Block + `isResetDialogOpen`/`handleResetAllLevels` aus
+  `App.tsx`, `stats`-State + `loadStatistics`-Effect aus `App.tsx`,
+  `TutorialOverlay`s `onRestartTutorial`-Prop-Verwendung (Prop bleibt in
+  `TutorialOverlay`, nur der Aufrufer in `App.tsx` verliert den Button dafür
+  — `tutorial.restart` wird schlicht nicht mehr verdrahtet).
+- **`App.tsx`**: `activeTab` wird zu `'home' | 'levels'` (kein `TAB_ORDER`-Array
+  mehr nötig, da nur 2 Screens — direkter Toggle statt Index-Vergleich).
+  Kopfzeile zeigt auf Mobil (`!isSidebarLayout`) im Start-Zustand: Titel +
+  Level-Button + Dark-Mode-Toggle + Schwarzweiß-Toggle. Im Level-Zustand auf
+  Mobil: Zurück-Pfeil + Titel „Level" (eigene, einfachere Kopfzeile).
+- **Neue Komponente `HomeActions.tsx`** (`src/components/common/`) — die drei
+  Buttons (Level, Dark-Mode, Schwarzweiß) als eigenständige, layoutlose
+  Komponente (nur die Buttons, kein Wrapper-Styling), die sowohl in der
+  mobilen Kopfzeile als auch in `Board.tsx`s Sidebar gerendert werden kann.
+  Props: `onOpenLevels: () => void`, `blackAndWhiteMode: boolean`,
+  `onToggleBlackAndWhite: () => void`. Nutzt intern `useColorMode` direkt für
+  den Dark-Mode-Toggle (kein Prop nötig, genau wie bisher in `SettingsTab`).
+- **`Board.tsx`**: bekommt eine neue Prop `sidebarFooter?: React.ReactNode`.
+  Wird **nur wenn `flexDirection === "row"`** (Sidebar-/Desktop-Layout) am
+  Ende der Sidebar-Spalte gerendert, unterhalb der Aktions-Buttons — im
+  Column-Layout (Mobil) wird die Prop ignoriert/nicht gerendert, da dort
+  `App.tsx` die gleichen Buttons bereits separat in der Kopfzeile zeigt
+  (sonst erschienen sie doppelt). `Board.tsx` kennt `HomeActions` inhaltlich
+  nicht, nur einen generischen Slot. Die `isMobile`-Unterscheidung für
+  Tipp/Hinweis/Reset/Undo/Redo entfällt, diese Buttons sind grundsätzlich
+  icon-only.
+- **`Tabs.tsx`**: `HomeTab` bekommt neue Props `onOpenLevels`,
+  `blackAndWhiteMode`, `onToggleBlackAndWhite`, reicht sie *unconditional*
+  als `sidebarFooter={<HomeActions .../>}` an `Board` durch — die
+  Sichtbarkeits-Entscheidung (Mobil vs. Desktop) trifft ausschließlich
+  `Board.tsx` intern über `flexDirection` (s.o.), `HomeTab` muss den
+  Breakpoint nicht selbst auswerten. `LevelsTab` bekommt eine neue Prop
+  `onBack: () => void` und rendert oben einen Zurück-Button (Icon
+  `ArrowBackIcon` + Text „Zurück").
+- **`LevelSelector.tsx`**: keine Änderung — wird weiterhin mit
+  `fullWidth={true}` im Level-Screen genutzt. Die kompakte
+  (`fullWidth={false}`) Variante wird nirgends mehr eingebunden, die
+  Komponente selbst bleibt aber (kein Grund, den Code zu entfernen, falls
+  später wieder gebraucht — Datei bleibt, nur der eine Call-Ort mit
+  `fullWidth={false}` in `App.tsx`s Kopfzeile fällt weg).
 
 ## Datenfluss
 
-Keine Änderung am State-Modell: `activeTab` lebt weiterhin in `App.tsx`,
-`handleTabChange` bleibt die einzige Stelle, die ihn setzt (inkl.
-Transition-Richtung über `calcTransition`). Sowohl `MobileHeaderMenu` als
-auch `SidebarNav` rufen nur `onTabChange(id)` auf — wie die aktuelle
-Bottom-Nav auch. Layout-Entscheidung (welche der beiden Komponenten
-gerendert wird) bleibt weiterhin rein CSS-Breakpoint-basiert
-(`isSidebarLayout` bzw. `flexDirection`), kein zusätzlicher State.
+`activeTab` (jetzt `'home' | 'levels'`) lebt weiterhin in `App.tsx`.
+`handleTabChange` reduziert sich auf einen einfachen Setter (kein
+`calcTransition`/Richtungs-Array-Vergleich mehr nötig, aber die
+Slide-Transition selbst bleibt: bei `home → levels` slided „left", bei
+`levels → home` slided „right", fest verdrahtet statt über Index-Vergleich
+berechnet). `HomeActions`' `onOpenLevels` ruft `handleTabChange('levels')`,
+`LevelsTab`s neuer Zurück-Button ruft `handleTabChange('home')`.
+`blackAndWhiteMode` und `useColorMode` unverändert wie bisher, nur die
+aufrufenden Bedienelemente ziehen um.
 
 ## Edge Cases
 
-- **Level-Auswahl im mobilen Header**: bleibt wie bisher nur auf dem
-  Start-Tab sichtbar, unabhängig vom neuen Hamburger-Menü daneben.
-- **Sidebar-Nav-Höhe**: Durch icon-only Aktions-Buttons soll die Sidebar auch
-  mit dem neuen Nav-Block nicht höher werden als das Brett. Falls das auf
-  sehr kurzen Viewports (kleine Fensterhöhe bei breitem Fenster) doch knapp
-  wird, greift das bestehende `overflowY="auto"` der Sidebar-Spalte
-  (Scrollen statt Clipping) — keine neue Mechanik nötig.
-- **Tutorial-Overlay**: unabhängig von dieser Änderung, keine Berührung.
+- **Generiertes Level auswählen**: bestehendes Verhalten
+  (`onLevelChange={(l) => { handleSelectLevel(l); handleTabChange('home'); }}`
+  in `App.tsx`) bleibt — nach Auswahl/Generieren eines Levels geht's
+  automatisch zurück zum Start-Screen.
+- **Sidebar-Footer nur im Sidebar-Layout**: Auf Mobil (`flexDirection ===
+  "column"`) wird `sidebarFooter` nicht in `Board.tsx` gerendert (dort sitzen
+  die drei Buttons ja stattdessen in der Kopfzeile) — `HomeTab` entscheidet
+  anhand des gleichen Breakpoints wie `App.tsx` (`isSidebarLayout`), ob es
+  `sidebarFooter` an `Board` durchreicht oder die Buttons stattdessen separat
+  (für die mobile Kopfzeile) an `App.tsx` zurückgibt. Konkret: `App.tsx`
+  rendert `HomeActions` selbst direkt in der mobilen Kopfzeile (nicht über
+  `HomeTab`/`Board` durchgereicht) — nur der Desktop-Weg läuft über
+  `Board`s `sidebarFooter`-Prop. Damit gibt es keine doppelte
+  Bedingungsprüfung an zwei Stellen für dieselbe Sache.
+- **Sidebar-Höhe**: durch icon-only Aktions-Buttons + nur 3 kompakte Buttons
+  im Footer (statt vorher angedachter 5-Punkte-Liste) bleibt die Sidebar
+  deutlich niedriger als das Brett. Bestehendes `overflowY="auto"` fängt
+  verbleibende Edge-Cases ab.
 
 ## Testing
 
-- `App.test.tsx`: bestehender Test klickt aktuell auf einen Button namens
-  "Level" (Bottom-Nav-Eintrag) — muss auf die neue Navigation angepasst
-  werden (Hamburger öffnen, dann „Level" im Menü klicken, im Test-Viewport
-  der mobilen Variante; oder direkt den `SidebarNav`-Button, je nachdem
-  welches Layout im Test-Viewport aktiv ist).
-- `Board.test.tsx`: Mocks/Props um `activeTab`/`onTabChange` ergänzen, neuer
-  Snapshot-/Rendering-Check dass `SidebarNav` im Sidebar-Modus erscheint.
-- Kein neuer Test für Swipe nötig (wird entfernt, nicht ersetzt).
-- Visuelle Verifikation wie bei den letzten Layout-Fixes: Playwright-Screenshots
-  bei typischen Mobil- und Desktop-Viewports vor dem Deploy.
+- `App.test.tsx`: bestehender Test klickt aktuell auf "Überspringen" (Tutorial)
+  dann auf einen Button "Level" (Bottom-Nav) — wird angepasst auf: Tutorial
+  überspringen, dann auf den neuen Level-Button klicken (mobiler Viewport,
+  Standard in Tests), prüfen dass Level-Screen-Inhalt erscheint.
+- `Board.test.tsx`: Mock/Props um `sidebarFooter` ergänzen, Test dass
+  übergebener Inhalt im Sidebar-Modus erscheint.
+- Kein neuer Test für Swipe, Stats, Info, Settings nötig (werden entfernt,
+  nicht ersetzt). Vorhandene Tests für diese Tabs (falls es welche gibt)
+  werden mit entfernt.
+- Visuelle Verifikation wie bei den letzten Layout-Fixes:
+  Playwright-Screenshots bei typischen Mobil- und Desktop-Viewports vor dem
+  Deploy (Start-Screen mit neuen Buttons, Level-Screen mit Zurück-Button, auf
+  beiden Formfaktoren).
 
 ## Out of Scope
 
-- Keine Änderung an den Tab-Inhalten selbst (`Tabs.tsx`).
-- Keine Änderung an der Tutorial-Overlay-Navigation.
-- Kein neuer State-Mechanismus für Navigation — reines Komponenten-/
-  Layout-Redesign auf Basis der bestehenden `activeTab`/`onTabChange`-Logik.
+- Keine Änderung an `statisticsService`/Solve-Recording selbst (nur die
+  Anzeige verschwindet).
+- Keine Änderung an der Tutorial-Overlay-Navigation oder ihrem
+  Auto-Start-Verhalten.
+- Kein neuer State-Mechanismus — reines Komponenten-/Layout-Redesign auf
+  Basis der bestehenden `activeTab`/Handler-Logik.
+- `SwipeableBox.tsx` als Komponente wird nicht gelöscht, nur ihre Verwendung
+  in `App.tsx` entfernt (Datei-Löschung nur falls Task-1-Prüfung zeigt, dass
+  sie nirgends sonst importiert wird).
