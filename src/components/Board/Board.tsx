@@ -406,14 +406,14 @@ export const Board: React.FC<BoardProps> = ({
         {cage && (
           <Box
             position="absolute"
-            top="8%"
-            left="8%"
-            right="8%"
-            bottom="8%"
+            inset="0"
             border="1px dashed"
             borderColor={cageBorderColor}
-            borderTop={hasTopSameCage ? 'none' : undefined}
-            borderLeft={hasLeftSameCage ? 'none' : undefined}
+            // An Cage-Übergängen ohne Käfig-Bruder wird die Linie
+            // gezeichnet. Auf der Top-Left-Ecke, wo die Summe sitzt,
+            // fehlen die Linien, damit die Ziffer nicht zerschnitten wird.
+            borderTop={hasTopSameCage || isCageStart ? 'none' : undefined}
+            borderLeft={hasLeftSameCage || isCageStart ? 'none' : undefined}
             borderRight={hasRightSameCage ? 'none' : undefined}
             borderBottom={hasBottomSameCage ? 'none' : undefined}
             pointerEvents="none"
@@ -424,14 +424,19 @@ export const Board: React.FC<BoardProps> = ({
         {isCageStart && cage && (
           <Text
             position="absolute"
-            top="1px"
-            left="2px"
+            top="0"
+            left="1px"
             fontSize={sumFontSize}
             fontWeight="bold"
             color={cageComplete ? 'status.success' : 'text.primary'}
             zIndex="2"
             lineHeight="1"
-            px="1px"
+            // Kleine Background-Pill: ueberdeckt die Cage-Linie an der
+            // Stelle, wo die Summe steht — sonst kollidiert sie mit dem
+            // Strich und sieht zerhackt aus.
+            bg={bgColor}
+            px="2px"
+            borderRadius="2px"
           >
             {cage.sum}
           </Text>
