@@ -31,11 +31,12 @@ const semanticTokens = {
     'cage.pink.100':        { default: 'pink.100',  _dark: 'pink.900' },
     'cage.yellow.100':      { default: 'yellow.100',_dark: 'yellow.900' },
 
-    // Käfig-Ränder: dezent im Light Mode (gray.300), sichtbarer im Dark.
-    'cage.blue.border':     { default: 'gray.300',  _dark: 'blue.400' },
-    'cage.green.border':    { default: 'gray.300',  _dark: 'green.400' },
-    'cage.pink.border':     { default: 'gray.300',  _dark: 'pink.400' },
-    'cage.yellow.border':   { default: 'gray.300',  _dark: 'yellow.400' },
+    // Käfig-Ränder: leicht dunklere Variante der Käfig-Farbe, damit die
+    // vier Käfig-Typen klar unterscheidbar sind (vorher alle gray.300).
+    'cage.blue.border':     { default: 'blue.300',  _dark: 'blue.400' },
+    'cage.green.border':    { default: 'green.300', _dark: 'green.400' },
+    'cage.pink.border':     { default: 'pink.300',  _dark: 'pink.400' },
+    'cage.yellow.border':   { default: 'yellow.400',_dark: 'yellow.400' },
 
     // Vorgegebene Werte vs. User-Eingabe
     'cell.given.text':      { default: 'gray.900',  _dark: 'gray.50'  },
