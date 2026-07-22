@@ -327,6 +327,16 @@ export const Board: React.FC<BoardProps> = ({
     const errorColor: string = blackAndWhiteMode ? 'gray.200' : 'cell.error.text';
     const successColor: string = blackAndWhiteMode ? 'gray.50' : 'status.success';
 
+    // Im BW-Modus bekommt jeder Kaefig-Typ einen eigenen Border-Ton, damit
+    // die vier Farben (Light: blue/green/pink/yellow) im Light-Modus UND
+    // in der SW-Variante unterscheidbar bleiben. ponytail: Vier diskrete
+    // Grautoene reichen — mehr waere nur visuelles Geraeusch.
+    const cageBorderColor: string = cage
+      ? (blackAndWhiteMode
+          ? (['gray.500', 'gray.600', 'gray.700', 'gray.800'] as const)[cages.indexOf(cage) % 4]
+          : `cage.${cage.color.split('.')[0]}.border`)
+      : (blackAndWhiteMode ? 'gray.600' : 'gray.300');
+
     const isSameValue = hasSameValue(row, col);
 
     let cellAnimation = "none";
@@ -401,7 +411,7 @@ export const Board: React.FC<BoardProps> = ({
             right="8%"
             bottom="8%"
             border="1px dashed"
-            borderColor={blackAndWhiteMode ? 'gray.600' : `cage.${(cage.color.split('.')[0])}.border`}
+            borderColor={cageBorderColor}
             borderTop={hasTopSameCage ? 'none' : undefined}
             borderLeft={hasLeftSameCage ? 'none' : undefined}
             borderRight={hasRightSameCage ? 'none' : undefined}

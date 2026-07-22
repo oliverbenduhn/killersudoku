@@ -33,7 +33,11 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('home');
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
-  const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(false);
+  // BW-Toggle in localStorage wie dark-Mode persistieren, damit der User
+  // nicht bei jedem Reload neu ein-/ausschalten muss.
+  const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(() => {
+    try { return localStorage.getItem('killersudoku_bw') === '1'; } catch { return false; }
+  });
   const toast = useToast();
   const tutorial = useTutorial();
 
@@ -79,21 +83,20 @@ function App() {
     setCurrentLevel(level);
   };
 
-  const handleGenerateLevel = (difficulty: Exclude<Difficulty, 'unknown'>) => {
+  const handleGenerateLevel = async (difficulty: Exclude<Difficulty, 'unknown'>) => {
     handleTabChange('home');
     setIsLoading(true);
-    // setTimeout, damit der Lade-Spinner rendert, bevor die (synchrone)
-    // Generierung den Main-Thread beansprucht (Expert: einige Sekunden).
-    setTimeout(() => {
-      try {
-        setGeneratedLevel(generateLevel({ difficulty }));
-      } catch (err) {
-        console.error('Fehler beim Generieren des Levels:', err);
-        toast({ title: 'Fehler', description: 'Zufallslevel konnte nicht erzeugt werden.', status: 'error', duration: 3000, isClosable: true });
-      } finally {
-        setIsLoading(false);
-      }
-    }, 50);
+    // Generator läuft async und yielded zwischen Versuchen, damit der
+    // Lade-Spinner auch auf Mobile-CPUs weiter rendert.
+    try {
+      const level = await generateLevel({ difficulty });
+      setGeneratedLevel(level);
+    } catch (err) {
+      console.error('Fehler beim Generieren des Levels:', err);
+      toast({ title: 'Fehler', description: 'Zufallslevel konnte nicht erzeugt werden.', status: 'error', duration: 3000, isClosable: true });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -107,7 +110,10 @@ function App() {
         top={0}
         zIndex={999}
         boxShadow="sm"
-        display={(isSidebarLayout || activeTab !== 'home') ? 'none' : 'block'}
+        // Header bleibt sichtbar auf dem Start-Tab — auch im Sidebar-Layout,
+        // weil HomeActions (BW/Dark/Level-Toggles) hier wohnen und es keinen
+        // anderen Weg dorthin gibt (keine Bottom-Nav auf Mobile).
+        display={activeTab !== 'home' ? 'none' : 'block'}
       >
         <Container maxW={containerMaxWidth} h={headerHeight} px={4}>
           <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
@@ -118,7 +124,11 @@ function App() {
               <HomeActions
                 onOpenLevels={() => handleTabChange('levels')}
                 blackAndWhiteMode={blackAndWhiteMode}
-                onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
+                onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => {
+                  const next = !v;
+                  try { localStorage.setItem('killersudoku_bw', next ? '1' : '0'); } catch {}
+                  return next;
+                })}
               />
             </Flex>
           </Flex>
