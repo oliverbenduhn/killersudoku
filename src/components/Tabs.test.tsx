@@ -13,6 +13,7 @@ describe('LevelsTab — Zufallslevel', () => {
         currentLevel={1}
         onLevelChange={noop}
         onGenerateLevel={onGenerate}
+        onBack={noop}
         transitionDirection={null}
       />
     );
