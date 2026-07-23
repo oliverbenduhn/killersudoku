@@ -313,7 +313,7 @@ export const Board: React.FC<BoardProps> = ({
       const base = cage.color.split('.')[0] as 'blue' | 'green' | 'pink' | 'yellow';
       bgColor = `cage.${base}.100`;
     }
-    if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue && (blackAndWhiteMode || !cage)) {
+    if ((isSameRow || isSameCol || isSameBlk) && (blackAndWhiteMode || !cage) && !isSelected) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
     // Selection hat hoechste Prio: sie ueberlagert Cage-Tint und Peer-Highlight
