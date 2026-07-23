@@ -46,7 +46,10 @@ interface DifficultyProfile {
 }
 
 const PROFILES: Record<Exclude<Difficulty, 'unknown'>, DifficultyProfile> = {
-  easy:   { cageSizes: [1, 2, 2, 3, 3, 4], baseGivens: 14, maxGivens: 22, difficultyRating: 2, entropyAnchors: 4 },
+  // ADR 0002: pool ohne Größe 1, weil der Top-Anker keine Einerkäfigs
+  // produziert und die freie Partition nur in Frontier-leer-Fällen welche
+  // anlegt (durch den Generator-Reparatur-Loop wieder aufgelöst).
+  easy:   { cageSizes: [2, 2, 3, 3, 4, 4], baseGivens: 14, maxGivens: 22, difficultyRating: 2, entropyAnchors: 4 },
   medium: { cageSizes: [2, 2, 3, 3, 4, 5], baseGivens: 8,  maxGivens: 14, difficultyRating: 5, entropyAnchors: 3 },
   hard:   { cageSizes: [2, 3, 3, 4, 5, 6], baseGivens: 4,  maxGivens: 9,  difficultyRating: 7, entropyAnchors: 2 },
   expert: { cageSizes: [3, 4, 4, 5, 6, 7], baseGivens: 0,  maxGivens: 6,  difficultyRating: 9, entropyAnchors: 1 },
