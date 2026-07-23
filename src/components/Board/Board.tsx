@@ -107,6 +107,10 @@ export const Board: React.FC<BoardProps> = ({
     xl: 80
   }) || 48;
   const { cellSize } = useBoardResize({ boardRef, cellSizeByBreakpoint, size });
+  // Käfig-Inset (siehe renderLineSvg): die gestrichelte Kontur läuft bei
+  // diesem Abstand von der Zellkante. Die Käfigsumme muss dahinter beginnen,
+  // sonst kollidiert die Ziffer mit dem gestrichelten Rahmen in der Ecke.
+  const cageInsetPx = Math.max(3, cellSize * 0.11);
 
   // Schriftgrößen
   const valueFontSize = useBreakpointValue({ base: "md", sm: "lg", md: "xl", lg: "xl" }) || "lg";
@@ -401,8 +405,8 @@ export const Board: React.FC<BoardProps> = ({
         {isCageStart && cage && (
           <Text
             position="absolute"
-            top="1px"
-            left="3px"
+            top={`${cageInsetPx + 1}px`}
+            left={`${cageInsetPx + 2}px`}
             fontSize={sumFontSize}
             fontWeight="bold"
             color={cageComplete ? successColor : 'text.primary'}
@@ -483,8 +487,7 @@ export const Board: React.FC<BoardProps> = ({
       }
     }
 
-    const insetPx = Math.max(3, cellSize * 0.11);
-    const radiusPx = Math.min(4, insetPx);
+    const radiusPx = Math.min(4, cageInsetPx);
     const dash = `${(cellSize * 0.13).toFixed(1)} ${(cellSize * 0.1).toFixed(1)}`;
 
     return (
@@ -512,7 +515,7 @@ export const Board: React.FC<BoardProps> = ({
         {/* Käfig-Konturen (Inset, gestrichelt, abgerundet) */}
         <g fill="none" strokeWidth={1.5} strokeDasharray={dash} strokeLinejoin="round" strokeLinecap="round">
           {cages.map((cage, idx) => {
-            const d = cageOutlinePath(cage.cells, cellSize, insetPx, radiusPx);
+            const d = cageOutlinePath(cage.cells, cellSize, cageInsetPx, radiusPx);
             if (!d) return null;
             const stroke = blackAndWhiteMode
               ? cssVar('grid.block.border')
