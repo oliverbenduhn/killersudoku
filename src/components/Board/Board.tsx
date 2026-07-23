@@ -316,6 +316,13 @@ export const Board: React.FC<BoardProps> = ({
     if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue && (blackAndWhiteMode || !cage)) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
+    // Selection hat hoechste Prio: sie ueberlagert Cage-Tint und Peer-Highlight
+    // und liegt als inset boxShadow UNTER dem SVG-Cage-Linien-Layer — sonst
+    // waeren die gestrichelten Kaefigraender unter der Selection-Outline weg.
+    const selectionShadow = isSelected
+      ? 'inset 0 0 0 2px var(--chakra-colors-brand-primary)'
+      : undefined;
+    if (isSelected) bgColor = 'cell.selected.bg';
 
     return (
       <Box
@@ -351,13 +358,8 @@ export const Board: React.FC<BoardProps> = ({
         }}
         onTouchEnd={handleDragEnd}
         cursor="pointer"
-        // Auswahl-Umrandung als outline (kein Layout-Shift), liegt über den
-        // SVG-Linien der Nachbarzellen.
-        outline={isSelected ? '2px solid' : undefined}
-        outlineColor={isSelected ? 'brand.primary' : undefined}
-        outlineOffset={isSelected ? '-2px' : undefined}
         transition="background-color 0.15s"
-        zIndex={isSelected ? 2 : 0}
+        style={{ boxShadow: selectionShadow }}
       />
     );
   };
