@@ -5,21 +5,30 @@ import { Board } from './Board';
 import { GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
 
+const mockGameState = {
+  cellValues: Array.from({ length: 9 }, () => Array(9).fill(0)),
+  id: 'test-game',
+  levelId: 'default',
+  mistakesUsed: 0,
+  hintsUsed: 0,
+  gameOver: false,
+  solved: false
+};
+const mockHandleReset = jest.fn();
+
 // Mock useGameState
 jest.mock('../../hooks/useGameState', () => ({
   __esModule: true,
   useGameState: () => ({
-    gameState: {
-      cellValues: Array.from({ length: 9 }, () => Array(9).fill(0)),
-      id: 'test-game',
-      levelId: 'default',
-      mistakesUsed: 0,
-      hintsUsed: 0,
-      gameOver: false,
-      solved: false
-    },
+    gameState: mockGameState,
     isLoading: false,
-    updateGameState: jest.fn().mockResolvedValue(undefined)
+    updateGameState: jest.fn().mockResolvedValue(undefined),
+    applyMove: jest.fn().mockResolvedValue(undefined),
+    undo: jest.fn().mockResolvedValue(undefined),
+    redo: jest.fn().mockResolvedValue(undefined),
+    canUndo: false,
+    canRedo: false,
+    clearHistory: jest.fn()
   })
 }));
 
@@ -80,7 +89,7 @@ jest.mock('../../hooks/useBoardGameLogic', () => ({
   useBoardGameLogic: () => ({
     handleNumberSelect: jest.fn(),
     handleClear: jest.fn(),
-    handleReset: jest.fn(),
+    handleReset: mockHandleReset,
     handleRevealHint: jest.fn(),
     isCageComplete: () => false,
     isBoardComplete: () => false
@@ -113,6 +122,8 @@ describe('Board Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGameState.mistakesUsed = 0;
+    mockGameState.gameOver = false;
     (GameLogic.isCellValid as jest.Mock).mockReturnValue(true);
   });
 
@@ -144,6 +155,21 @@ describe('Board Component', () => {
     const cell = screen.getByTestId('cell-0-0');
     expect(cell).toHaveAttribute('aria-label');
     expect(cell.getAttribute('aria-label')).toContain('Zeile 1 Spalte 1');
+  });
+
+  test('bietet bei Game Over einen aktivierbaren Neustart an', () => {
+    mockGameState.mistakesUsed = 3;
+    mockGameState.gameOver = true;
+
+    render(<Board levelData={mockLevelData} />);
+
+    expect(screen.getByRole('heading', { name: 'Game Over' })).toBeInTheDocument();
+    const restartButton = screen.getByRole('button', { name: 'Neu starten' });
+    expect(restartButton).toBeEnabled();
+
+    fireEvent.click(restartButton);
+    expect(mockHandleReset).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeEnabled();
   });
 
   test('rendert sidebarFooter NICHT im Column-Modus (Mobil, Standard im Test-Viewport)', () => {

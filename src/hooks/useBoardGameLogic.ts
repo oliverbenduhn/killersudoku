@@ -101,12 +101,6 @@ export const useBoardGameLogic = ({
       animation.triggerAnimation(lastCell, number, lastValid);
 
       if (!isGameOver && gameOverNow) {
-        showError({
-          title: 'Game Over',
-          description: 'Du hast das Fehlerlimit erreicht.',
-          status: 'error',
-          duration: 3000
-        });
         onGameOver();
       }
     },
@@ -148,7 +142,8 @@ export const useBoardGameLogic = ({
       solved: false,
       gameOver: false,
       endTime: undefined,
-      startTime: Date.now()
+      startTime: Date.now(),
+      elapsedTime: 0
     });
 
     resetSelection();

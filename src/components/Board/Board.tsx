@@ -32,6 +32,12 @@ import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
 import RippleButton from '../common/RippleButton';
 import FadeInView from '../common/FadeInView';
+import { cageOutlinePath } from './cageOutline';
+
+// Chakra-Semantik-Token → CSS-Variable, damit SVG-Strokes ohne Neuberechnung
+// mit Light-/Dark-/BW-Umschaltung mitziehen.
+const cssVar = (token: string): string =>
+  `var(--chakra-colors-${token.replace(/\./g, '-')})`;
 
 // Animationen
 const pulseAnimation = keyframes`
@@ -280,7 +286,10 @@ export const Board: React.FC<BoardProps> = ({
     return sel !== 0 && sel === cur;
   };
 
-  const renderCell = (row: number, col: number) => {
+  // ── Flächen-Schicht (unten): Zell-Hintergrund + Interaktion ──────────────
+  // Trägt Käfig-Tönung, Peer-/Auswahl-Highlight, alle Zeige-/Touch-Events,
+  // testid/aria und die CSS-Auswahl-Umrandung. Keine Linien, keine Zahlen.
+  const renderBgCell = (row: number, col: number) => {
     if (!gameState || !levelData) return null;
     if (gameState.levelId !== puzzleId) return null; // Race-Condition-Schutz
 
@@ -289,84 +298,24 @@ export const Board: React.FC<BoardProps> = ({
     const isSameCol = selectedCell?.col === col;
     const isSameBlk = selectedCell && isSameBlock(selectedCell.row, selectedCell.col, row, col);
     const cage = GameLogic.getCageForCell(cages, row, col);
-
-    const topLeftCell = cage ? findTopLeftCellInCage(cage) : null;
-    const isCageStart = topLeftCell && topLeftCell.row === row && topLeftCell.col === col;
-
     const value = gameState.cellValues[row][col];
     const valid = GameLogic.isCellValid(gameState.cellValues, row, col, value, cages, size);
     const isInitialValue = levelData.initialValues[row][col] !== 0;
-    const cageComplete = cage ? isCageComplete(cage) : false;
 
-    const hasTopSameCage = row > 0 && GameLogic.areCellsInSameCage(cages, row, col, row - 1, col);
-    const hasLeftSameCage = col > 0 && GameLogic.areCellsInSameCage(cages, row, col, row, col - 1);
-    const hasRightSameCage = col < size - 1 && GameLogic.areCellsInSameCage(cages, row, col, row, col + 1);
-    const hasBottomSameCage = row < size - 1 && GameLogic.areCellsInSameCage(cages, row, col, row + 1, col);
-
-    const isLastEntered =
-      animation.lastEnteredCell?.row === row && animation.lastEnteredCell?.col === col;
-
+    // BW-Modus wie klassischer Killer-Sudoku-Druck: kein Flächen-Tint pro
+    // Käfig, nur die SVG-Linien tragen die Struktur.
     let bgColor: string = 'surface.raised';
-    if (cage) {
-      if (blackAndWhiteMode) {
-        // Vier-Stufen-Skala mit echtem Hell-Dunkel-Abstand. Im Light-Modus
-        // laufen die Töne von rein weiß bis dunkelgrau, im Dark-Modus
-        // invertiert (rein schwarz bis hellgrau) — die Skala dreht sich
-        // mit dem ColorMode um, sonst sind im dunklen BW Käfige hell, die
-        // im hellen BW dunkel waren. Vier Stufen → idx % 4 in theme.ts.
-        bgColor = `cage.bw.${cages.indexOf(cage) % 4}`;
-      } else {
-        // cage.color ist 'blue.100'|'green.100'|'pink.100'|'yellow.100'.
-        // Mapping auf semantisches Token aus theme.ts.
-        const base = cage.color.split('.')[0] as 'blue' | 'green' | 'pink' | 'yellow';
-        bgColor = `cage.${base}.100`;
-      }
-    } else if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue) {
+    if (cage && !blackAndWhiteMode) {
+      const base = cage.color.split('.')[0] as 'blue' | 'green' | 'pink' | 'yellow';
+      bgColor = `cage.${base}.100`;
+    }
+    if ((isSameRow || isSameCol || isSameBlk) && !isInitialValue && (blackAndWhiteMode || !cage)) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
 
-    const valueColor: string = isInitialValue
-      ? 'cell.given.text'
-      : (blackAndWhiteMode ? 'gray.300' : 'cell.user.text');
-    const errorColor: string = blackAndWhiteMode ? 'gray.200' : 'cell.error.text';
-    const successColor: string = blackAndWhiteMode ? 'gray.50' : 'status.success';
-
-    // BW-Modus: Skalenton-basiert (helle Kaefige dunkle Border, dunkle
-    // Kaefige helle Border). Sonst: Käfig-Farbe aus theme.ts.
-    const cageBorderColor: string = cage
-      ? (blackAndWhiteMode
-          ? `cage.bw.${cages.indexOf(cage) % 4}.border`
-          : `cage.${cage.color.split('.')[0]}.border`)
-      : (blackAndWhiteMode ? 'gray.600' : 'gray.300');
-
-    const isSameValue = hasSameValue(row, col);
-
-    let cellAnimation = "none";
-    if (animation.animating && isLastEntered) {
-      cellAnimation = animation.lastEnteredValid
-        ? `${successAnimation} 0.5s ease`
-        : `${errorAnimation} 0.4s ease`;
-    } else if (isSelected && !isInitialValue) {
-      cellAnimation = `${pulseAnimation} 1.5s infinite ease-in-out`;
-    }
-
-    const boxShadow = isSelected ? "0px 1px 3px rgba(0,0,0,0.2) inset" : "none";
-    const elevation = !valid && value !== 0
-      ? "0px 1px 3px 0px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.12)"
-      : "none";
-
-    // 3×3-Block-Grenzen brauchen dickere (2 px) Linien; die Info nutzt
-    // der Cage-Overlay unten, um die Block-Outlines zu zeichnen.
-    const isBlockRightEdge = col % 3 === 2 && col < size - 1;
-    const isBlockLeftEdge = col % 3 === 0 && col > 0;
-    const isBlockTopEdge = row % 3 === 0 && row > 0;
-    const isBlockBottomEdge = row % 3 === 2 && row < size - 1;
-    const isLastCol = col === size - 1;
-    const isLastRow = row === size - 1;
-
     return (
       <Box
-        key={`${row}-${col}`}
+        key={`bg-${row}-${col}`}
         data-testid={`cell-${row}-${col}`}
         role="gridcell"
         aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}`}
@@ -374,12 +323,6 @@ export const Board: React.FC<BoardProps> = ({
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
-        // Kein eigener Border — der Cage-Overlay unten zeichnet alle
-        // Außenlinien (Cage-Grenzen gestrichelt, Block-Grenzen 2 px,
-        // Außen-Rahmen 1 px). Sonst überlagern sich zwei Linien an
-        // jeder Käfig-Kante und es sieht aus wie Doppellinien mit Spalt.
-        border={isSelected ? '2px solid' : undefined}
-        borderColor={isSelected ? 'brand.primary' : undefined}
         bg={bgColor}
         onMouseDown={() => handleDragStart(row, col)}
         onMouseEnter={() => handleDragEnter(row, col)}
@@ -404,73 +347,66 @@ export const Board: React.FC<BoardProps> = ({
         }}
         onTouchEnd={handleDragEnd}
         cursor="pointer"
-        _hover={{ borderColor: 'brand.primary' }}
-        boxShadow={boxShadow}
-        transition="background-color 0.15s, border-color 0.15s"
-        zIndex={isSelected ? 1 : 0}
-        style={{
-          animation: cellAnimation,
-          boxShadow: elevation,
-          transform: isSelected && !isInitialValue ? 'translateZ(1px)' : 'none'
-        }}
-      >
-        {/* Overlay-Box: zeichnet alle Außenlinien der Zelle (Cage-Grenzen
-            gestrichelt, 3×3-Block-Grenzen 2 px solid, Außen-Rahmen 1 px).
-            Border-Box mit inset: -1px = Linie liegt exakt auf der
-            Außenkante; aneinandergrenzende Käfige überlappen ihre
-            Cage-Linie auf der gemeinsamen Kante (Bug: vorher Doppellinien
-            mit Spalt). Cage-Linien werden auf den Seiten weggelassen, wo
-            die Nachbarzelle im selben Käfig liegt (kein Doppelstrich). Auf
-            der Top-Left-Ecke (wo die Käfig-Summe sitzt) fehlen die
-            Linien, damit die Ziffer nicht zerschnitten wird. Block-Grenzen
-            und Außen-Rahmen werden immer gezeichnet. */}
-        <Box
-          position="absolute"
-          inset="-1px"
-          pointerEvents="none"
-          // Oben: Käfig-Bruder → keine Cage-Linie (reicht die Border vom
-          // Nachbar). Käfig-Start → keine Linie (Summe). Sonst 3×3-Block-
-          // Linie (2 px), sonst Cage-Linie (1 px gestrichelt).
-          borderTop={
-            hasTopSameCage || isCageStart ? 'none'
-            : isBlockTopEdge ? '2px solid'
-            : '1px dashed'
-          }
-          borderLeft={
-            hasLeftSameCage || isCageStart ? 'none'
-            : isBlockLeftEdge ? '2px solid'
-            : '1px dashed'
-          }
-          borderRight={
-            hasRightSameCage ? 'none'
-            : (isBlockRightEdge || isLastCol) ? '2px solid'
-            : '1px dashed'
-          }
-          borderBottom={
-            hasBottomSameCage ? 'none'
-            : (isBlockBottomEdge || isLastRow) ? '2px solid'
-            : '1px dashed'
-          }
-          borderColor={cageBorderColor}
-          transition="border-color 0.3s"
-        />
+        // Auswahl-Umrandung als outline (kein Layout-Shift), liegt über den
+        // SVG-Linien der Nachbarzellen.
+        outline={isSelected ? '2px solid' : undefined}
+        outlineColor={isSelected ? 'brand.primary' : undefined}
+        outlineOffset={isSelected ? '-2px' : undefined}
+        transition="background-color 0.15s"
+        zIndex={isSelected ? 2 : 0}
+      />
+    );
+  };
 
+  // ── Zahlen-Schicht (oben): Käfigsumme, Zellwert, Notiz-Kandidaten ────────
+  // pointerEvents:none — Interaktion geht an die Flächen-Schicht durch.
+  const renderNumCell = (row: number, col: number) => {
+    if (!gameState || !levelData) return null;
+    if (gameState.levelId !== puzzleId) return null;
+
+    const isSelected = selectedCells.some(c => c.row === row && c.col === col);
+    const cage = GameLogic.getCageForCell(cages, row, col);
+    const topLeftCell = cage ? findTopLeftCellInCage(cage) : null;
+    const isCageStart = topLeftCell && topLeftCell.row === row && topLeftCell.col === col;
+
+    const value = gameState.cellValues[row][col];
+    const valid = GameLogic.isCellValid(gameState.cellValues, row, col, value, cages, size);
+    const isInitialValue = levelData.initialValues[row][col] !== 0;
+    const cageComplete = cage ? isCageComplete(cage) : false;
+    const isSameValue = hasSameValue(row, col);
+
+    const errorColor: string = blackAndWhiteMode ? 'cell.given.text' : 'cell.error.text';
+    const successColor: string = blackAndWhiteMode ? 'text.secondary' : 'status.success';
+
+    const isLastEntered =
+      animation.lastEnteredCell?.row === row && animation.lastEnteredCell?.col === col;
+    let cellAnimation = 'none';
+    if (animation.animating && isLastEntered) {
+      cellAnimation = animation.lastEnteredValid
+        ? `${successAnimation} 0.5s ease`
+        : `${errorAnimation} 0.4s ease`;
+    } else if (isSelected && !isInitialValue && !value) {
+      cellAnimation = `${pulseAnimation} 1.5s infinite ease-in-out`;
+    }
+
+    return (
+      <Box
+        key={`num-${row}-${col}`}
+        position="relative"
+        w={`${cellSize}px`}
+        h={`${cellSize}px`}
+        pointerEvents="none"
+        style={{ animation: cellAnimation }}
+      >
         {isCageStart && cage && (
           <Text
             position="absolute"
-            top="0"
-            left="1px"
+            top="1px"
+            left="3px"
             fontSize={sumFontSize}
             fontWeight="bold"
-            color={cageComplete ? 'status.success' : 'text.primary'}
-            zIndex="2"
+            color={cageComplete ? successColor : 'text.primary'}
             lineHeight="1"
-            // Kleine Background-Pill: ueberdeckt die Cage-Linie an der
-            // Stelle, wo die Summe steht — sonst kollidiert sie mit dem
-            // Strich und sieht zerhackt aus.
-            bg={bgColor}
-            px="2px"
-            borderRadius="2px"
           >
             {cage.sum}
           </Text>
@@ -482,7 +418,7 @@ export const Board: React.FC<BoardProps> = ({
           left="50%"
           transform="translate(-50%, -50%)"
           fontSize={isSameValue ? `calc(${valueFontSize} * 0.85)` : valueFontSize}
-          fontWeight={(!valid && value !== 0) || isSameValue ? "bold" : "normal"}
+          fontWeight={(!valid && value !== 0) || isSameValue ? 'bold' : 'normal'}
           color={cageComplete ? successColor : (!valid && value !== 0) ? errorColor : (isInitialValue ? 'cell.given.text' : 'cell.user.text')}
           userSelect="none"
           transition="color 0.3s, font-size 0.2s"
@@ -502,11 +438,10 @@ export const Board: React.FC<BoardProps> = ({
             justifyContent="center"
             alignItems="center"
             gap="1px"
-            pointerEvents="none"
             animation={`${fadeInAnimation} 0.3s ease-out`}
           >
             {possibleValues.map(v => (
-              <Text key={v} fontSize={sumFontSize} color="gray.600" lineHeight="1">{v}</Text>
+              <Text key={v} fontSize={sumFontSize} color="text.muted" lineHeight="1">{v}</Text>
             ))}
           </Box>
         )}
@@ -514,19 +449,96 @@ export const Board: React.FC<BoardProps> = ({
     );
   };
 
-  const renderGrid = () => {
-    if (!gameState) return null;
+  // Ein HTML-Zellgitter (Flächen ODER Zahlen) als size×size-Rows rendern.
+  const renderCellGrid = (renderFn: (r: number, c: number) => React.ReactNode) => {
     const rows = [];
     for (let i = 0; i < size; i++) {
       const cells = [];
-      for (let j = 0; j < size; j++) {
-        cells.push(renderCell(i, j));
-      }
+      for (let j = 0; j < size; j++) cells.push(renderFn(i, j));
       rows.push(
         <Grid key={i} templateColumns={`repeat(${size}, 1fr)`}>{cells}</Grid>
       );
     }
     return rows;
+  };
+
+  // ── Linien-Schicht (Mitte): ein SVG mit Gitter, Blocklinien, Rahmen und
+  //    einer gestrichelten Inset-Kontur pro Käfig. pointerEvents:none.
+  const renderLineSvg = () => {
+    const boardPx = size * cellSize;
+    const thin: React.ReactNode[] = [];
+    const block: React.ReactNode[] = [];
+
+    // Interne Gitter-/Blocklinien. 1px-Linien auf x.5 snappen (scharf),
+    // 2px-Blocklinien auf ganze Pixel. i=0 und i=size = Außenrahmen (Rect).
+    for (let i = 1; i < size; i++) {
+      const isBlock = i % 3 === 0;
+      const p = isBlock ? i * cellSize : i * cellSize + 0.5;
+      if (isBlock) {
+        block.push(<line key={`v${i}`} x1={p} y1={0} x2={p} y2={boardPx} />);
+        block.push(<line key={`h${i}`} x1={0} y1={p} x2={boardPx} y2={p} />);
+      } else {
+        thin.push(<line key={`v${i}`} x1={p} y1={0} x2={p} y2={boardPx} />);
+        thin.push(<line key={`h${i}`} x1={0} y1={p} x2={boardPx} y2={p} />);
+      }
+    }
+
+    const insetPx = Math.max(3, cellSize * 0.11);
+    const radiusPx = Math.min(4, insetPx);
+    const dash = `${(cellSize * 0.13).toFixed(1)} ${(cellSize * 0.1).toFixed(1)}`;
+
+    return (
+      <svg
+        width={boardPx}
+        height={boardPx}
+        viewBox={`0 0 ${boardPx} ${boardPx}`}
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+        aria-hidden="true"
+      >
+        {/* Dünngitter */}
+        <g stroke={cssVar('grid.cage.border')} strokeWidth={1}>{thin}</g>
+        {/* 3×3-Blocklinien */}
+        <g stroke={cssVar('grid.block.border')} strokeWidth={2} strokeLinecap="square">{block}</g>
+        {/* Außenrahmen */}
+        <rect
+          x={1.25}
+          y={1.25}
+          width={boardPx - 2.5}
+          height={boardPx - 2.5}
+          fill="none"
+          stroke={cssVar('grid.block.border')}
+          strokeWidth={2.5}
+        />
+        {/* Käfig-Konturen (Inset, gestrichelt, abgerundet) */}
+        <g fill="none" strokeWidth={1.5} strokeDasharray={dash} strokeLinejoin="round" strokeLinecap="round">
+          {cages.map((cage, idx) => {
+            const d = cageOutlinePath(cage.cells, cellSize, insetPx, radiusPx);
+            if (!d) return null;
+            const stroke = blackAndWhiteMode
+              ? cssVar('grid.block.border')
+              : cssVar(`cage.${cage.color.split('.')[0]}.border`);
+            return <path key={idx} d={d} stroke={stroke} />;
+          })}
+        </g>
+      </svg>
+    );
+  };
+
+  const renderBoard = () => {
+    if (!gameState) return null;
+    const boardPx = size * cellSize;
+    return (
+      <Box position="relative" w={`${boardPx}px`} h={`${boardPx}px`}>
+        {/* Flächen + Interaktion */}
+        <Box position="absolute" top={0} left={0}>{renderCellGrid(renderBgCell)}</Box>
+        {/* Linien */}
+        {renderLineSvg()}
+        {/* Zahlen */}
+        <Box position="absolute" top={0} left={0} pointerEvents="none">
+          {renderCellGrid(renderNumCell)}
+        </Box>
+      </Box>
+    );
   };
 
   const isLoadingCombined = stateLoading || externalLoading || (gameState && gameState.levelId !== puzzleId);
@@ -610,7 +622,7 @@ export const Board: React.FC<BoardProps> = ({
         _focus={{ outline: "none" }}
         _focusVisible={{ outline: "none" }}
       >
-        <Box>{renderGrid()}</Box>
+        {renderBoard()}
 
         {gameState && isBoardComplete() && (
           <FadeInView

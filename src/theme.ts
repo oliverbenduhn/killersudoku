@@ -53,6 +53,12 @@ const semanticTokens = {
     'cage.bw.3':           { default: 'gray.600',  _dark: 'gray.200' },
     'cage.bw.3.border':    { default: 'gray.900',  _dark: 'gray.600' },
 
+    // Block-Grenzen (3×3): staerkste Linie im Grid, muss in beiden
+    // ColorModes klar gegen Cage-Flaechen UND gegen surface.raised
+    // (Zellhintergrund ohne Cage) abstechen.
+    'grid.block.border':    { default: 'gray.700',  _dark: 'gray.300' },
+    'grid.cage.border':     { default: 'gray.400',  _dark: 'gray.500' },
+
     // Vorgegebene Werte vs. User-Eingabe
     'cell.given.text':      { default: 'gray.900',  _dark: 'gray.50'  },
     'cell.user.text':       { default: 'blue.600',  _dark: 'blue.300' },

@@ -52,22 +52,27 @@ const PROFILES: Record<Exclude<Difficulty, 'unknown'>, DifficultyProfile> = {
   expert: { cageSizes: [3, 4, 4, 5, 6, 7], baseGivens: 0,  maxGivens: 6,  difficultyRating: 9, entropyAnchors: 1 },
 };
 
-const MAX_ATTEMPTS = 60;
+const MAX_ATTEMPTS = 20;
 
 /**
  * Erzeugt ein zufälliges, garantiert eindeutig lösbares Level.
+ *
+ * Die Generierung läuft als `async` mit `yieldToBrowser()` zwischen
+ * Versuchen, damit der Browser auf Mobile-CPUs zwischen den
+ * (teureren) Solver-Aufrufen auch tatsächlich rendern kann —
+ * sonst hängt der Lade-Spinner 5–10 s auf einem einzigen Frame.
  * Wirft, wenn nach MAX_ATTEMPTS kein Level im Schwierigkeits-Budget
  * gefunden wurde (praktisch nicht erreichbar).
  */
-export function generateLevel(options: GenerateOptions): GameLevel {
+export async function generateLevel(options: GenerateOptions): Promise<GameLevel> {
   const profile = PROFILES[options.difficulty];
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     const solution = generateSolvedGrid();
     const cages = partitionIntoCages(solution, profile.cageSizes, profile.entropyAnchors);
-    if (!hasUniqueCombinationAnchor(cages)) continue;
-    if (find45Deductions(createEmptyBoard(), cages).length === 0) continue;
-    if (!colorCages(cages)) continue;
+    if (!hasUniqueCombinationAnchor(cages)) { await yieldToBrowser(); continue; }
+    if (find45Deductions(createEmptyBoard(), cages).length === 0) { await yieldToBrowser(); continue; }
+    if (!colorCages(cages)) { await yieldToBrowser(); continue; }
 
     const initialValues = createEmptyBoard();
     const cells = shuffle(allCells());
@@ -76,8 +81,8 @@ export function generateLevel(options: GenerateOptions): GameLevel {
       initialValues[row][col] = solution[row][col];
     }
 
-    if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) continue;
-    if (!evaluateLogicalSolvability(initialValues, cages).solved) continue;
+    if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) { await yieldToBrowser(); continue; }
+    if (!evaluateLogicalSolvability(initialValues, cages).solved) { await yieldToBrowser(); continue; }
 
     const now = new Date().toISOString();
     return {
@@ -95,6 +100,15 @@ export function generateLevel(options: GenerateOptions): GameLevel {
     };
   }
   throw new Error(`generateLevel: kein valides Level nach ${MAX_ATTEMPTS} Versuchen (${options.difficulty})`);
+}
+
+/**
+ * Gibt dem Browser zwischen Generator-Versuchen die Chance zu rendern
+ * (z. B. Lade-Spinner-Animation). Auf eine macrotask warten, dann
+ * zurück zur Schleife. Auf Mobile-CPUs rettet das die UI-Reaktivität.
+ */
+function yieldToBrowser(): Promise<void> {
+  return new Promise<void>((resolve) => setTimeout(resolve, 0));
 }
 
 // ---------- 1. Zufällige Lösung ----------

@@ -12,8 +12,8 @@ const countGivens = (m: number[][]): number =>
 describe('puzzleGeneratorService — generateLevel', () => {
   test.each(['easy', 'medium', 'hard', 'expert'] as const)(
     'erzeugt valides, eindeutig lösbares Level (%s)',
-    (difficulty) => {
-      const lvl = generateLevel({ difficulty, levelNumber: 101 });
+    async (difficulty) => {
+      const lvl = await generateLevel({ difficulty, levelNumber: 101 });
       const r = validateLevel(lvl);
       expect(r.errors).toEqual([]);
       expect(lvl.difficulty).toBe(difficulty);
@@ -27,16 +27,16 @@ describe('puzzleGeneratorService — generateLevel', () => {
     }
   );
 
-  test('easy startet mit deutlich mehr Vorgaben als expert', () => {
-    const easy = generateLevel({ difficulty: 'easy' });
-    const expert = generateLevel({ difficulty: 'expert' });
+  test('easy startet mit deutlich mehr Vorgaben als expert', async () => {
+    const easy = await generateLevel({ difficulty: 'easy' });
+    const expert = await generateLevel({ difficulty: 'expert' });
     expect(countGivens(easy.initialValues)).toBeGreaterThanOrEqual(14);
     expect(countGivens(expert.initialValues)).toBeLessThanOrEqual(6);
   });
 
-  test('zwei Aufrufe erzeugen unterschiedliche Rätsel', () => {
-    const a = generateLevel({ difficulty: 'medium' });
-    const b = generateLevel({ difficulty: 'medium' });
+  test('zwei Aufrufe erzeugen unterschiedliche Rätsel', async () => {
+    const a = await generateLevel({ difficulty: 'medium' });
+    const b = await generateLevel({ difficulty: 'medium' });
     expect(a.id).not.toBe(b.id);
     expect(a.solution).not.toEqual(b.solution);
   });
