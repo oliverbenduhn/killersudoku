@@ -45,14 +45,22 @@ export const useBoardResize = ({
       const node = boardRef.current;
       if (!node) return;
 
-      // Primäre Bremse: Container selbst. Im Sidebar-Layout (md+) ist die
-      // verfügbare Breite ~70 % des Viewports; Viewport-Höhe als Cap allein
-      // ließ die Cells über den Container hinausragen (Bug: links/rechts
-      // abgeschnitten). clientWidth schließt Border/Padding aus.
-      const containerW = node.clientWidth;
-      const containerH = node.clientHeight;
-      const containerMaxCell = containerW > 0 && containerH > 0
-        ? Math.floor(Math.min(containerW, containerH) / size)
+      // Primäre Bremse: nutzbarer Inhalt des Containers (Breite UND Höhe).
+      // Im Sidebar-Layout (md+) ist die verfügbare Breite ~70 % des
+      // Viewports; Viewport-Höhe als Cap allein ließ die Cells über den
+      // Container hinausragen (Bug: links/rechts abgeschnitten).
+      //
+      // ponytail: clientWidth enthält das Padding (box-sizing: border-box
+      // reserviert Padding innerhalb der Box), also muss paddingLeft/Right
+      // abgezogen werden — sonst läuft die letzte Zelle rechts über den
+      // Container hinaus. Dasselbe für die Höhe. Bug-Vermeidung.
+      const cs = window.getComputedStyle(node);
+      const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const contentW = node.clientWidth - padX;
+      const contentH = node.clientHeight - padY;
+      const containerMaxCell = contentW > 0 && contentH > 0
+        ? Math.floor(Math.min(contentW, contentH) / size)
         : Infinity;
       // Sekundärer Cap: Viewport, falls der Container noch nicht gemessen
       // ist (initial Render) — verhindert Riesen-Cells vor dem ersten
