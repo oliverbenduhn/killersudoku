@@ -100,8 +100,8 @@ export const Board: React.FC<BoardProps> = ({
 
   // Responsive Zellgröße
   const cellSizeByBreakpoint = useBreakpointValue({
-    base: 36,
-    sm: 42,
+    base: 40,
+    sm: 44,
     md: 56,
     lg: 72,
     xl: 80
@@ -582,7 +582,7 @@ export const Board: React.FC<BoardProps> = ({
   return (
     <Flex
       direction={flexDirection}
-      gap={4}
+      gap={3}
       justify="center"
       align={flexDirection === "column" ? "center" : "start"}
       flexWrap="wrap"
