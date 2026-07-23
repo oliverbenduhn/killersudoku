@@ -273,10 +273,6 @@ export const Board: React.FC<BoardProps> = ({
   })();
 
   // Helpers fürs Rendering
-  const isSameBlock = (r1: number, c1: number, r2: number, c2: number): boolean =>
-    Math.floor(r1 / 3) === Math.floor(r2 / 3) &&
-    Math.floor(c1 / 3) === Math.floor(c2 / 3);
-
   const findTopLeftCellInCage = (cage: Cage): CellPosition | null => {
     if (!cage?.cells?.length) return null;
     const sorted = [...cage.cells].sort((a, b) => (a.row - b.row) || (a.col - b.col));
@@ -300,7 +296,6 @@ export const Board: React.FC<BoardProps> = ({
     const isSelected = selectedCells.some(c => c.row === row && c.col === col);
     const isSameRow = selectedCell?.row === row;
     const isSameCol = selectedCell?.col === col;
-    const isSameBlk = selectedCell && isSameBlock(selectedCell.row, selectedCell.col, row, col);
     const cage = GameLogic.getCageForCell(cages, row, col);
     const value = gameState.cellValues[row][col];
     const valid = GameLogic.isCellValid(gameState.cellValues, row, col, value, cages, size);
@@ -313,7 +308,7 @@ export const Board: React.FC<BoardProps> = ({
       const base = cage.color.split('.')[0] as 'blue' | 'green' | 'pink' | 'yellow';
       bgColor = `cage.${base}.100`;
     }
-    if ((isSameRow || isSameCol || isSameBlk) && (blackAndWhiteMode || !cage) && !isSelected) {
+    if ((isSameRow || isSameCol) && (blackAndWhiteMode || !cage) && !isSelected) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
     // Selection hat hoechste Prio: sie ueberlagert Cage-Tint und Peer-Highlight
