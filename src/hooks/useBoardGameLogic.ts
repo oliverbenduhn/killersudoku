@@ -69,6 +69,18 @@ export const useBoardGameLogic = ({
         return;
       }
 
+      if (selectedCells.length === 0) {
+        // Stiller Fall zuvor: User klickte Zahl ohne Zellauswahl → nichts
+        // passierte, wirkte wie „ich kann nix eintragen". Jetzt Feedback.
+        showError({
+          title: 'Keine Zelle ausgewählt',
+          description: 'Tippe zuerst auf eine Zelle, dann auf eine Zahl.',
+          status: 'info',
+          duration: 1800
+        });
+        return;
+      }
+
       const entry = GameLogic.applyPlayerEntry(
         gameState.cellValues,
         levelData.initialValues,
@@ -99,6 +111,17 @@ export const useBoardGameLogic = ({
       });
 
       animation.triggerAnimation(lastCell, number, lastValid);
+
+      // Visuelles Feedback bei abgelehnter Eingabe — sonst wirkt es, als
+      // würde die Eingabe verschluckt (User dachte: „ich kann nix eintragen").
+      if (anyInvalid) {
+        showError({
+          title: `Zahl ${number} passt hier nicht`,
+          description: 'Verstößt gegen Sudoku- oder Käfig-Regel.',
+          status: 'warning',
+          duration: 1800
+        });
+      }
 
       if (!isGameOver && gameOverNow) {
         onGameOver();

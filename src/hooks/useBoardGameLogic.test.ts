@@ -59,7 +59,7 @@ describe('useBoardGameLogic – Game Over', () => {
     jest.restoreAllMocks();
   });
 
-  test('zeigt beim Erreichen des Fehlerlimits keinen zusätzlichen Toast', () => {
+  test('zeigt beim Erreichen des Fehlerlimits einen Eingabe-Warn-Toast, aber keinen separaten Game-Over-Toast', () => {
     jest.spyOn(GameLogic, 'applyPlayerEntry').mockReturnValue({
       cellValues: emptyBoard(),
       acceptedCells: [],
@@ -74,7 +74,12 @@ describe('useBoardGameLogic – Game Over', () => {
       mistakesUsed: 3,
       gameOver: true
     }));
-    expect(options.showError).not.toHaveBeenCalled();
+    // Eingabe-Warn-Toast ja (User-Feedback „passt hier nicht"), aber kein
+    // zusätzlicher Game-Over-Toast.
+    expect(options.showError).toHaveBeenCalledTimes(1);
+    expect(options.showError).toHaveBeenCalledWith(expect.objectContaining({
+      status: 'warning'
+    }));
     expect(options.onGameOver).toHaveBeenCalledTimes(1);
   });
 
