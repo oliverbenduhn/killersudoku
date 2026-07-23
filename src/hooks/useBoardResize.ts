@@ -45,13 +45,23 @@ export const useBoardResize = ({
       const node = boardRef.current;
       if (!node) return;
 
-      // Viewport-basiert messen, nicht die Box selbst — sonst Self-Lock auf
-      // kleine Cell-Größen im Landscape, weil die Box nur so groß ist wie
-      // das aktuelle Grid.
+      // Primäre Bremse: Container selbst. Im Sidebar-Layout (md+) ist die
+      // verfügbare Breite ~70 % des Viewports; Viewport-Höhe als Cap allein
+      // ließ die Cells über den Container hinausragen (Bug: links/rechts
+      // abgeschnitten). clientWidth schließt Border/Padding aus.
+      const containerW = node.clientWidth;
+      const containerH = node.clientHeight;
+      const containerMaxCell = containerW > 0 && containerH > 0
+        ? Math.floor(Math.min(containerW, containerH) / size)
+        : Infinity;
+      // Sekundärer Cap: Viewport, falls der Container noch nicht gemessen
+      // ist (initial Render) — verhindert Riesen-Cells vor dem ersten
+      // Resize-Tick.
       const viewportSide = Math.min(window.innerWidth, window.innerHeight);
       const viewportMaxCell = Math.floor((viewportSide * 0.92) / size);
+      const maxCell = Math.min(viewportMaxCell, containerMaxCell, cellSizeByBreakpoint);
       const minSize = window.innerWidth < 768 ? 24 : 28;
-      const newCellSize = Math.max(minSize, Math.min(viewportMaxCell, cellSizeByBreakpoint));
+      const newCellSize = Math.max(minSize, maxCell);
 
       if (Math.abs(newCellSize - lastCellSize) < 2 || resizeAttempts >= maxResizeAttempts) {
         if (Math.abs(newCellSize - cellSizeRef.current) >= 2) {

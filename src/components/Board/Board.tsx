@@ -3,6 +3,7 @@ import {
   Box,
   Grid,
   Text,
+  Heading,
   Spinner,
   useBreakpointValue,
   Flex,
@@ -308,9 +309,12 @@ export const Board: React.FC<BoardProps> = ({
     let bgColor: string = 'surface.raised';
     if (cage) {
       if (blackAndWhiteMode) {
-        const idx = cages.indexOf(cage);
-        const grayLevel = 100 - (idx % 4) * 10;
-        bgColor = `gray.${grayLevel}`;
+        // Vier-Stufen-Skala mit echtem Hell-Dunkel-Abstand. Im Light-Modus
+        // laufen die Töne von rein weiß bis dunkelgrau, im Dark-Modus
+        // invertiert (rein schwarz bis hellgrau) — die Skala dreht sich
+        // mit dem ColorMode um, sonst sind im dunklen BW Käfige hell, die
+        // im hellen BW dunkel waren. Vier Stufen → idx % 4 in theme.ts.
+        bgColor = `cage.bw.${cages.indexOf(cage) % 4}`;
       } else {
         // cage.color ist 'blue.100'|'green.100'|'pink.100'|'yellow.100'.
         // Mapping auf semantisches Token aus theme.ts.
@@ -327,13 +331,11 @@ export const Board: React.FC<BoardProps> = ({
     const errorColor: string = blackAndWhiteMode ? 'gray.200' : 'cell.error.text';
     const successColor: string = blackAndWhiteMode ? 'gray.50' : 'status.success';
 
-    // Im BW-Modus bekommt jeder Kaefig-Typ einen eigenen Border-Ton, damit
-    // die vier Farben (Light: blue/green/pink/yellow) im Light-Modus UND
-    // in der SW-Variante unterscheidbar bleiben. ponytail: Vier diskrete
-    // Grautoene reichen — mehr waere nur visuelles Geraeusch.
+    // BW-Modus: Skalenton-basiert (helle Kaefige dunkle Border, dunkle
+    // Kaefige helle Border). Sonst: Käfig-Farbe aus theme.ts.
     const cageBorderColor: string = cage
       ? (blackAndWhiteMode
-          ? (['gray.500', 'gray.600', 'gray.700', 'gray.800'] as const)[cages.indexOf(cage) % 4]
+          ? `cage.bw.${cages.indexOf(cage) % 4}.border`
           : `cage.${cage.color.split('.')[0]}.border`)
       : (blackAndWhiteMode ? 'gray.600' : 'gray.300');
 
@@ -353,6 +355,15 @@ export const Board: React.FC<BoardProps> = ({
       ? "0px 1px 3px 0px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.12)"
       : "none";
 
+    // 3×3-Block-Grenzen brauchen dickere (2 px) Linien; die Info nutzt
+    // der Cage-Overlay unten, um die Block-Outlines zu zeichnen.
+    const isBlockRightEdge = col % 3 === 2 && col < size - 1;
+    const isBlockLeftEdge = col % 3 === 0 && col > 0;
+    const isBlockTopEdge = row % 3 === 0 && row > 0;
+    const isBlockBottomEdge = row % 3 === 2 && row < size - 1;
+    const isLastCol = col === size - 1;
+    const isLastRow = row === size - 1;
+
     return (
       <Box
         key={`${row}-${col}`}
@@ -363,12 +374,12 @@ export const Board: React.FC<BoardProps> = ({
         position="relative"
         w={`${cellSize}px`}
         h={`${cellSize}px`}
-        border={isSelected ? '2px solid' : '1px solid'}
-        borderColor={isSelected ? 'brand.primary' : 'surface.sunken'}
-        borderRightWidth={col % 3 === 2 ? '2px' : undefined}
-        borderBottomWidth={row % 3 === 2 ? '2px' : undefined}
-        borderRightColor={col % 3 === 2 ? 'surface.raised' : undefined}
-        borderBottomColor={row % 3 === 2 ? 'surface.raised' : undefined}
+        // Kein eigener Border — der Cage-Overlay unten zeichnet alle
+        // Außenlinien (Cage-Grenzen gestrichelt, Block-Grenzen 2 px,
+        // Außen-Rahmen 1 px). Sonst überlagern sich zwei Linien an
+        // jeder Käfig-Kante und es sieht aus wie Doppellinien mit Spalt.
+        border={isSelected ? '2px solid' : undefined}
+        borderColor={isSelected ? 'brand.primary' : undefined}
         bg={bgColor}
         onMouseDown={() => handleDragStart(row, col)}
         onMouseEnter={() => handleDragEnter(row, col)}
@@ -403,23 +414,46 @@ export const Board: React.FC<BoardProps> = ({
           transform: isSelected && !isInitialValue ? 'translateZ(1px)' : 'none'
         }}
       >
-        {cage && (
-          <Box
-            position="absolute"
-            inset="0"
-            border="1px dashed"
-            borderColor={cageBorderColor}
-            // An Cage-Übergängen ohne Käfig-Bruder wird die Linie
-            // gezeichnet. Auf der Top-Left-Ecke, wo die Summe sitzt,
-            // fehlen die Linien, damit die Ziffer nicht zerschnitten wird.
-            borderTop={hasTopSameCage || isCageStart ? 'none' : undefined}
-            borderLeft={hasLeftSameCage || isCageStart ? 'none' : undefined}
-            borderRight={hasRightSameCage ? 'none' : undefined}
-            borderBottom={hasBottomSameCage ? 'none' : undefined}
-            pointerEvents="none"
-            transition="border-color 0.3s"
-          />
-        )}
+        {/* Overlay-Box: zeichnet alle Außenlinien der Zelle (Cage-Grenzen
+            gestrichelt, 3×3-Block-Grenzen 2 px solid, Außen-Rahmen 1 px).
+            Border-Box mit inset: -1px = Linie liegt exakt auf der
+            Außenkante; aneinandergrenzende Käfige überlappen ihre
+            Cage-Linie auf der gemeinsamen Kante (Bug: vorher Doppellinien
+            mit Spalt). Cage-Linien werden auf den Seiten weggelassen, wo
+            die Nachbarzelle im selben Käfig liegt (kein Doppelstrich). Auf
+            der Top-Left-Ecke (wo die Käfig-Summe sitzt) fehlen die
+            Linien, damit die Ziffer nicht zerschnitten wird. Block-Grenzen
+            und Außen-Rahmen werden immer gezeichnet. */}
+        <Box
+          position="absolute"
+          inset="-1px"
+          pointerEvents="none"
+          // Oben: Käfig-Bruder → keine Cage-Linie (reicht die Border vom
+          // Nachbar). Käfig-Start → keine Linie (Summe). Sonst 3×3-Block-
+          // Linie (2 px), sonst Cage-Linie (1 px gestrichelt).
+          borderTop={
+            hasTopSameCage || isCageStart ? 'none'
+            : isBlockTopEdge ? '2px solid'
+            : '1px dashed'
+          }
+          borderLeft={
+            hasLeftSameCage || isCageStart ? 'none'
+            : isBlockLeftEdge ? '2px solid'
+            : '1px dashed'
+          }
+          borderRight={
+            hasRightSameCage ? 'none'
+            : (isBlockRightEdge || isLastCol) ? '2px solid'
+            : '1px dashed'
+          }
+          borderBottom={
+            hasBottomSameCage ? 'none'
+            : (isBlockBottomEdge || isLastRow) ? '2px solid'
+            : '1px dashed'
+          }
+          borderColor={cageBorderColor}
+          transition="border-color 0.3s"
+        />
 
         {isCageStart && cage && (
           <Text
@@ -604,23 +638,67 @@ export const Board: React.FC<BoardProps> = ({
         {gameState && isGameOver && (
           <FadeInView
             direction="scale"
-            duration={800}
+            duration={240}
             position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            bg="status.error"
-            border="2px solid"
-            borderColor="status.error"
-            borderRadius="md"
+            inset={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            bg="blackAlpha.600"
             p={4}
-            textAlign="center"
-            boxShadow="xl"
             zIndex={10}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="game-over-title"
+            aria-describedby="game-over-description"
           >
-            <Text fontSize="xl" fontWeight="bold" color="red.600">
-              Game Over – zu viele Fehler
-            </Text>
+            <Stack
+              spacing={4}
+              w="100%"
+              maxW="300px"
+              bg="surface.raised"
+              color="text.primary"
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="surface.sunken"
+              p={{ base: 5, md: 6 }}
+              textAlign="center"
+              boxShadow="xl"
+            >
+              <Box
+                alignSelf="center"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                w="48px"
+                h="48px"
+                borderRadius="full"
+                bg="red.50"
+                color="status.error"
+                fontSize="2xl"
+                fontWeight="800"
+                aria-hidden="true"
+              >
+                !
+              </Box>
+              <Box>
+                <Heading id="game-over-title" as="h2" size="md" color="text.primary" mb={2}>
+                  Game Over
+                </Heading>
+                <Text id="game-over-description" color="text.secondary" fontSize="sm">
+                  Du hast drei Fehler gemacht. Starte das Rätsel neu und versuche es noch einmal.
+                </Text>
+              </Box>
+              <RippleButton
+                onClick={handleReset}
+                colorScheme="red"
+                w="100%"
+                aria-label="Neu starten"
+                autoFocus
+              >
+                Neu starten
+              </RippleButton>
+            </Stack>
           </FadeInView>
         )}
       </Box>
@@ -714,7 +792,7 @@ export const Board: React.FC<BoardProps> = ({
           <RippleButton
             variant="ghost"
             onClick={handleReset}
-            isDisabled={!gameState || isGameOver}
+            isDisabled={!gameState}
             aria-label="Reset"
           >
             <RepeatClockIcon />

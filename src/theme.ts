@@ -38,6 +38,21 @@ const semanticTokens = {
     'cage.pink.border':     { default: 'pink.300',  _dark: 'pink.400' },
     'cage.yellow.border':   { default: 'yellow.400',_dark: 'yellow.400' },
 
+    // Schwarzweiß-Modus: Vier Käfig-Stufen mit echtem Hell-Dunkel-Abstand.
+    // Light läuft von rein weiß bis dunkelgrau, Dark invertiert (rein
+    // schwarz bis hellgrau) — die Skala muss sich mit dem ColorMode
+    // umdrehen, sonst sind im dunklen BW Käfige hell, die im hellen BW
+    // dunkel waren. Border-Ton pro Stufe abgestimmt auf die jeweilige
+    // Hintergrund-Helligkeit.
+    'cage.bw.0':           { default: 'white',     _dark: 'gray.900' },
+    'cage.bw.0.border':    { default: 'gray.600',  _dark: 'gray.200' },
+    'cage.bw.1':           { default: 'gray.100',  _dark: 'gray.700' },
+    'cage.bw.1.border':    { default: 'gray.700',  _dark: 'gray.300' },
+    'cage.bw.2':           { default: 'gray.300',  _dark: 'gray.500' },
+    'cage.bw.2.border':    { default: 'gray.700',  _dark: 'gray.300' },
+    'cage.bw.3':           { default: 'gray.600',  _dark: 'gray.200' },
+    'cage.bw.3.border':    { default: 'gray.900',  _dark: 'gray.600' },
+
     // Vorgegebene Werte vs. User-Eingabe
     'cell.given.text':      { default: 'gray.900',  _dark: 'gray.50'  },
     'cell.user.text':       { default: 'blue.600',  _dark: 'blue.300' },
