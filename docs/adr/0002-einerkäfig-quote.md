@@ -37,10 +37,12 @@ Käfig-Größe.
 | hard | `[2,3,3,4,5,6]` | `[3,3,4,5,6]` | `[3,3,4,5,6]` |
 | expert | `[3,4,4,5,6,7]` | `[3,4,4,5,6,7]` | `[3,4,4,5,6,7]` |
 
-Cap-Prüfung im Generator nur für **easy/medium**. hard/expert haben Pool ohne
-`1`, die effektive Quote ist durch das Pool-Design garantiert klein. Ein
-zusätzlicher Cap-Check wäre Rauschen, kostet aber Versuche in Stufe 2/3 und
-verlangsamt die ohnehin solver-intensive Generierung.
+Cap-Prüfung im Generator für **easy, medium, hard**. expert hat aktuell keine
+aktive Cap-Prüfung — Pool-Härtung in Stufe 2/3 für expert wäre zu solver-schwer
+(Stufe 3 = `[5,6,7]` mit `baseGivens: 0` führt zu reproduzierbar roten
+Generator-Tests). expert-Quote pendelt sich bei der aktuellen Architektur bei
+≈ 15–20 % ein, deutlich über dem Cap. Reduktion erfordert einen Refactor des
+Frontier-Loops mit Backtracking — separates Ticket, siehe Consequences.
 
 ## Validator und bestehende 100 Leveldateien
 
@@ -72,6 +74,11 @@ sind damit eine eigene Aufräum-Aufgabe, nicht Teil dieses Patches.
   Wahrscheinlichkeits-Vektoren.
 - Generator-Tests benötigen 60s Timeout (vorher 5s) — expert-Levels brauchen
   bei Misskonfiguration einige Sekunden zum Konvergieren.
-- Bestehende 100 Leveldateien erfüllen die neue Quote nicht. Sie sind
-  dokumentiert „as-is" — eine zukünftige Aufgabe ersetzt sie durch neu
-  generierte Level via `generateLevel()`.
+- Bestehende 100 Leveldateien werden via `scripts/regenerate-levels.ts`
+  ersetzt — Schreibvorgang einmalig pro Maschine.
+- **Offen:** expert-Quote (≈ 17 %) liegt über Cap (2 %). Reduktion erfordert
+  einen Refactor des Frontier-Loops in `partitionIntoCages`, der bei
+  `frontier.length === 0` einen alternativen Pfad probiert (Backtracking),
+  statt die Cage früh zu schließen. Aktuelle Architektur toleriert die
+  Quote-Überschreitung in expert und liefert sie aus; das ist explizit
+  dokumentiert, nicht verborgen.

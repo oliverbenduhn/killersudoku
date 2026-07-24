@@ -69,21 +69,27 @@ const POOL_FALLBACKS: Record<Exclude<Difficulty, 'unknown'>, number[][]> = {
   medium: [[2, 2, 3, 3, 4, 5], [2, 3, 3, 4, 5], [3, 3, 4, 5]],
   // hard: nur leicht härter werdend — Stufe 3 ist nicht zu strikt
   hard:   [[2, 3, 3, 4, 5, 6], [3, 3, 4, 5, 6], [3, 3, 4, 5, 6]],
-  // expert: alle Stufen sehr ähnlich — Solver-Bottleneck, nicht Pool-Bottleneck
+  // expert: Pool-Härtung ist nicht sinnvoll — Stufe 3 (`[5,6,7]`) ist
+  // solver-schwer bei `baseGivens: 0`. Quote pendelt sich bei der
+  // aktuellen Architektur bei ≈ 15–20 % ein. Cap-Prüfung ist aus.
+  // Reduktion erfordert Frontier-Backtracking (separates Ticket).
   expert: [[3, 4, 4, 5, 6, 7], [3, 4, 4, 5, 6, 7], [3, 4, 4, 5, 6, 7]],
 };
 
-// ADR 0002: Cap-Quoten pro Schwierigkeit — Pool-Härtung in den jeweiligen
-// Stufen wird verworfen, wenn die Quote nicht innerhalb der Cap liegt.
-// ponytail: easy und medium haben Pool mit Größe 2+ → Cap-Check nötig.
-// hard/expert haben bereits Pool ohne 1 → Quote ist durch Pool-Design
-// garantiert klein; Cap-Check wäre Rauschen. Stattdessen prüft der
-// Generator nur für easy/medium.
+// ADR 0002: Cap-Quoten pro Schwierigkeit. easy/medium/hard prüfen die
+// Quote pro Partition (Frontier-leer kann einzelne Einerkäfigs
+// einschleusen). expert hat aktuell keine aktive Cap-Prüfung —
+// Pool-Härtung in Stufe 2/3 würde den Solver-Bottleneck noch weiter
+// verschärfen (Stufe 3 = `[5,6,7]` → min target 5, sehr solver-schwer
+// für expert mit `baseGivens: 0`). expert-Quote pendelt sich bei der
+// aktuellen Architektur bei ≈ 15–20 % ein; das ist über Cap 2 %.
+// Reduktion erfordert einen zukünftigen Refactor des Frontier-Loops
+// mit Backtracking — separates Ticket.
 const ONE_CAGE_LIMITS: Record<Exclude<Difficulty, 'unknown'>, number> = {
   easy: 0.10, medium: 0.08, hard: 0.04, expert: 0.02,
 };
 function needsOneCageCheck(d: Exclude<Difficulty, 'unknown'>): boolean {
-  return d === 'easy' || d === 'medium';
+  return d !== 'expert';
 }
 
 const MAX_ATTEMPTS = 60;
@@ -114,8 +120,8 @@ export async function generateLevel(options: GenerateOptions): Promise<GameLevel
       if (find45Deductions(createEmptyBoard(), cages).length === 0) { await yieldToBrowser(); continue; }
       if (!colorCages(cages)) { await yieldToBrowser(); continue; }
 
-      // ADR 0002: Cap-Prüfung. Nur für easy/medium aktiv — hard/expert
-      // haben Pool ohne 1, ihre Quote ist durch Pool-Design klein.
+      // ADR 0002: Cap-Prüfung aktiv für easy/medium/hard. expert hat
+      // Cap-Prüfung aus (siehe Kommentar bei ONE_CAGE_LIMITS).
       if (needsOneCageCheck(options.difficulty)) {
         const oneCages = cages.filter((c) => c.cells.length === 1).length;
         if (oneCages / cages.length > limit) { await yieldToBrowser(); continue; }
