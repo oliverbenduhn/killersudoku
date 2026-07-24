@@ -464,11 +464,12 @@ export const Board: React.FC<BoardProps> = ({
           top="50%"
           left="50%"
           transform="translate(-50%, -50%)"
-          fontSize={isSameValue ? `calc(${valueFontSize} * 0.85)` : valueFontSize}
+          fontSize={isSameValue ? `calc(${valueFontSize} * 1.15)` : valueFontSize}
           fontWeight={(!valid && value !== 0) || isSameValue ? 'bold' : 'normal'}
           color={cageComplete ? successColor : (!valid && value !== 0) ? errorColor : (isInitialValue ? 'cell.given.text' : 'cell.user.text')}
+          opacity={isSameValue || cageComplete || (!valid && value !== 0) ? 1 : 0.75}
           userSelect="none"
-          transition="color 0.3s, font-size 0.2s"
+          transition="color 0.3s, font-size 0.2s, opacity 0.2s"
         >
           {value || ''}
         </Text>
@@ -687,7 +688,11 @@ export const Board: React.FC<BoardProps> = ({
         p={flexDirection === "column" ? 2 : [1, 2, 4]}
         display="flex"
         justifyContent="center"
-        alignItems="center"
+        // Im Sidebar-Modus (row) soll das Brett oben in seiner 80vh-Box
+        // starten statt vertikal zentriert zu sein, sonst steht die
+        // NumberPad-Sidebar (top-aligned) höher als das Brett (Tablet-
+        // Hochformat-Bug: Sidebar und Brett-Oberkante klafften auseinander).
+        alignItems={flexDirection === "row" ? "flex-start" : "center"}
         boxShadow="md"
         borderRadius="lg"
         bg="surface.raised"

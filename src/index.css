@@ -3,6 +3,17 @@
   font-size: 16px;
 }
 
+/* Seite darf nicht scrollen: das Layout ist so dimensioniert, dass
+   Brett + Sidebar in den Viewport passen. Scroll würde auf Touch-
+   Geräten mit Drag-Mehrfachauswahl auf dem Brett kollidieren.
+   100dvh (falls unterstützt) berücksichtigt Browser-Chrome, das
+   ein-/ausgeblendet wird; Fallback 100% für ältere Browser. */
+html, body, #root {
+  height: 100%;
+  height: 100dvh;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   padding: 0;
