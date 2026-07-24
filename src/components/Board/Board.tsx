@@ -465,17 +465,20 @@ export const Board: React.FC<BoardProps> = ({
           {value || ''}
         </Text>
 
-        {/* Hint-Overlay (#7) verdrängt nur visuell die Notizen der
-            ausgewählten Zelle; gameState.notes bleibt unverändert. */}
+        {/* Notiz-Kandidaten (Issue #5): 3×3-Mini-Raster, gedämpfter Kontrast,
+            BW-tauglich. In Cage-Start-Zellen wird die 1er-Position (oben links)
+            weggelassen, weil dort die Käfigsumme sitzt. Notes-Box liegt mit
+            cageInsetPx-Abstand von der Zellkante — innerhalb der gestrichelten
+            Kontur. */}
         {!value && !isInitialValue &&
           !(showHints && isHintCell && possibleValues.length > 0) &&
           gameState.notes?.[row]?.[col]?.length > 0 && (
           <Box
             position="absolute"
-            top="2px"
-            left="2px"
-            right="2px"
-            bottom="2px"
+            top={`${cageInsetPx * 2}px`}
+            left={`${cageInsetPx * 2}px`}
+            right={`${cageInsetPx * 2}px`}
+            bottom={`${cageInsetPx * 2}px`}
             display="grid"
             gridTemplateColumns="repeat(3, 1fr)"
             gridTemplateRows="repeat(3, 1fr)"
