@@ -7,6 +7,7 @@ import * as GameLogic from '../../services/gameLogicService';
 
 const mockGameState = {
   cellValues: Array.from({ length: 9 }, () => Array(9).fill(0)),
+  notes: Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => [])),
   id: 'test-game',
   levelId: 'default',
   mistakesUsed: 0,
@@ -170,6 +171,22 @@ describe('Board Component', () => {
     fireEvent.click(restartButton);
     expect(mockHandleReset).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Reset' })).toBeEnabled();
+  });
+
+  test('zeigt Notiz-Kandidaten an festen Positionen im 3×3-Raster', () => {
+    mockGameState.notes[0][0] = [1, 5, 9];
+    try {
+      render(<Board levelData={mockLevelData} />);
+      const grid = screen.getByTestId('notes-0-0');
+      const slots = Array.from(grid.children);
+      expect(slots).toHaveLength(9);
+      expect(slots[0]).toHaveTextContent('1');
+      expect(slots[4]).toHaveTextContent('5');
+      expect(slots[8]).toHaveTextContent('9');
+      expect(slots[1]).toBeEmptyDOMElement();
+    } finally {
+      mockGameState.notes[0][0] = [];
+    }
   });
 
   test('rendert sidebarFooter NICHT im Column-Modus (Mobil, Standard im Test-Viewport)', () => {

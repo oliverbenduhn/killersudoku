@@ -106,3 +106,216 @@ describe('useBoardGameLogic – Game Over', () => {
     expect(options.clearHistory).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('useBoardGameLogic – Bleistiftmodus (Issue #5)', () => {
+  const emptyBoard = (): number[][] => Array.from({ length: 9 }, () => Array(9).fill(0));
+  const emptyNotes = (): number[][][] =>
+    Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => []));
+
+  const initialValues = emptyBoard();
+  const cellValues = emptyBoard();
+  const levelData: GameLevel = {
+    id: 'logic-test',
+    levelNumber: 1,
+    initialValues,
+    solution: emptyBoard(),
+    cages: [{ id: 'c1', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }], sum: 3, color: 'blue.100' }]
+  };
+
+  const makeState = (overrides: Partial<GameState> = {}): GameState => ({
+    id: 'game',
+    levelId: 'level-1',
+    cellValues: cellValues.map(row => [...row]),
+    notes: emptyNotes(),
+    mistakesUsed: 0,
+    hintsUsed: 0,
+    gameOver: false,
+    ...overrides
+  });
+
+  test('Ziffer im Bleistiftmodus toggelt Notiz und ruft applyMove nur mit notes auf', () => {
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState(),
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const call = applyMove.mock.calls[0][0];
+    expect(call.notes[0][0]).toEqual([4]);
+    // Zellwert bleibt unverändert — Notizpfad berührt cellValues NICHT.
+    expect(call.cellValues).toBeUndefined();
+    expect(call.mistakesUsed).toBeUndefined();
+  });
+
+  test('zweites Drücken derselben Ziffer im Bleistiftmodus entfernt die Notiz wieder', () => {
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const notes = emptyNotes();
+    notes[0][0] = [4];
+    const options = makeOptions({
+      gameState: makeState({ notes }),
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    const call = applyMove.mock.calls[0][0];
+    expect(call.notes[0][0]).toEqual([]);
+  });
+
+  test('Bleistiftmodus + Vorgabezelle = kein applyMove (No-op)', () => {
+    const initial = emptyBoard();
+    initial[0][0] = 5;
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes: emptyNotes() }),
+      levelData: { ...levelData, initialValues: initial },
+      selectedCells: [{ row: 0, col: 0 }],
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    expect(applyMove).not.toHaveBeenCalled();
+  });
+
+  test('Bleistiftmodus + ausgefüllte Zelle = kein applyMove (No-op)', () => {
+    const values = emptyBoard();
+    values[0][0] = 3;
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes: emptyNotes(), cellValues: values }),
+      selectedCells: [{ row: 0, col: 0 }],
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    expect(applyMove).not.toHaveBeenCalled();
+  });
+
+  test('Mehrfachauswahl: Notiz nur in leeren, nicht vorgegebenen Zellen', () => {
+    const initial = emptyBoard();
+    initial[0][0] = 1; // Vorgabe
+    const values = emptyBoard();
+    values[0][1] = 2; // ausgefüllt
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes: emptyNotes(), cellValues: values }),
+      levelData: { ...levelData, initialValues: initial },
+      selectedCells: [
+        { row: 0, col: 0 }, // Vorgabe
+        { row: 0, col: 1 }, // ausgefüllt
+        { row: 0, col: 2 }, // leer
+        { row: 1, col: 2 }, // leer
+      ],
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(7));
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const call = applyMove.mock.calls[0][0];
+    expect(call.notes[0][2]).toEqual([7]);
+    expect(call.notes[1][2]).toEqual([7]);
+    expect(call.notes[0][0]).toEqual([]);
+    expect(call.notes[0][1]).toEqual([]);
+  });
+
+  test('handleClear im Bleistiftmodus leert alle Notizen der Auswahl', () => {
+    const notes = emptyNotes();
+    notes[0][0] = [3, 5, 7];
+    notes[0][1] = [1];
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes }),
+      selectedCells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleClear());
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const call = applyMove.mock.calls[0][0];
+    expect(call.notes[0][0]).toEqual([]);
+    expect(call.notes[0][1]).toEqual([]);
+  });
+
+  test('handleClear im Bleistiftmodus ohne Notiz-Inhalt löst kein applyMove aus (No-op)', () => {
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes: emptyNotes() }),
+      selectedCells: [{ row: 0, col: 0 }],
+      pencilMode: true,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleClear());
+
+    expect(applyMove).not.toHaveBeenCalled();
+  });
+
+  test('inaktiver Bleistiftmodus: Ziffer nimmt unverändert den Wertepfad (Regression)', () => {
+    // applyPlayerEntry ist gemockt; wir prüfen, dass der Wertepfad gewählt
+    // wird, NICHT der Notizpfad — also wird applyMove mit cellValues
+    // aufgerufen, nicht mit notes.
+    jest.spyOn(GameLogic, 'applyPlayerEntry').mockReturnValue({
+      cellValues: (() => {
+        const b = emptyBoard();
+        b[0][0] = 4;
+        return b;
+      })(),
+      acceptedCells: [{ row: 0, col: 0 }],
+      rejectedCells: []
+    });
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState(),
+      pencilMode: false,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const call = applyMove.mock.calls[0][0];
+    expect(call.cellValues).toBeDefined();
+    expect(call.notes).toBeUndefined();
+  });
+
+  test('handleClear inaktivem Modus löscht weiterhin Zellwerte (Regression)', () => {
+    const values = emptyBoard();
+    values[0][0] = 4;
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ cellValues: values }),
+      selectedCells: [{ row: 0, col: 0 }],
+      pencilMode: false,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleClear());
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const call = applyMove.mock.calls[0][0];
+    expect(call.cellValues[0][0]).toBe(0);
+    expect(call.notes).toBeUndefined();
+  });
+});

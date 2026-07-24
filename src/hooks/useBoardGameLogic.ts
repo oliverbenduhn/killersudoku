@@ -14,6 +14,12 @@ export interface UseBoardGameLogicOptions {
   maxHints: number;
   maxMistakes: number;
   isGameOver: boolean;
+  /**
+   * Bleistiftmodus (Issue #4/#5): wenn aktiv, leiten handleNumberSelect und
+   * handleClear auf die Notiz-Pfade um statt auf die Werteingabe. Quelle:
+   * lokaler Board-State, nicht im GameState.
+   */
+  pencilMode?: boolean;
   updateGameState: (newState: Partial<GameState>) => Promise<void>;
   applyMove: (newState: Partial<GameState>) => Promise<void>;
   clearHistory: () => void;
@@ -46,6 +52,7 @@ export const useBoardGameLogic = ({
   maxHints,
   maxMistakes,
   isGameOver,
+  pencilMode = false,
   updateGameState,
   applyMove,
   clearHistory,
@@ -78,6 +85,23 @@ export const useBoardGameLogic = ({
           status: 'info',
           duration: 1800
         });
+        return;
+      }
+
+      // Bleistiftmodus (Issue #5): Zifferneingabe toggelt Notiz statt Wert.
+      // No-op (keine editierbare Zelle getroffen) führt zu KEINEM applyMove
+      // und KEINEM Undo-Eintrag — changedCells-Liste ist das Signal.
+      if (pencilMode) {
+        const result = GameLogic.togglePlayerNotes(
+          gameState.notes,
+          gameState.cellValues,
+          levelData.initialValues,
+          selectedCells,
+          number,
+          size
+        );
+        if (result.changedCells.length === 0) return;
+        applyMove({ notes: result.notes });
         return;
       }
 
@@ -127,7 +151,7 @@ export const useBoardGameLogic = ({
         onGameOver();
       }
     },
-    [gameState, levelData, cages, selectedCells, size, maxMistakes, isGameOver, applyMove, animation, onGameOver, showError]
+    [gameState, levelData, cages, selectedCells, size, maxMistakes, isGameOver, pencilMode, applyMove, animation, onGameOver, showError]
   );
 
   const handleClear = useCallback(() => {
@@ -143,6 +167,22 @@ export const useBoardGameLogic = ({
       return;
     }
 
+    // Bleistiftmodus (Issue #5): Löschen leert alle Notizen der Auswahl,
+    // nicht den Zellwert. Werte-Pfad darunter bleibt für Werte aktiv.
+    if (pencilMode) {
+      if (selectedCells.length === 0) return;
+      const result = GameLogic.clearPlayerNotes(
+        gameState.notes,
+        gameState.cellValues,
+        levelData.initialValues,
+        selectedCells,
+        size
+      );
+      if (result.changedCells.length === 0) return;
+      applyMove({ notes: result.notes });
+      return;
+    }
+
     const newValues = gameState.cellValues.map(row => [...row]);
     selectedCells.forEach(({ row, col }) => {
       if (levelData.initialValues[row][col] === 0) {
@@ -151,7 +191,7 @@ export const useBoardGameLogic = ({
     });
 
     applyMove({ cellValues: newValues });
-  }, [gameState, levelData, selectedCells, isGameOver, applyMove, showError]);
+  }, [gameState, levelData, selectedCells, isGameOver, pencilMode, applyMove, showError]);
 
   const handleReset = useCallback(() => {
     if (!gameState || !levelData) return;
