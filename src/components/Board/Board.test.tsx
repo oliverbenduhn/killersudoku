@@ -191,3 +191,123 @@ describe('Board Component', () => {
     }
   });
 });
+
+describe('Bleistiftmodus (#4)', () => {
+  const emptyBoard: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  const mockLevelData: GameLevel = {
+    levelNumber: 1,
+    id: 'test-level',
+    initialValues: emptyBoard,
+    solution: emptyBoard.map((row) => [...row]),
+    cages: [
+      {
+        id: 'cage-1',
+        cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+        sum: 3,
+        color: 'blue.100'
+      }
+    ]
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGameState.mistakesUsed = 0;
+    mockGameState.gameOver = false;
+    // Mock-useGameState gibt gameState.levelId='default' zurück; damit der
+    // Board-Renderpfad nicht über die Race-Condition-Schiene "kein Brett"
+    // abbricht, spiegeln wir hier den jeweils aktuellen puzzleId.
+    mockGameState.levelId = 'default';
+  });
+
+  test('Button hat eindeutigen zugänglichen Namen und startet im Modus "aus"', () => {
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Klick auf den Button togglet sichtbaren Aktivzustand und aria-pressed', () => {
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('P-Taste togglet den Modus ohne selektierte Zelle und nach Button-Klick', () => {
+    render(<Board levelData={mockLevelData} />);
+    // Erst einen anderen Button klicken (Fokus verschieben).
+    const numberBtn = screen.getByRole('button', { name: 'Zahl 1' });
+    fireEvent.click(numberBtn);
+    // Dann P auf dem window feuern — Button darf NICHT fokussiert sein.
+    fireEvent.keyDown(window, { key: 'p' });
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(window, { key: 'p' });
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Gedrückt gehaltenes P (event.repeat) togglet nur einmal', () => {
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.keyDown(window, { key: 'p' });
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(window, { key: 'p', repeat: true });
+    fireEvent.keyDown(window, { key: 'p', repeat: true });
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('Shift+P (Großbuchstabe) togglet ebenfalls', () => {
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.keyDown(window, { key: 'P' });
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  test('P in einem fokussierten Texteingabefeld togglet NICHT', () => {
+    render(
+      <div>
+        <Board levelData={mockLevelData} />
+        <input data-testid="text-input" />
+      </div>
+    );
+    const input = screen.getByTestId('text-input');
+    input.focus();
+    expect(document.activeElement).toBe(input);
+    fireEvent.keyDown(window, { key: 'p' });
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('P mit gedrückter Ctrl/Meta/Alt-Taste togglet NICHT', () => {
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.keyDown(window, { key: 'p', ctrlKey: true });
+    fireEvent.keyDown(window, { key: 'p', metaKey: true });
+    fireEvent.keyDown(window, { key: 'p', altKey: true });
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Modus ist beim ersten Mount "aus"', () => {
+    render(<Board levelData={mockLevelData} />);
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('Modus wird bei puzzleId-Wechsel automatisch auf "aus" zurückgesetzt', () => {
+    mockGameState.levelId = 'level-a';
+    const { rerender } = render(<Board levelData={mockLevelData} puzzleId="level-a" />);
+    fireEvent.click(screen.getByRole('button', { name: /Bleistiftmodus/ }));
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'true');
+    mockGameState.levelId = 'level-b';
+    rerender(<Board levelData={mockLevelData} puzzleId="level-b" />);
+    expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('P ohne Level/Board-Kontext togglet ebenfalls (Button-Klick-Symmetrie)', () => {
+    // Reines Mode-Toggle-Verhalten ohne Renders von Brett.
+    render(<Board levelData={mockLevelData} />);
+    const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.click(btn);
+    expect(btn).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(window, { key: 'p' });
+    expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+});

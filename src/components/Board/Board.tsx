@@ -15,7 +15,7 @@ import {
   keyframes,
   useToast
 } from '@chakra-ui/react';
-import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, RepeatClockIcon } from '@chakra-ui/icons';
+import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, EditIcon, RepeatClockIcon } from '@chakra-ui/icons';
 
 import { useGameState } from '../../hooks/useGameState';
 import { useStrategicHint } from '../../hooks/useStrategicHint';
@@ -94,6 +94,11 @@ export const Board: React.FC<BoardProps> = ({
   const strategicHint = useStrategicHint();
   const [cages, setCages] = useState<Cage[]>([]);
   const [hasError, setHasError] = useState<boolean>(false);
+  // Bleistiftmodus: rein clientseitiger UI-State (Issue #4). Kein Teil von
+  // GameState, nicht persistiert. Reset auf "aus" erfolgt explizit beim
+  // Mount (Initialwert false) und bei jedem puzzleId-Wechsel — Board wird
+  // bei Levelwechsel innerhalb der Sitzung NICHT neu gemountet.
+  const [pencilMode, setPencilMode] = useState<boolean>(false);
   const solveRecordedRef = useRef<string | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const boardFocusRef = useRef<HTMLDivElement | null>(null);
@@ -219,6 +224,14 @@ export const Board: React.FC<BoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [levelData, puzzleId, externalLoading]);
 
+  // Bleistiftmodus zurücksetzen bei jedem puzzleId-Wechsel (Issue #4).
+  // Initial-Mount = useState(false) oben; Levelwechsel innerhalb der Sitzung
+  // muss explizit auf "aus" zurückspringen, da Board nicht neu gemountet wird.
+  useEffect(() => {
+    setPencilMode(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleId]);
+
   // F5 für Hints an/aus
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -230,6 +243,28 @@ export const Board: React.FC<BoardProps> = ({
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [toggleHints]);
+
+  // P für Bleistiftmodus an/aus (Issue #4). Globaler window-Listener —
+  // funktioniert unabhängig vom Zell-/Button-Fokus. Wiederholtes Halten
+  // (event.repeat) togglet nur einmal; Modifier-Tasten und Texteingabe-
+  // Elemente werden ignoriert, damit der Shortcut nicht kollidiert.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key !== 'p' && e.key !== 'P') return;
+      if (e.repeat) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const active = document.activeElement as HTMLElement | null;
+      if (active) {
+        const tag = active.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+        if (active.isContentEditable) return;
+      }
+      e.preventDefault();
+      setPencilMode(v => !v);
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
 
   // Solve-Detection
   useEffect(() => {
@@ -747,6 +782,20 @@ export const Board: React.FC<BoardProps> = ({
           gap={flexDirection === "row" ? 2 : undefined}
           mt={flexDirection === "row" ? 2 : 4}
         >
+          {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
+              Visual: solid + outline-Ring bei aktiv = nicht rein farblich.
+              aria-pressed trägt den Modus-Zustand für Screenreader. */}
+          <RippleButton
+            onClick={() => setPencilMode(v => !v)}
+            colorScheme="blue"
+            variant={pencilMode ? 'solid' : 'outline'}
+            aria-label="Bleistiftmodus"
+            aria-pressed={pencilMode}
+            boxShadow={pencilMode ? 'outline' : undefined}
+            data-testid="pencil-toggle"
+          >
+            <EditIcon />
+          </RippleButton>
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
             variant="outline"
