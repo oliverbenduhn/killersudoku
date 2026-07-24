@@ -43,10 +43,21 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
 
         if (savedState) {
           if (currentPuzzleIdRef.current === puzzleId) {
-            let restored = savedState as GameState;
-            restored = {
-              ...restored,
-              notes: normalizeNotes(restored.notes, restored.cellValues, createEmptyBoard(size), size)
+            const saved = savedState as Partial<GameState>;
+            const savedCellValues = Array.isArray(saved.cellValues)
+              ? saved.cellValues
+              : createEmptyBoard(size);
+            let restored = {
+              ...saved,
+              id: typeof saved.id === 'string' ? saved.id : `game_${puzzleId}_${Date.now()}`,
+              cellValues: savedCellValues,
+              notes: normalizeNotes(saved.notes, savedCellValues, createEmptyBoard(size), size),
+              startTime: typeof saved.startTime === 'number' ? saved.startTime : Date.now(),
+              elapsedTime: typeof saved.elapsedTime === 'number' ? saved.elapsedTime : 0,
+              hintsUsed: typeof saved.hintsUsed === 'number' ? saved.hintsUsed : 0,
+              mistakesUsed: typeof saved.mistakesUsed === 'number' ? saved.mistakesUsed : 0,
+              gameOver: saved.gameOver === true,
+              levelId: puzzleId
             };
             const levelMatch = puzzleId.match(/level-(\d+)/);
             if (levelMatch?.[1]) {
@@ -65,11 +76,11 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                   size
                 );
                 restored = { ...restored, cellValues, notes };
-                await saveGameState(puzzleId, restored);
               } catch (error) {
                 console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
               }
             }
+            await saveGameState(puzzleId, restored);
             setGameState(restored);
           }
         } else {

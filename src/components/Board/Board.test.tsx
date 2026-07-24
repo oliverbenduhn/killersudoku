@@ -367,11 +367,13 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     mockGameState.gameOver = false;
     mockGameState.levelId = 'default';
     mockGameState.notes[0][0] = [];
+    mockGameState.notes[0][1] = [];
     setHintsForTest(false, []);
   });
 
   afterEach(() => {
     mockGameState.notes[0][0] = [];
+    mockGameState.notes[0][1] = [];
     setHintsForTest(false, []);
   });
 
@@ -390,6 +392,22 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     // Optisch ausgeblendet, Daten unverändert.
     expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
     expect(mockGameState.notes[0][0]).toEqual([1, 5, 9]);
+  });
+
+  test('Mehrfachauswahl blendet Notizen nur in der primären Hint-Zelle aus', () => {
+    mockGameState.notes[0][0] = [1];
+    mockGameState.notes[0][1] = [2];
+    setHintsForTest(true, [3, 4]);
+    render(<Board levelData={mockLevelData} />);
+
+    const first = screen.getByTestId('cell-0-0');
+    fireEvent.mouseDown(first);
+    fireEvent.mouseEnter(screen.getByTestId('cell-0-1'));
+
+    expect(first).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByTestId('cell-0-1')).toHaveAttribute('aria-selected', 'true');
+    expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
+    expect(screen.getByTestId('notes-0-1')).toBeInTheDocument();
   });
 
   test('Nach Deaktivieren des Hint-Modus erscheinen die Notizen unverändert wieder', () => {

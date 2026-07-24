@@ -403,6 +403,7 @@ export const Board: React.FC<BoardProps> = ({
     if (gameState.levelId !== puzzleId) return null;
 
     const isSelected = selectedCells.some(c => c.row === row && c.col === col);
+    const isHintCell = selectedCell?.row === row && selectedCell?.col === col;
     const cage = GameLogic.getCageForCell(cages, row, col);
     const topLeftCell = cage ? findTopLeftCellInCage(cage) : null;
     const isCageStart = topLeftCell && topLeftCell.row === row && topLeftCell.col === col;
@@ -467,7 +468,7 @@ export const Board: React.FC<BoardProps> = ({
         {/* Hint-Overlay (#7) verdrängt nur visuell die Notizen der
             ausgewählten Zelle; gameState.notes bleibt unverändert. */}
         {!value && !isInitialValue &&
-          !(showHints && isSelected && possibleValues.length > 0) &&
+          !(showHints && isHintCell && possibleValues.length > 0) &&
           gameState.notes?.[row]?.[col]?.length > 0 && (
           <Box
             position="absolute"
@@ -503,7 +504,7 @@ export const Board: React.FC<BoardProps> = ({
           </Box>
         )}
 
-        {showHints && isSelected && !value && !isInitialValue && possibleValues.length > 0 && (
+        {showHints && isHintCell && !value && !isInitialValue && possibleValues.length > 0 && (
           <Box
             position="absolute"
             top="2px"
