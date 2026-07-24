@@ -211,6 +211,9 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
    * (Zahleneingabe, Hinweis-Reveal), MÜSSEN dies statt updateGameState
    * nutzen. Aufrufer, die nur Metadaten ändern (Timer-Tick), bleiben bei
    * updateGameState.
+   *
+   * ADR-0003: commit speichert (before, after) als Paar, damit redo den
+   * ursprünglichen Nachher-Zustand exakt reproduziert.
    */
   const applyMove = async (newState: Partial<GameState>) => {
     if (!gameState) return;
@@ -218,7 +221,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     // (React-StrictMode-Doppeleffekt), nutzen wir den State-Snapshot aus
     // gameStateRef als Fallback.
     const snapshotSource = gameStateRef.current ?? gameState;
-    undo.commit(snapshotSource);
+    // Nachher-Zustand synchron materialisieren, damit der Redo-Stack
+    // nach dem await den korrekten Wert hat (unabhängig von React-Batching).
+    const afterState = { ...snapshotSource, ...newState };
+    undo.commit({ before: snapshotSource, after: afterState });
     await updateGameState(newState);
   };
 
