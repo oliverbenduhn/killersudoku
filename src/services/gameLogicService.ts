@@ -250,6 +250,31 @@ export const togglePlayerNotes = (
   return { notes: next, changedCells };
 };
 
+/**
+ * Leert alle Notizen der ausgewählten (leeren, nicht vorgegebenen) Zellen.
+ * No-op-Zellen landen NICHT in changedCells — damit kann der Aufrufer
+ * entscheiden, ob er überhaupt einen applyMove auslösen will.
+ */
+export const clearPlayerNotes = (
+  notes: number[][][],
+  cellValues: number[][],
+  initialValues: number[][],
+  selectedCells: CellPosition[],
+  size: number = 9
+): PlayerNotesResult => {
+  const next = normalizeNotes(notes, cellValues, initialValues, size);
+  const changedCells: CellPosition[] = [];
+
+  for (const cell of selectedCells) {
+    if (initialValues[cell.row]?.[cell.col] !== 0 || cellValues[cell.row]?.[cell.col] !== 0) continue;
+    if (!next[cell.row]?.[cell.col] || next[cell.row][cell.col].length === 0) continue;
+    next[cell.row][cell.col] = [];
+    changedCells.push(cell);
+  }
+
+  return { notes: next, changedCells };
+};
+
 export interface PlayerEntryResult {
   cellValues: number[][];
   acceptedCells: CellPosition[];

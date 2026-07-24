@@ -197,7 +197,8 @@ export const Board: React.FC<BoardProps> = ({
       /* Toast zeigt bereits den Fehler an; das Banner wird via gameState.gameOver gerendert */
     },
     onSolveRecorded: handleSolveRecorded,
-    showError
+    showError,
+    pencilMode
   });
 
   // Keyboard-Navigation
@@ -461,6 +462,47 @@ export const Board: React.FC<BoardProps> = ({
         >
           {value || ''}
         </Text>
+
+        {/* Notiz-Kandidaten (Issue #5): festes 3x3-Mini-Raster, gedämpfter
+            Kontrast, BW-tauglich (text.muted hat in beiden Themes dieselbe
+            Wertigkeit). Wird nur auf leeren, nicht vorgegebenen Zellen mit
+            Inhalt gerendert. Hinweis-Overlay (showHints) und Notizen
+            schließen sich gegenseitig aus; das Hinweis-Overlay ist die
+            Hint-Engine und kommt aus einem anderen System (#7). */}
+        {!value && !isInitialValue && gameState.notes?.[row]?.[col]?.length > 0 && (
+          <Box
+            position="absolute"
+            top="2px"
+            left="2px"
+            right="2px"
+            bottom="2px"
+            display="grid"
+            gridTemplateColumns="repeat(3, 1fr)"
+            gridTemplateRows="repeat(3, 1fr)"
+            data-testid={`notes-${row}-${col}`}
+          >
+            {Array.from({ length: 9 }, (_, idx) => {
+              const digit = idx + 1;
+              const cellNotes = gameState.notes[row][col];
+              if (!cellNotes.includes(digit)) return <Box key={digit} />;
+              return (
+                <Text
+                  key={digit}
+                  fontSize={sumFontSize}
+                  color="text.muted"
+                  fontWeight="normal"
+                  lineHeight="1"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  aria-hidden="true"
+                >
+                  {digit}
+                </Text>
+              );
+            })}
+          </Box>
+        )}
 
         {showHints && isSelected && !value && !isInitialValue && possibleValues.length > 0 && (
           <Box
