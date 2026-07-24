@@ -4,6 +4,9 @@
 // entscheidet, wann ein Snapshot angelegt wird — üblicherweise vor jedem
 // User-Move, der den Brett-Zustand verändert.
 //
+// ADR-0003: commit speichert das (before, after)-Paar, damit redo den
+// ursprünglichen Nachher-Zustand exakt reproduziert (ohne Vertauschung).
+//
 // Cap auf 50 Einträge pro Stack: eine Killer-Sudoku-Session dauert 5–30
 // Minuten, 50 Undo-Schritte reichen für jeden realistischen Fall. Mehr
 // wäre Memory-Bloat ohne erkennbaren Nutzen.
@@ -12,16 +15,21 @@ import { useState, useCallback, useRef } from 'react';
 
 const MAX_HISTORY = 50;
 
+export interface UndoRedoPair<T> {
+  before: T;
+  after: T;
+}
+
 export interface UseUndoRedoResult<T> {
   /** Kann undo() etwas rückgängig machen? */
   canUndo: boolean;
   /** Kann redo() etwas wiederherstellen? */
   canRedo: boolean;
-  /** Snapshot des aktuellen State in den Past-Stack legen. Idempotent für identischen State. */
-  commit: (state: T) => void;
-  /** Einen Schritt zurück. Gibt den State zurück, mit dem der Aufrufer applyState aufruft. */
+  /** (before, after)-Paar auf den Past-Stack. Idempotent, wenn bereits das letzte Paar identisch ist. */
+  commit: (pair: UndoRedoPair<T>) => void;
+  /** Einen Schritt zurück. Liefert den Vorher-Zustand (before). */
   undo: () => T | null;
-  /** Einen Schritt vor. Gibt den State zurück. */
+  /** Einen Schritt vor. Liefert den Nachher-Zustand (after). */
   redo: () => T | null;
   /** Past + Future leeren (z. B. nach Reset oder Levelwechsel). */
   reset: () => void;
@@ -30,25 +38,27 @@ export interface UseUndoRedoResult<T> {
   futureDepth: number;
 }
 
+function pairEquals<T>(a: UndoRedoPair<T>, b: UndoRedoPair<T>): boolean {
+  return a.before === b.before && a.after === b.after;
+}
+
 export function useUndoRedo<T>(): UseUndoRedoResult<T> {
-  const [past, setPast] = useState<T[]>([]);
-  const [future, setFuture] = useState<T[]>([]);
+  const [past, setPast] = useState<UndoRedoPair<T>[]>([]);
+  const [future, setFuture] = useState<UndoRedoPair<T>[]>([]);
 
   // Refs, damit commit/undo/redo den jeweils aktuellen Stand sehen, ohne
   // durch stale-Closures bei React-StrictMode-Doppeleffekt reinzulaufen.
-  const pastRef = useRef<T[]>([]);
-  const futureRef = useRef<T[]>([]);
+  const pastRef = useRef<UndoRedoPair<T>[]>([]);
+  const futureRef = useRef<UndoRedoPair<T>[]>([]);
   pastRef.current = past;
   futureRef.current = future;
 
-  const commit = useCallback((state: T) => {
+  const commit = useCallback((pair: UndoRedoPair<T>) => {
     const currentPast = pastRef.current;
-    // Identische States nicht doppelt pushen (z. B. wenn dieselbe Zelle
-    // zweimal hintereinander gesetzt wird, ohne dass sich der State
-    // ändert — wir wollen den Undo-Stack nicht mit No-Ops füllen).
-    if (currentPast.length > 0 && currentPast[currentPast.length - 1] === state) return;
+    // Identische Paare nicht doppelt pushen (No-Ops füllen sonst den Stack).
+    if (currentPast.length > 0 && pairEquals(currentPast[currentPast.length - 1], pair)) return;
 
-    const next = [...currentPast, state];
+    const next = [...currentPast, pair];
     if (next.length > MAX_HISTORY) next.shift();
     pastRef.current = next;
     setPast(next);
@@ -67,22 +77,25 @@ export function useUndoRedo<T>(): UseUndoRedoResult<T> {
     const nextPast = currentPast.slice(0, -1);
     pastRef.current = nextPast;
     setPast(nextPast);
+    // Vorher-Zustand ist das, was der Aufrufer anwendet. Das vollständige
+    // Paar bleibt für Redo erhalten, damit auch ein folgendes Undo wieder
+    // denselben Vorher-Zustand kennt (ADR-0003).
     futureRef.current = [...currentFuture, last];
     setFuture((f) => [...f, last]);
-    return last;
+    return last.before;
   }, []);
 
   const redo = useCallback((): T | null => {
     const currentPast = pastRef.current;
     const currentFuture = futureRef.current;
     if (currentFuture.length === 0) return null;
-    const next = currentFuture[currentFuture.length - 1];
+    const pair = currentFuture[currentFuture.length - 1];
     const nextFuture = currentFuture.slice(0, -1);
     futureRef.current = nextFuture;
     setFuture(nextFuture);
-    pastRef.current = [...currentPast, next];
-    setPast((p) => [...p, next]);
-    return next;
+    pastRef.current = [...currentPast, pair];
+    setPast((p) => [...p, pair]);
+    return pair.after;
   }, []);
 
   const reset = useCallback(() => {
