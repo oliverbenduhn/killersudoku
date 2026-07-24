@@ -124,6 +124,7 @@ function App() {
               <HomeActions
                 onOpenLevels={() => handleTabChange('levels')}
                 blackAndWhiteMode={blackAndWhiteMode}
+                currentLevel={currentLevel}
                 onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => {
                   const next = !v;
                   try { localStorage.setItem('killersudoku_bw', next ? '1' : '0'); } catch {}
