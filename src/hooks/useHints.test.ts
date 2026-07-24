@@ -25,6 +25,7 @@ describe('useHints', () => {
     const gameState: GameState = {
       id: 'g1',
       cellValues: emptyBoard(),
+      notes: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => [])),
       startTime: Date.now(),
       elapsedTime: 0,
       hintsUsed: 0,

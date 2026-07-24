@@ -10,6 +10,8 @@ import {
   getPossibleValues,
   areCellsInSameCage,
   applyPlayerEntry,
+  togglePlayerNotes,
+  normalizeNotes,
   sanitizePlayerBoard
 } from './gameLogicService';
 import { Cage } from '../types/gameTypes';
@@ -251,6 +253,72 @@ describe('gameLogicService', () => {
       const c = cage('c1', [{ row: 0, col: 0 }], 5);
       const result = getPossibleValues(board, 0, 0, [c]) as { values: number[]; currentValueInvalid: boolean };
       expect(result.currentValueInvalid).toBe(true);
+    });
+  });
+
+  describe('player notes', () => {
+    const emptyNotes = (): number[][][] =>
+      Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []));
+
+    test('toggles a note on and off', () => {
+      const initial = emptyBoard();
+      const values = emptyBoard();
+      const added = togglePlayerNotes(emptyNotes(), values, initial, [{ row: 0, col: 0 }], 4);
+      expect(added.notes[0][0]).toEqual([4]);
+      expect(added.changedCells).toEqual([{ row: 0, col: 0 }]);
+
+      const removed = togglePlayerNotes(added.notes, values, initial, [{ row: 0, col: 0 }], 4);
+      expect(removed.notes[0][0]).toEqual([]);
+      expect(removed.changedCells).toEqual([{ row: 0, col: 0 }]);
+    });
+
+    test('changes only empty editable cells in a mixed selection', () => {
+      const initial = emptyBoard();
+      const values = emptyBoard();
+      initial[0][0] = 1;
+      values[0][0] = 1;
+      values[0][1] = 2;
+
+      const result = togglePlayerNotes(
+        emptyNotes(),
+        values,
+        initial,
+        [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 1, col: 2 }],
+        7
+      );
+
+      expect(result.changedCells).toEqual([{ row: 0, col: 2 }, { row: 1, col: 2 }]);
+      expect(result.notes[0][0]).toEqual([]);
+      expect(result.notes[0][1]).toEqual([]);
+      expect(result.notes[0][2]).toEqual([7]);
+      expect(result.notes[1][2]).toEqual([7]);
+    });
+
+    test('normalizes malformed notes and clears occupied cells', () => {
+      const initial = emptyBoard();
+      const values = emptyBoard();
+      initial[0][0] = 3;
+      values[0][0] = 3;
+      values[0][1] = 5;
+      const malformed: unknown = [
+        [[9, 2, 2, 0, 10, 3.5, '4'], [1, 8], [7]],
+        'not-a-row'
+      ];
+
+      const normalized = normalizeNotes(malformed, values, initial);
+
+      expect(normalized).toHaveLength(9);
+      expect(normalized.every((row: number[][]) => row.length === 9)).toBe(true);
+      expect(normalized[0][0]).toEqual([]);
+      expect(normalized[0][1]).toEqual([]);
+      expect(normalized[0][2]).toEqual([7]);
+      expect(normalized[0][3]).toEqual([]);
+      expect(normalized[1][0]).toEqual([]);
+    });
+
+    test('missing notes becomes an empty 9x9 grid', () => {
+      const normalized = normalizeNotes(undefined, emptyBoard(), emptyBoard());
+      expect(normalized).toEqual(emptyNotes());
     });
   });
 

@@ -199,6 +199,57 @@ export const areCellsInSameCage = (
   return cage.cells.some(cell => cell.row === row2 && cell.col === col2);
 };
 
+export interface PlayerNotesResult {
+  notes: number[][][];
+  changedCells: CellPosition[];
+}
+
+export const createEmptyNotes = (size: number = 9): number[][][] =>
+  Array.from({ length: size }, () => Array.from({ length: size }, () => []));
+
+export const normalizeNotes = (
+  savedNotes: unknown,
+  cellValues: number[][],
+  initialValues: number[][],
+  size: number = 9
+): number[][][] => Array.from({ length: size }, (_, row) =>
+  Array.from({ length: size }, (_, col) => {
+    if (initialValues[row]?.[col] !== 0 || cellValues[row]?.[col] !== 0) return [];
+    const values = Array.isArray(savedNotes)
+      && Array.isArray(savedNotes[row])
+      && Array.isArray(savedNotes[row][col])
+      ? savedNotes[row][col]
+      : [];
+    return [...new Set(values.filter(
+      (value: unknown): value is number => Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 9
+    ))].sort((a, b) => a - b);
+  })
+);
+
+export const togglePlayerNotes = (
+  notes: number[][][],
+  cellValues: number[][],
+  initialValues: number[][],
+  selectedCells: CellPosition[],
+  value: number,
+  size: number = 9
+): PlayerNotesResult => {
+  const next = normalizeNotes(notes, cellValues, initialValues, size);
+  const changedCells: CellPosition[] = [];
+  if (!Number.isInteger(value) || value < 1 || value > 9) return { notes: next, changedCells };
+
+  for (const cell of selectedCells) {
+    if (initialValues[cell.row]?.[cell.col] !== 0 || cellValues[cell.row]?.[cell.col] !== 0 || !next[cell.row]?.[cell.col]) continue;
+    const cellNotes = next[cell.row][cell.col];
+    next[cell.row][cell.col] = cellNotes.includes(value)
+      ? cellNotes.filter((note) => note !== value)
+      : [...cellNotes, value].sort((a, b) => a - b);
+    changedCells.push(cell);
+  }
+
+  return { notes: next, changedCells };
+};
+
 export interface PlayerEntryResult {
   cellValues: number[][];
   acceptedCells: CellPosition[];
