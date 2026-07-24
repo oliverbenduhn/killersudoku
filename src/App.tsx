@@ -146,8 +146,6 @@ function App() {
               error={error}
               blackAndWhiteMode={blackAndWhiteMode}
               transitionDirection={tabTransition}
-              onOpenLevels={() => handleTabChange('levels')}
-              onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => !v)}
             />
           )}
           {activeTab === 'levels' && (

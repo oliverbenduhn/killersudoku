@@ -8,7 +8,6 @@ import LevelSelector from './LevelSelector/LevelSelector';
 
 import { Board } from './Board/Board';
 import FadeInView from './common/FadeInView';
-import { HomeActions } from './common/HomeActions';
 
 interface TabPanelProps {
   transitionDirection: 'left' | 'right' | null;
@@ -25,8 +24,6 @@ interface HomeTabProps {
   transitionDirection: 'left' | 'right' | null;
   /** Überschreibt die Storage-Id (z. B. für generierte Zufallslevel). */
   puzzleId?: string;
-  onOpenLevels: () => void;
-  onToggleBlackAndWhite: () => void;
 }
 
 export function HomeTab({
@@ -37,8 +34,6 @@ export function HomeTab({
   blackAndWhiteMode,
   transitionDirection,
   puzzleId,
-  onOpenLevels,
-  onToggleBlackAndWhite,
 }: HomeTabProps) {
   return (
     <FadeInView
@@ -59,13 +54,6 @@ export function HomeTab({
           isLoading={isLoading}
           error={error}
           blackAndWhiteMode={blackAndWhiteMode}
-          sidebarFooter={
-            <HomeActions
-              onOpenLevels={onOpenLevels}
-              blackAndWhiteMode={blackAndWhiteMode}
-              onToggleBlackAndWhite={onToggleBlackAndWhite}
-            />
-          }
         />
       </Box>
     </FadeInView>
