@@ -63,6 +63,7 @@ describe('useBoardGameLogic – Game Over', () => {
   test('zeigt beim Erreichen des Fehlerlimits einen Eingabe-Warn-Toast, aber keinen separaten Game-Over-Toast', () => {
     jest.spyOn(GameLogic, 'applyPlayerEntry').mockReturnValue({
       cellValues: emptyBoard(),
+      notes: gameState.notes,
       acceptedCells: [],
       rejectedCells: [{ row: 0, col: 0 }]
     });
@@ -84,10 +85,12 @@ describe('useBoardGameLogic – Game Over', () => {
     expect(options.onGameOver).toHaveBeenCalledTimes(1);
   });
 
-  test('setzt einen Game-over-Spielstand vollständig zurück', () => {
+  test('setzt einen Game-over-Spielstand vollständig zurück und verwirft Notizen und History', () => {
     const updateGameState = jest.fn().mockResolvedValue(undefined);
+    const notes = Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => []));
+    notes[0][0] = [2, 4];
     const options = makeOptions({
-      gameState: { ...gameState, mistakesUsed: 3, gameOver: true },
+      gameState: { ...gameState, notes, mistakesUsed: 3, gameOver: true },
       isGameOver: true,
       updateGameState
     });
@@ -97,17 +100,19 @@ describe('useBoardGameLogic – Game Over', () => {
 
     expect(updateGameState).toHaveBeenCalledWith(expect.objectContaining({
       cellValues: levelData.initialValues,
+      notes: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => [])),
       mistakesUsed: 0,
       hintsUsed: 0,
       solved: false,
       gameOver: false,
       elapsedTime: 0
     }));
+    expect(options.applyMove).not.toHaveBeenCalled();
     expect(options.clearHistory).toHaveBeenCalledTimes(1);
   });
 });
 
-describe('useBoardGameLogic – Bleistiftmodus (Issue #5)', () => {
+describe('useBoardGameLogic – Bleistiftmodus (Issues #5/#6)', () => {
   const emptyBoard = (): number[][] => Array.from({ length: 9 }, () => Array(9).fill(0));
   const emptyNotes = (): number[][][] =>
     Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => []));
@@ -270,6 +275,69 @@ describe('useBoardGameLogic – Bleistiftmodus (Issue #5)', () => {
     expect(applyMove).not.toHaveBeenCalled();
   });
 
+  test('normal value entry applies values and cleared notes atomically', () => {
+    const nextValues = emptyBoard();
+    nextValues[0][0] = 4;
+    const nextNotes = emptyNotes();
+    jest.spyOn(GameLogic, 'applyPlayerEntry').mockReturnValue({
+      cellValues: nextValues,
+      notes: nextNotes,
+      acceptedCells: [{ row: 0, col: 0 }],
+      rejectedCells: []
+    });
+    const notes = emptyNotes();
+    notes[0][0] = [4, 7];
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes }),
+      pencilMode: false,
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleNumberSelect(4));
+
+    expect(GameLogic.applyPlayerEntry).toHaveBeenCalledWith(
+      options.gameState?.cellValues,
+      notes,
+      options.levelData?.initialValues,
+      options.selectedCells,
+      4,
+      options.cages,
+      options.size
+    );
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    expect(applyMove).toHaveBeenCalledWith(expect.objectContaining({
+      cellValues: nextValues,
+      notes: nextNotes
+    }));
+  });
+
+  test('reveal hint applies the value and cleared target notes atomically', () => {
+    const solution = emptyBoard();
+    solution[0][0] = 1;
+    const notes = emptyNotes();
+    notes[0][0] = [1, 3];
+    notes[0][1] = [5];
+    const applyMove = jest.fn().mockResolvedValue(undefined);
+    const options = makeOptions({
+      gameState: makeState({ notes }),
+      levelData: { ...levelData, solution },
+      applyMove
+    });
+
+    const { result } = renderHook(() => useBoardGameLogic(options));
+    act(() => result.current.handleRevealHint());
+
+    expect(applyMove).toHaveBeenCalledTimes(1);
+    const move = applyMove.mock.calls[0][0];
+    expect(move.cellValues[0][0]).toBe(1);
+    expect(move.notes[0][0]).toEqual([]);
+    expect(move.notes[0][1]).toEqual([5]);
+    expect(move.notes).not.toBe(notes);
+    expect(notes[0][0]).toEqual([1, 3]);
+  });
+
   test('inaktiver Bleistiftmodus: Ziffer nimmt unverändert den Wertepfad (Regression)', () => {
     // applyPlayerEntry ist gemockt; wir prüfen, dass der Wertepfad gewählt
     // wird, NICHT der Notizpfad — also wird applyMove mit cellValues
@@ -280,6 +348,7 @@ describe('useBoardGameLogic – Bleistiftmodus (Issue #5)', () => {
         b[0][0] = 4;
         return b;
       })(),
+      notes: emptyNotes(),
       acceptedCells: [{ row: 0, col: 0 }],
       rejectedCells: []
     });
@@ -296,7 +365,7 @@ describe('useBoardGameLogic – Bleistiftmodus (Issue #5)', () => {
     expect(applyMove).toHaveBeenCalledTimes(1);
     const call = applyMove.mock.calls[0][0];
     expect(call.cellValues).toBeDefined();
-    expect(call.notes).toBeUndefined();
+    expect(call.notes).toBeDefined();
   });
 
   test('handleClear inaktivem Modus löscht weiterhin Zellwerte (Regression)', () => {

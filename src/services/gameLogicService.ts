@@ -277,6 +277,7 @@ export const clearPlayerNotes = (
 
 export interface PlayerEntryResult {
   cellValues: number[][];
+  notes: number[][][];
   acceptedCells: CellPosition[];
   rejectedCells: CellPosition[];
 }
@@ -289,6 +290,7 @@ export interface PlayerEntryResult {
  */
 export const applyPlayerEntry = (
   cellValues: number[][],
+  notes: number[][][],
   initialValues: number[][],
   selectedCells: CellPosition[],
   value: number,
@@ -296,6 +298,7 @@ export const applyPlayerEntry = (
   size: number = 9
 ): PlayerEntryResult => {
   const next = cellValues.map((row) => [...row]);
+  const nextNotes = notes.map((row) => row.map((cell) => [...cell]));
   const acceptedCells: CellPosition[] = [];
   const rejectedCells: CellPosition[] = [];
 
@@ -305,13 +308,14 @@ export const applyPlayerEntry = (
     candidate[cell.row][cell.col] = value;
     if (isCellValid(candidate, cell.row, cell.col, value, cages, size)) {
       next[cell.row][cell.col] = value;
+      nextNotes[cell.row][cell.col] = [];
       acceptedCells.push(cell);
     } else {
       rejectedCells.push(cell);
     }
   }
 
-  return { cellValues: next, acceptedCells, rejectedCells };
+  return { cellValues: next, notes: nextNotes, acceptedCells, rejectedCells };
 };
 
 /**
@@ -332,6 +336,7 @@ export const sanitizePlayerBoard = (
       if (initialValues[row]?.[col] !== 0 || value === 0) continue;
       sanitized = applyPlayerEntry(
         sanitized,
+        createEmptyNotes(size),
         initialValues,
         [{ row, col }],
         value,
