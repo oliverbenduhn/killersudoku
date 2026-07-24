@@ -117,7 +117,33 @@ function App() {
         // anderen Weg dorthin gibt (keine Bottom-Nav auf Mobile).
         display={activeTab !== 'home' ? 'none' : 'block'}
       >
-        <Container maxW={containerMaxWidth} h={headerHeight} px={4}>
+        <Container
+          maxW={containerMaxWidth}
+          h={headerHeight}
+          px={4}
+          // Phone-Landscape (md..xl, height < 500): Header rotiert 90° nach
+          // links und dockt links an. So bleibt der gesamte vertikale Raum
+          // fürs Brett verfügbar, und Titel + Aktionen liegen am linken
+          // Rand als schmale Spalte. Desktop/Portrait sind unberührt.
+          sx={{
+            '@media (orientation: landscape) and (max-height: 499px) and (min-width: 768px)': {
+              position: 'fixed',
+              top: '50%',
+              left: 0,
+              transform: 'translateY(-50%) rotate(-90deg)',
+              transformOrigin: 'center',
+              height: '52px',
+              width: '240px',
+              whiteSpace: 'nowrap',
+              paddingLeft: '12px',
+              paddingRight: '12px',
+              borderRadius: '0 8px 8px 0',
+              boxShadow: 'sm',
+              background: 'var(--chakra-colors-surface-raised)',
+              zIndex: 999,
+            },
+          }}
+        >
           <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
             <Flex align="baseline" gap={2}>
               <Heading as="h1" color={headerTextColor} fontSize={{ base: '18px', md: '20px' }} fontWeight="700" letterSpacing="-0.02em">
