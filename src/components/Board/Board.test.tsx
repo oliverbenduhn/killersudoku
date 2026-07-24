@@ -75,15 +75,28 @@ jest.mock('../../hooks/useCellAnimation', () => ({
   })
 }));
 
+// Mutable Hint-Status für Seam-Tests (Issue #7): useState im Mock selbst,
+// damit toggleHints eine echte React-Rerender-Kaskade auslöst; externer
+// setHintsForTest setzt Werte für den nächsten Mount.
+let mockShowHints = false;
+let mockPossibleValues: number[] = [];
 jest.mock('../../hooks/useHints', () => ({
   __esModule: true,
-  useHints: () => ({
-    showHints: false,
-    possibleValues: [],
-    toggleHints: jest.fn(),
-    refreshHints: jest.fn()
-  })
+  useHints: () => {
+    const [show, setShow] = React.useState(mockShowHints);
+    const [values, setValues] = React.useState(mockPossibleValues);
+    return {
+      showHints: show,
+      possibleValues: values,
+      toggleHints: jest.fn(() => { mockShowHints = !mockShowHints; setShow((s: boolean) => !s); }),
+      refreshHints: jest.fn()
+    };
+  }
 }));
+const setHintsForTest = (show: boolean, values: number[] = []) => {
+  mockShowHints = show;
+  mockPossibleValues = values;
+};
 
 jest.mock('../../hooks/useBoardGameLogic', () => ({
   __esModule: true,
@@ -125,6 +138,7 @@ describe('Board Component', () => {
     jest.clearAllMocks();
     mockGameState.mistakesUsed = 0;
     mockGameState.gameOver = false;
+    setHintsForTest(false, []);
     (GameLogic.isCellValid as jest.Mock).mockReturnValue(true);
   });
 
@@ -230,6 +244,7 @@ describe('Bleistiftmodus (#4)', () => {
     jest.clearAllMocks();
     mockGameState.mistakesUsed = 0;
     mockGameState.gameOver = false;
+    setHintsForTest(false, []);
     // Mock-useGameState gibt gameState.levelId='default' zurück; damit der
     // Board-Renderpfad nicht über die Race-Condition-Schiene "kein Brett"
     // abbricht, spiegeln wir hier den jeweils aktuellen puzzleId.
@@ -326,5 +341,84 @@ describe('Bleistiftmodus (#4)', () => {
     expect(btn).toHaveAttribute('aria-pressed', 'true');
     fireEvent.keyDown(window, { key: 'p' });
     expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+});
+
+describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
+  const emptyBoard: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+  const mockLevelData: GameLevel = {
+    levelNumber: 1,
+    id: 'test-level',
+    initialValues: emptyBoard,
+    solution: emptyBoard.map((row) => [...row]),
+    cages: [
+      {
+        id: 'cage-1',
+        cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+        sum: 3,
+        color: 'blue.100'
+      }
+    ]
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockGameState.mistakesUsed = 0;
+    mockGameState.gameOver = false;
+    mockGameState.levelId = 'default';
+    mockGameState.notes[0][0] = [];
+    setHintsForTest(false, []);
+  });
+
+  afterEach(() => {
+    mockGameState.notes[0][0] = [];
+    setHintsForTest(false, []);
+  });
+
+  test('Notiz-Kandidaten erscheinen ohne Hint-Overlay', () => {
+    mockGameState.notes[0][0] = [1, 5, 9];
+    render(<Board levelData={mockLevelData} />);
+    expect(screen.getByTestId('notes-0-0')).toBeInTheDocument();
+  });
+
+  test('Notizen werden visuell ausgeblendet, solange das Hint-Overlay für die selektierte Zelle aktiv ist; Daten bleiben unverändert', () => {
+    mockGameState.notes[0][0] = [1, 5, 9];
+    // Mock-Hook mit aktivem Overlay und möglichen Werten initialisieren.
+    setHintsForTest(true, [2, 4]);
+    render(<Board levelData={mockLevelData} />);
+    fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+    // Optisch ausgeblendet, Daten unverändert.
+    expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
+    expect(mockGameState.notes[0][0]).toEqual([1, 5, 9]);
+  });
+
+  test('Nach Deaktivieren des Hint-Modus erscheinen die Notizen unverändert wieder', () => {
+    mockGameState.notes[0][0] = [1, 5, 9];
+    setHintsForTest(true, [2, 4]);
+    render(<Board levelData={mockLevelData} />);
+    fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+    expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
+    // F5 schaltet das Overlay im echten Board-Pfad aus — Mock-Toggle aktualisiert
+    // useState, Board rendert erneut, Notizen sind wieder sichtbar.
+    fireEvent.keyDown(window, { key: 'F5' });
+    const grid = screen.getByTestId('notes-0-0');
+    const slots = Array.from(grid.children);
+    expect(slots[0]).toHaveTextContent('1');
+    expect(slots[4]).toHaveTextContent('5');
+    expect(slots[8]).toHaveTextContent('9');
+  });
+
+  test('aria-label der Flächen-Schicht-Zelle listet gesetzte Notiz-Kandidaten mit auf', () => {
+    mockGameState.notes[0][0] = [2, 7];
+    render(<Board levelData={mockLevelData} />);
+    const cell = screen.getByTestId('cell-0-0');
+    expect(cell.getAttribute('aria-label')).toContain('Notizen 2, 7');
+  });
+
+  test('aria-label enthält keinen Notiz-Suffix, wenn die Zelle leer ist', () => {
+    mockGameState.notes[0][0] = [];
+    render(<Board levelData={mockLevelData} />);
+    const cell = screen.getByTestId('cell-0-0');
+    expect(cell.getAttribute('aria-label')).not.toContain('Notizen');
   });
 });

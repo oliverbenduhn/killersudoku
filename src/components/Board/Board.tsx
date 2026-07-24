@@ -355,12 +355,13 @@ export const Board: React.FC<BoardProps> = ({
       : undefined;
     if (isSelected) bgColor = 'cell.selected.bg';
 
+    const noteCandidates = gameState.notes?.[row]?.[col] ?? [];
     return (
       <Box
         key={`bg-${row}-${col}`}
         data-testid={`cell-${row}-${col}`}
         role="gridcell"
-        aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}`}
+        aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}${noteCandidates.length > 0 ? `, Notizen ${noteCandidates.join(', ')}` : ''}`}
         aria-selected={isSelected}
         position="relative"
         w={`${cellSize}px`}
@@ -463,13 +464,11 @@ export const Board: React.FC<BoardProps> = ({
           {value || ''}
         </Text>
 
-        {/* Notiz-Kandidaten (Issue #5): festes 3x3-Mini-Raster, gedämpfter
-            Kontrast, BW-tauglich (text.muted hat in beiden Themes dieselbe
-            Wertigkeit). Wird nur auf leeren, nicht vorgegebenen Zellen mit
-            Inhalt gerendert. Hinweis-Overlay (showHints) und Notizen
-            schließen sich gegenseitig aus; das Hinweis-Overlay ist die
-            Hint-Engine und kommt aus einem anderen System (#7). */}
-        {!value && !isInitialValue && gameState.notes?.[row]?.[col]?.length > 0 && (
+        {/* Hint-Overlay (#7) verdrängt nur visuell die Notizen der
+            ausgewählten Zelle; gameState.notes bleibt unverändert. */}
+        {!value && !isInitialValue &&
+          !(showHints && isSelected && possibleValues.length > 0) &&
+          gameState.notes?.[row]?.[col]?.length > 0 && (
           <Box
             position="absolute"
             top="2px"
