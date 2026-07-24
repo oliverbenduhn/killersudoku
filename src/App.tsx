@@ -27,7 +27,17 @@ import { Difficulty, GameLevel } from './types/gameTypes';
 type TabName = 'home' | 'levels';
 
 function App() {
-  const [currentLevel, setCurrentLevel] = useState<number>(1);
+  // Zuletzt gespieltes Level in localStorage persistieren, damit ein Reload
+  // (z. B. versehentliches Aktualisieren im Browser) nicht auf Level 1
+  // zurückspringt, sondern dort weitermacht, wo man war.
+  const [currentLevel, setCurrentLevel] = useState<number>(() => {
+    try {
+      const stored = Number(localStorage.getItem('killersudoku_current_level'));
+      return Number.isInteger(stored) && stored > 0 ? stored : 1;
+    } catch {
+      return 1;
+    }
+  });
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
   // Generiertes Zufallslevel; hat Vorrang vor dem geladenen Standard-Level.
   const [generatedLevel, setGeneratedLevel] = useState<GameLevel | null>(null);
@@ -78,6 +88,10 @@ function App() {
     };
     fetchLevel();
     return () => { cancelled = true; };
+  }, [currentLevel]);
+
+  useEffect(() => {
+    try { localStorage.setItem('killersudoku_current_level', String(currentLevel)); } catch {}
   }, [currentLevel]);
 
   // Fullscreen-Toggle: requestFullscreen() / exitFullscreen() der Browser
