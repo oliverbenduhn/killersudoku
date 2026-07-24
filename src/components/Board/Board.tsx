@@ -818,14 +818,13 @@ export const Board: React.FC<BoardProps> = ({
           disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
           remainingDigits={remainingDigits}
         />
-        <Box
-          // Im Landscape Action-Bar in zwei Gruppen teilen: primäre
-          // Aktionen (Tipp + Hinweis) oben, sekundäre (Reset, Undo, Redo)
-          // unten in einer kompakten Reihe — spart vertikalen Platz.
-          display={flexDirection === "row" ? "flex" : "block"}
-          flexDirection={flexDirection === "row" ? "column" : undefined}
-          gap={flexDirection === "row" ? 2 : undefined}
-          mt={flexDirection === "row" ? 2 : 4}
+        <Grid
+          // 3×2-Gitter analog NumberPad: Buttons so breit wie eine
+          // Pad-Zelle (halbe Pad-Breite) — schafft Platz fürs Brett.
+          templateColumns="repeat(2, 1fr)"
+          gap={2}
+          width={flexDirection === "row" ? "auto" : "100%"}
+          mt={4}
         >
           {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
               Visual: solid + outline-Ring bei aktiv = nicht rein farblich.
@@ -838,6 +837,7 @@ export const Board: React.FC<BoardProps> = ({
             aria-pressed={pencilMode}
             boxShadow={pencilMode ? 'outline' : undefined}
             data-testid="pencil-toggle"
+            width="100%"
           >
             <EditIcon />
           </RippleButton>
@@ -882,6 +882,7 @@ export const Board: React.FC<BoardProps> = ({
             }}
             isDisabled={!gameState || isGameOver || cages.length === 0}
             aria-label="Tipp"
+            width="100%"
           >
             <BellIcon />
           </RippleButton>
@@ -891,6 +892,7 @@ export const Board: React.FC<BoardProps> = ({
             onClick={handleRevealHint}
             isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
             aria-label={`Hinweis (${MAX_HINTS - (gameState?.hintsUsed || 0)})`}
+            width="100%"
           >
             <AddIcon />
           </RippleButton>
@@ -900,6 +902,7 @@ export const Board: React.FC<BoardProps> = ({
             onClick={handleReset}
             isDisabled={!gameState}
             aria-label="Reset"
+            width="100%"
           >
             <RepeatClockIcon />
           </RippleButton>
@@ -908,6 +911,7 @@ export const Board: React.FC<BoardProps> = ({
             onClick={() => { void undo(); }}
             isDisabled={!gameState || isGameOver || !canUndo}
             aria-label="Rückgängig"
+            width="100%"
           >
             <ArrowBackIcon />
           </RippleButton>
@@ -916,10 +920,11 @@ export const Board: React.FC<BoardProps> = ({
             onClick={() => { void redo(); }}
             isDisabled={!gameState || isGameOver || !canRedo}
             aria-label="Wiederherstellen"
+            width="100%"
           >
             <ArrowForwardIcon />
           </RippleButton>
-        </Box>
+        </Grid>
 
         {flexDirection === "row" && sidebarFooter && (
           <Box
