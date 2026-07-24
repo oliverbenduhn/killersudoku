@@ -104,12 +104,17 @@ export const Board: React.FC<BoardProps> = ({
   const boardFocusRef = useRef<HTMLDivElement | null>(null);
 
   // Responsive Zellgröße
+  // xl/2xl waren bislang bei 80px gedeckelt — auf Desktop-Auflösungen
+  // ≥1280px ließ das trotz freier Höhe (Container ist 80vh) viel
+  // hellgrauen Leerraum um das Brett. Cap jetzt weiter angehoben, damit
+  // useBoardResize den tatsächlich verfügbaren Platz ausnutzen kann.
   const cellSizeByBreakpoint = useBreakpointValue({
     base: 40,
     sm: 44,
     md: 56,
     lg: 72,
-    xl: 80
+    xl: 96,
+    '2xl': 116
   }) || 48;
   const { cellSize } = useBoardResize({ boardRef, cellSizeByBreakpoint, size });
   // Käfig-Inset (siehe renderLineSvg): die gestrichelte Kontur läuft bei
