@@ -10,6 +10,8 @@ describe('HomeActions', () => {
       <HomeActions
         onOpenLevels={onOpenLevels}
         blackAndWhiteMode={false}
+        isFullscreen={false}
+        onToggleFullscreen={jest.fn()}
         onToggleBlackAndWhite={jest.fn()}
       />
     );
@@ -23,6 +25,8 @@ describe('HomeActions', () => {
       <HomeActions
         onOpenLevels={jest.fn()}
         blackAndWhiteMode={false}
+        isFullscreen={false}
+        onToggleFullscreen={jest.fn()}
         onToggleBlackAndWhite={onToggleBlackAndWhite}
       />
     );
@@ -35,6 +39,8 @@ describe('HomeActions', () => {
       <HomeActions
         onOpenLevels={jest.fn()}
         blackAndWhiteMode={true}
+        isFullscreen={false}
+        onToggleFullscreen={jest.fn()}
         onToggleBlackAndWhite={jest.fn()}
       />
     );
@@ -46,6 +52,8 @@ describe('HomeActions', () => {
       <HomeActions
         onOpenLevels={jest.fn()}
         blackAndWhiteMode={false}
+        isFullscreen={false}
+        onToggleFullscreen={jest.fn()}
         onToggleBlackAndWhite={jest.fn()}
       />
     );

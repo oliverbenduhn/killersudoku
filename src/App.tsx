@@ -35,6 +35,12 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('home');
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
+  // Fullscreen-Status wird mit document.fullscreenElement synchron gehalten,
+  // damit der Toggle-Button auch reagiert, wenn der User per Browser-UI
+  // (z. B. ESC) das Vollbild verlässt.
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(() =>
+    typeof document !== 'undefined' && !!document.fullscreenElement
+  );
   // BW-Toggle in localStorage wie dark-Mode persistieren, damit der User
   // nicht bei jedem Reload neu ein-/ausschalten muss.
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(() => {
@@ -73,6 +79,26 @@ function App() {
     fetchLevel();
     return () => { cancelled = true; };
   }, [currentLevel]);
+
+  // Fullscreen-Toggle: requestFullscreen() / exitFullscreen() der Browser
+  // API. Browser verlangt einen User-Gesture — der Button-Click ist einer.
+  const handleToggleFullscreen = () => {
+    if (typeof document === 'undefined') return;
+    if (!document.fullscreenElement) {
+      void document.documentElement.requestFullscreen().catch(() => {
+        // Browser kann Vollbild verweigern (z. B. bei <iframe> oder ohne
+        // User-Gesture); still ignorieren.
+      });
+    } else {
+      void document.exitFullscreen();
+    }
+  };
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const onChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', onChange);
+    return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
 
   const handleTabChange = (tabName: TabName) => {
     if (tabName === activeTab) return;
@@ -158,6 +184,8 @@ function App() {
                 onOpenLevels={() => handleTabChange('levels')}
                 blackAndWhiteMode={blackAndWhiteMode}
                 currentLevel={currentLevel}
+                isFullscreen={isFullscreen}
+                onToggleFullscreen={handleToggleFullscreen}
                 onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => {
                   const next = !v;
                   try { localStorage.setItem('killersudoku_bw', next ? '1' : '0'); } catch {}
