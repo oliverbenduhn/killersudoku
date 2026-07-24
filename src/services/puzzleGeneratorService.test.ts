@@ -10,6 +10,7 @@ const countGivens = (m: number[][]): number =>
   m.flat().filter((v) => v !== 0).length;
 
 describe('puzzleGeneratorService — generateLevel', () => {
+  jest.setTimeout(60_000);
   test.each(['easy', 'medium', 'hard', 'expert'] as const)(
     'erzeugt valides, eindeutig lösbares Level (%s)',
     async (difficulty) => {

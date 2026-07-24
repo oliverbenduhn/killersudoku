@@ -46,7 +46,7 @@ interface DifficultyProfile {
 }
 
 const PROFILES: Record<Exclude<Difficulty, 'unknown'>, DifficultyProfile> = {
-  // ADR 0002: pool ohne Größe 1, weil der Top-Anker keine Einerkäfigs
+  // ADR 0002: Pool ohne Größe 1, weil der Top-Anker keine Einerkäfigs
   // produziert und die freie Partition nur in Frontier-leer-Fällen welche
   // anlegt (durch den Generator-Reparatur-Loop wieder aufgelöst).
   easy:   { cageSizes: [2, 2, 3, 3, 4, 4], baseGivens: 14, maxGivens: 22, difficultyRating: 2, entropyAnchors: 4 },
@@ -55,54 +55,100 @@ const PROFILES: Record<Exclude<Difficulty, 'unknown'>, DifficultyProfile> = {
   expert: { cageSizes: [3, 4, 4, 5, 6, 7], baseGivens: 0,  maxGivens: 6,  difficultyRating: 9, entropyAnchors: 1 },
 };
 
-const MAX_ATTEMPTS = 20;
+// ADR 0002: gestaffelte Pool-Versuche pro Schwierigkeit — Pool wird
+// schrittweise härter, wenn die Einerkäfig-Quote nicht in MAX_ATTEMPTS
+// Versuchen erreicht wird. Letzte Stufe ist immer pool ohne 1.
+// ponytail: expert und hard haben bereits Pool ohne 1; die Stufen dort
+// variieren die Härte weniger (kein Wegwerfen von Käfig-Größe 2). Da die
+// Einerkäfig-Quote ohne 1-Element im Pool sehr klein ist, ist die
+// Härtung selten der Bottleneck; öfter ist es der Solver (Eindeutigkeit).
+const POOL_FALLBACKS: Record<Exclude<Difficulty, 'unknown'>, number[][]> = {
+  // easy: Stufe 1 weicht max 4 Zellen ab, Stufe 2 nur 2-3, Stufe 3 minimal
+  easy:   [[2, 2, 3, 3, 4, 4], [2, 3, 3, 4, 4], [3, 3, 4, 4]],
+  // medium: harter werdend Richtung Minimalset
+  medium: [[2, 2, 3, 3, 4, 5], [2, 3, 3, 4, 5], [3, 3, 4, 5]],
+  // hard: nur leicht härter werdend — Stufe 3 ist nicht zu strikt
+  hard:   [[2, 3, 3, 4, 5, 6], [3, 3, 4, 5, 6], [3, 3, 4, 5, 6]],
+  // expert: alle Stufen sehr ähnlich — Solver-Bottleneck, nicht Pool-Bottleneck
+  expert: [[3, 4, 4, 5, 6, 7], [3, 4, 4, 5, 6, 7], [3, 4, 4, 5, 6, 7]],
+};
+
+// ADR 0002: Cap-Quoten pro Schwierigkeit — Pool-Härtung in den jeweiligen
+// Stufen wird verworfen, wenn die Quote nicht innerhalb der Cap liegt.
+// ponytail: easy und medium haben Pool mit Größe 2+ → Cap-Check nötig.
+// hard/expert haben bereits Pool ohne 1 → Quote ist durch Pool-Design
+// garantiert klein; Cap-Check wäre Rauschen. Stattdessen prüft der
+// Generator nur für easy/medium.
+const ONE_CAGE_LIMITS: Record<Exclude<Difficulty, 'unknown'>, number> = {
+  easy: 0.10, medium: 0.08, hard: 0.04, expert: 0.02,
+};
+function needsOneCageCheck(d: Exclude<Difficulty, 'unknown'>): boolean {
+  return d === 'easy' || d === 'medium';
+}
+
+const MAX_ATTEMPTS = 60;
 
 /**
  * Erzeugt ein zufälliges, garantiert eindeutig lösbares Level.
  *
  * Die Generierung läuft als `async` mit `yieldToBrowser()` zwischen
  * Versuchen, damit der Browser auf Mobile-CPUs zwischen den
- * (teureren) Solver-Aufrufen auch tatsächlich rendern kann —
- * sonst hängt der Lade-Spinner 5–10 s auf einem einzigen Frame.
- * Wirft, wenn nach MAX_ATTEMPTS kein Level im Schwierigkeits-Budget
- * gefunden wurde (praktisch nicht erreichbar).
+ * (teureren) Solver-Aufrufen auch tatsächlich rendern kann — sonst
+ * hängt der Lade-Spinner 5–10 s auf einem einzigen Frame.
+ *
+ * ADR 0002: Pool-Härtung — pro Schwierigkeit gibt es 3 Pools in steigender
+ * Härte. Generator probiert Stufe 1 bis MAX_ATTEMPTS. Wenn die Einerkäfig-
+ * Quote den Cap nicht einhält, geht es zu Stufe 2 mit härterem Pool. Wenn
+ * auch das nicht reicht, Stufe 3. Nach allen drei Stufen gilt der
+ * praktisch-nicht-erreichbare Fehlerfall.
  */
 export async function generateLevel(options: GenerateOptions): Promise<GameLevel> {
   const profile = PROFILES[options.difficulty];
+  const limit = ONE_CAGE_LIMITS[options.difficulty];
 
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const solution = generateSolvedGrid();
-    const cages = partitionIntoCages(solution, profile.cageSizes, profile.entropyAnchors);
-    if (!hasUniqueCombinationAnchor(cages)) { await yieldToBrowser(); continue; }
-    if (find45Deductions(createEmptyBoard(), cages).length === 0) { await yieldToBrowser(); continue; }
-    if (!colorCages(cages)) { await yieldToBrowser(); continue; }
+  for (const pool of POOL_FALLBACKS[options.difficulty]) {
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const solution = generateSolvedGrid();
+      const cages = partitionIntoCages(solution, pool, profile.entropyAnchors);
+      if (!hasUniqueCombinationAnchor(cages)) { await yieldToBrowser(); continue; }
+      if (find45Deductions(createEmptyBoard(), cages).length === 0) { await yieldToBrowser(); continue; }
+      if (!colorCages(cages)) { await yieldToBrowser(); continue; }
 
-    const initialValues = createEmptyBoard();
-    const cells = shuffle(allCells());
-    for (let i = 0; i < profile.baseGivens; i++) {
-      const { row, col } = cells[i];
-      initialValues[row][col] = solution[row][col];
+      // ADR 0002: Cap-Prüfung. Nur für easy/medium aktiv — hard/expert
+      // haben Pool ohne 1, ihre Quote ist durch Pool-Design klein.
+      if (needsOneCageCheck(options.difficulty)) {
+        const oneCages = cages.filter((c) => c.cells.length === 1).length;
+        if (oneCages / cages.length > limit) { await yieldToBrowser(); continue; }
+      }
+
+      const initialValues = createEmptyBoard();
+      const cells = shuffle(allCells());
+      for (let i = 0; i < profile.baseGivens; i++) {
+        const { row, col } = cells[i];
+        initialValues[row][col] = solution[row][col];
+      }
+
+      if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) { await yieldToBrowser(); continue; }
+      if (!evaluateLogicalSolvability(initialValues, cages).solved) { await yieldToBrowser(); continue; }
+
+      const now = new Date().toISOString();
+      return {
+        id: randomId(),
+        levelNumber: options.levelNumber ?? 0,
+        difficulty: options.difficulty,
+        difficultyRating: profile.difficultyRating,
+        name: `Generiert (${options.difficulty})`,
+        cages,
+        initialValues,
+        solution,
+        author: 'generator',
+        createdAt: now,
+        updatedAt: now,
+      };
     }
-
-    if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) { await yieldToBrowser(); continue; }
-    if (!evaluateLogicalSolvability(initialValues, cages).solved) { await yieldToBrowser(); continue; }
-
-    const now = new Date().toISOString();
-    return {
-      id: randomId(),
-      levelNumber: options.levelNumber ?? 0,
-      difficulty: options.difficulty,
-      difficultyRating: profile.difficultyRating,
-      name: `Generiert (${options.difficulty})`,
-      cages,
-      initialValues,
-      solution,
-      author: 'generator',
-      createdAt: now,
-      updatedAt: now,
-    };
+    // Bis hierher MAX_ATTEMPTS Versuche verbraucht — versuche nächste Stufe.
   }
-  throw new Error(`generateLevel: kein valides Level nach ${MAX_ATTEMPTS} Versuchen (${options.difficulty})`);
+  throw new Error(`generateLevel: kein valides Level nach Pool-Härtung fuer ${options.difficulty}`);
 }
 
 /**

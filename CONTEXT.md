@@ -18,6 +18,16 @@ _Avoid_: Box, Region, Quadrant
 Eine Gruppe zusammenhängender Zellen mit einer Pflichtsumme. Im Rendering durch eine gestrichelte, nach innen versetzte Kontur markiert.
 _Avoid_: Gruppe, Bereich, Zone
 
+**Einerkäfig** (One-cell cage):
+Ein Käfig, der genau eine Zelle umfasst. Trivial lösbar: die Summe ist der Zellwert selbst und der Käfig verrät eine vorgegebene Ziffer ohne Logik. Ein zu hoher Anteil an Einerkäfigs entwertet das Rätsel. Cap-Quote pro Schwierigkeit in ADR 0002.
+_Avoid_: Vorgabe-Käfig, trivialer Käfig, Einzelfeld
+
+**Einerkäfig-Quote** (One-cell-cage quote):
+Verhältnis `|Einerkäfig| / |Cages|` im Level. Bezugsgröße sind die Käfigs, nicht die Zellen, weil ein Einerkäfig trivialer Käfig ist — gemessen wird der Anteil trivialer Käfigs. Caps pro Schwierigkeit in ADR 0002.
+
+**Pool-Härtung** (Pool escalation):
+Mechanismus im Generator: pro Schwierigkeit werden drei Pools in steigender Härte probiert, wenn die Quote den Cap nicht einhält. Letzte Stufe ist immer ein Pool ohne Käfig-Größe `1`. Details in ADR 0002.
+
 **Käfigsumme**:
 Die kleine Zahl oben-links im Käfig; Zielsumme aller Zellwerte des Käfigs.
 _Avoid_: Cage-Total, Zielwert
