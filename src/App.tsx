@@ -6,6 +6,7 @@ import {
   Container,
   Heading,
   Flex,
+  Text,
   useBreakpointValue,
   useColorModeValue,
   useToast,
@@ -13,6 +14,7 @@ import {
 
 import InstallPrompt from './components/common/InstallPrompt';
 import { HomeActions } from './components/common/HomeActions';
+import { APP_VERSION } from './version';
 
 import { HomeTab, LevelsTab } from './components/Tabs';
 import { TutorialOverlay } from './components/common/TutorialOverlay';
@@ -117,9 +119,14 @@ function App() {
       >
         <Container maxW={containerMaxWidth} h={headerHeight} px={4}>
           <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
-            <Heading as="h1" color={headerTextColor} fontSize={{ base: '18px', md: '20px' }} fontWeight="700" letterSpacing="-0.02em">
-              Killer Sudoku
-            </Heading>
+            <Flex align="baseline" gap={2}>
+              <Heading as="h1" color={headerTextColor} fontSize={{ base: '18px', md: '20px' }} fontWeight="700" letterSpacing="-0.02em">
+                Killer Sudoku
+              </Heading>
+              <Text color={headerTextColor} opacity={0.5} fontSize="xs" fontFamily="mono">
+                v{APP_VERSION}
+              </Text>
+            </Flex>
             <Flex align="center" gap={1}>
               <HomeActions
                 onOpenLevels={() => handleTabChange('levels')}
