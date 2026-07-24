@@ -57,3 +57,11 @@ _Avoid_: Käfig-Rand, Cage-Border
 **BW-Modus** (Schwarz-Weiß):
 Darstellung ohne Käfig-Flächenfarben — nur Linien tragen die Struktur (Vorbild: klassischer Killer-Sudoku-Druck). Zahlen und Konturen neutral grau/schwarz.
 _Avoid_: Monochrom-Modus, Druck-Modus
+
+**Bleistiftmodus** (Pencil mode):
+Sitzungsweiter, nicht persistierter Eingabemodus. Aktiv, tragen Zifferneingaben (Tastatur wie NumberPad) keine finalen Zellwerte mehr ein, sondern toggeln Notiz-Kandidaten der ausgewählten Zelle(n). Setzt sich beim Laden, Reload und Level-/Puzzlewechsel immer auf „aus" zurück. Vollständige Spec in GitHub Issue #1; der zugehörige Undo/Redo-Architekturfix ist in ADR 0003 dokumentiert.
+_Avoid_: Notizmodus, Kandidatenmodus
+
+**Notiz-Kandidat** (Player pencil mark):
+Eine vom Spieler im Bleistiftmodus gesetzte Ziffer (1–9) als vorläufiger Kandidat einer leeren, nicht vorgegebenen Zelle — Teil des persistierten Spielstands, unabhängig vom internen Solver-`candidates`-Konzept (Hint-Engine). Wird automatisch entfernt, sobald die Zelle einen finalen Wert erhält (normale Eingabe, Reveal-Hint) oder bei Reset.
+_Avoid_: Notiz, Kandidat (ohne Kontext), Pencil Mark
