@@ -690,7 +690,7 @@ export const Board: React.FC<BoardProps> = ({
         flexGrow={1}
         flexShrink={1}
         flexBasis={flexDirection === "row" ? "0" : "auto"}
-        maxW={flexDirection === "column" ? "100%" : "70%"}
+        maxW={flexDirection === "column" ? "100%" : "80%"}
         // Im Sidebar-Modus (md+) nutzt das Brett 80vh der Höhe — das
         // lässt in der Sidebar Platz für NumberPad+Löschen+Aktionen
         // ohne dass sie hinter der Bottom-Nav verschwinden.
@@ -806,13 +806,14 @@ export const Board: React.FC<BoardProps> = ({
         // Im Landscape keine Bottom-Nav-Overlap-Risk: Inhalt vor
         // Bottom-Nav enden lassen (Bottom-Nav ist 57 px + Safe-Area).
         pb={flexDirection === "row" ? "72px" : 2}
-        // Im Sidebar-Modus die volle verfügbare Breite rechts vom Brett
-        // einnehmen, damit NumberPad+Aktionen gleichmäßig verteilt sind.
+        // Im Sidebar-Modus nur so breit wie NumberPad/Aktionen (nicht den
+        // Restplatz füllen) — das Brett bekommt den übrigen Platz via
+        // flexGrow, damit rechts kein Leerraum bleibt.
         width={flexDirection === "column" ? "100%" : "auto"}
-        flex={flexDirection === "row" ? "1" : undefined}
+        flex={flexDirection === "row" ? "0 0 auto" : undefined}
         display="flex"
         flexDirection="column"
-        alignItems={flexDirection === "column" ? "center" : "stretch"}
+        alignItems={flexDirection === "column" ? "center" : "start"}
         overflowY="auto"
       >
         <NumberPad
