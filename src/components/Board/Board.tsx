@@ -718,7 +718,7 @@ export const Board: React.FC<BoardProps> = ({
             boxShadow="xl"
             zIndex={10}
           >
-            <Text fontSize="xl" fontWeight="bold" color="status.success">
+            <Text fontSize="xl" fontWeight="bold" color="white">
               Gratulation! Das Rätsel ist gelöst!
             </Text>
           </FadeInView>
