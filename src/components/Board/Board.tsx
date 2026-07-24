@@ -26,6 +26,7 @@ import { useCellAnimation } from '../../hooks/useCellAnimation';
 import { useBoardKeyboard } from '../../hooks/useBoardKeyboard';
 import { useHints } from '../../hooks/useHints';
 import { useBoardGameLogic, recordBoardSolved } from '../../hooks/useBoardGameLogic';
+import { markLevelSolved, markLevelStarted, parseLevelNumber } from '../../services/progressService';
 
 import NumberPad from '../NumberPad/NumberPad';
 import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
@@ -279,8 +280,11 @@ export const Board: React.FC<BoardProps> = ({
   useEffect(() => {
     if (!gameState) return;
 
+    const levelNumber = parseLevelNumber(puzzleId);
+
     if (gameState.solved) {
       solveRecordedRef.current = puzzleId;
+      if (levelNumber !== null) markLevelSolved(levelNumber);
       return;
     }
     if (!levelData || !isBoardComplete()) return;
@@ -296,8 +300,25 @@ export const Board: React.FC<BoardProps> = ({
         endTime: finishedAt,
         elapsedTime: elapsedMs
       });
+      if (levelNumber !== null) markLevelSolved(levelNumber);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameState, levelData, puzzleId]);
+
+  // Angefangen-Markierung: sobald der Spieler mindestens ein Feld selbst
+  // befüllt (nicht Teil der levelData.initialValues-Vorgaben), gilt das
+  // Level als "angefangen" für die Levelübersicht (killer Sudoku hat je
+  // nach Schwierigkeit vorbefüllte Zellen, die nicht mitzählen dürfen).
+  useEffect(() => {
+    if (!gameState || !levelData) return;
+    if (gameState.solved) return;
+    const levelNumber = parseLevelNumber(puzzleId);
+    if (levelNumber === null) return;
+
+    const hasUserInput = gameState.cellValues.some((row, r) =>
+      row.some((v, c) => v > 0 && levelData.initialValues[r][c] === 0)
+    );
+    if (hasUserInput) markLevelStarted(levelNumber);
   }, [gameState, levelData, puzzleId]);
 
   // Verbleibende Ziffern berechnen
