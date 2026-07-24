@@ -125,6 +125,9 @@ export const Board: React.FC<BoardProps> = ({
   // Brett-Höhe an der kürzeren Viewport-Seite, sodass Cell-Größe jetzt
   // quadratisch an die verfügbare Höhe des linken Bereichs gebunden ist.
   const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as "column" | "row";
+  // Sidebar-Action-Grid teilt die NumberPad-Breite, damit die 2-Spalten
+  // nicht über das Pad hinausfließen (Sidebar ist via flex={1} breiter).
+  const actionGridWidth = useBreakpointValue({ base: '100%', sm: '220px', md: '240px', lg: '260px' }) ?? '100%';
 
   // Cell Selection
   const {
@@ -826,7 +829,7 @@ export const Board: React.FC<BoardProps> = ({
           // ist via flex={1} breiter als padWidth).
           templateColumns="repeat(2, 1fr)"
           gap={2}
-          width={useBreakpointValue({ base: '100%', sm: '220px', md: '240px', lg: '260px' }) ?? '100%'}
+          width={actionGridWidth}
           mt={4}
         >
           {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
