@@ -45,6 +45,7 @@ export const CAGE_COLORS: readonly CageColor[] = [
 export interface GameState {
   id: string;
   cellValues: number[][];
+  notes: number[][][];
   startTime?: number;
   endTime?: number;
   difficulty?: Difficulty;

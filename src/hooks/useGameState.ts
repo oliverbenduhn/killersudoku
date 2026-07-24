@@ -3,7 +3,7 @@ import { saveGameState, loadGameState } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
 import { createEmptyBoard } from '../services/puzzleGeneratorService';
-import { sanitizePlayerBoard } from '../services/gameLogicService';
+import { sanitizePlayerBoard, createEmptyNotes, normalizeNotes } from '../services/gameLogicService';
 import { useUndoRedo } from './useUndoRedo';
 
 // Lokale Erweiterung des GameState-Interfaces mit zusätzlichen Eigenschaften für den Hook
@@ -44,6 +44,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         if (savedState) {
           if (currentPuzzleIdRef.current === puzzleId) {
             let restored = savedState as GameState;
+            restored = {
+              ...restored,
+              notes: normalizeNotes(restored.notes, restored.cellValues, createEmptyBoard(size), size)
+            };
             const levelMatch = puzzleId.match(/level-(\d+)/);
             if (levelMatch?.[1]) {
               try {
@@ -54,7 +58,13 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                   levelData.cages,
                   size
                 );
-                restored = { ...restored, cellValues };
+                const notes = normalizeNotes(
+                  restored.notes,
+                  cellValues,
+                  levelData.initialValues,
+                  size
+                );
+                restored = { ...restored, cellValues, notes };
                 await saveGameState(puzzleId, restored);
               } catch (error) {
                 console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
@@ -75,6 +85,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                   const newGameState: GameState = {
                     id: `game_${puzzleId}_${Date.now()}`,
                     cellValues: JSON.parse(JSON.stringify(levelData.initialValues)),
+                    notes: createEmptyNotes(size),
                     startTime: Date.now(),
                     elapsedTime: 0,
                     difficulty: levelData.difficulty,
@@ -112,6 +123,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
       const emptyState: GameState = {
         id: `game_${puzzleId}_${Date.now()}`,
         cellValues: createEmptyBoard(size),
+        notes: createEmptyNotes(size),
         startTime: Date.now(),
         elapsedTime: 0,
         difficulty: undefined,

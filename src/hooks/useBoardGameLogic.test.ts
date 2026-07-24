@@ -22,6 +22,7 @@ const gameState: GameState = {
   id: 'game',
   levelId: 'level-1',
   cellValues: emptyBoard(),
+  notes: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => [])),
   mistakesUsed: 2,
   hintsUsed: 0,
   gameOver: false
