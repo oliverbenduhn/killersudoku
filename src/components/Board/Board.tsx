@@ -821,9 +821,12 @@ export const Board: React.FC<BoardProps> = ({
         <Grid
           // 3×2-Gitter analog NumberPad: Buttons so breit wie eine
           // Pad-Zelle (halbe Pad-Breite) — schafft Platz fürs Brett.
+          // Breite muss zum NumberPad passen, sonst fließen die 2
+          // Action-Spalten über die NumberPad-Breite hinaus (Sidebar
+          // ist via flex={1} breiter als padWidth).
           templateColumns="repeat(2, 1fr)"
           gap={2}
-          width={flexDirection === "row" ? "auto" : "100%"}
+          width={useBreakpointValue({ base: '100%', sm: '220px', md: '240px', lg: '260px' }) ?? '100%'}
           mt={4}
         >
           {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
