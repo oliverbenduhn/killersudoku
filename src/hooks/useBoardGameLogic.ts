@@ -107,6 +107,7 @@ export const useBoardGameLogic = ({
 
       const entry = GameLogic.applyPlayerEntry(
         gameState.cellValues,
+        gameState.notes,
         levelData.initialValues,
         selectedCells,
         number,
@@ -130,6 +131,7 @@ export const useBoardGameLogic = ({
 
       applyMove({
         cellValues: entry.cellValues,
+        notes: entry.notes,
         mistakesUsed: updatedMistakes,
         gameOver: gameOverNow
       });
@@ -200,6 +202,7 @@ export const useBoardGameLogic = ({
     const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
     updateGameState({
       cellValues: initialValuesCopy,
+      notes: GameLogic.createEmptyNotes(size),
       mistakesUsed: 0,
       hintsUsed: 0,
       solved: false,
@@ -215,7 +218,7 @@ export const useBoardGameLogic = ({
     clearHistory(); // Reset verwirft die Undo-History, sonst könnte
                     // der User nach Reset auf „Undo" drücken und wäre
                     // wieder vor dem Reset.
-  }, [gameState, levelData, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory]);
+  }, [gameState, levelData, size, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory]);
 
   const handleRevealHint = useCallback(() => {
     if (!gameState || !levelData) return;
@@ -301,8 +304,12 @@ export const useBoardGameLogic = ({
     const newValues = gameState.cellValues.map(row => [...row]);
     newValues[target.row][target.col] = correctValue;
 
+    const newNotes = gameState.notes.map(row => row.map(cell => [...cell]));
+    newNotes[target.row][target.col] = [];
+
     applyMove({
       cellValues: newValues,
+      notes: newNotes,
       hintsUsed: hintsUsed + 1
     });
 

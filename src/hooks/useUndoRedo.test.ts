@@ -55,6 +55,36 @@ describe('useUndoRedo', () => {
     expect(redone).toBe(7); // keine Vorher-/Nachher-Vertauschung
   });
 
+  test('Notiz-Aktion → Undo → Redo stellt den Notiz-Nachher-Zustand wieder her', () => {
+    type State = { cellValues: number[][]; notes: number[][][] };
+    const before: State = { cellValues: [[0]], notes: [[[]]] };
+    const after: State = { cellValues: [[0]], notes: [[[4]]] };
+    const { result } = renderHook(() => useUndoRedo<State>());
+    act(() => result.current.commit({ before, after }));
+
+    let state: State | null = null;
+    act(() => { state = result.current.undo(); });
+    expect(state).toBe(before);
+    act(() => { state = result.current.redo(); });
+    expect(state).toBe(after);
+    expect(state!.notes[0][0]).toEqual([4]);
+  });
+
+  test('Werteingabe → Undo → Redo stellt Wert und automatisch geleerte Notizen atomar wieder her', () => {
+    type State = { cellValues: number[][]; notes: number[][][] };
+    const before: State = { cellValues: [[0]], notes: [[[2, 4]]] };
+    const after: State = { cellValues: [[4]], notes: [[[]]] };
+    const { result } = renderHook(() => useUndoRedo<State>());
+    act(() => result.current.commit({ before, after }));
+
+    let state: State | null = null;
+    act(() => { state = result.current.undo(); });
+    expect(state).toBe(before);
+    act(() => { state = result.current.redo(); });
+    expect(state).toBe(after);
+    expect(state).toEqual({ cellValues: [[4]], notes: [[[]]] });
+  });
+
   test('mehrere Moves: each undo→before, each redo→after', () => {
     const { result } = renderHook(() => useUndoRedo<number>());
     act(() => result.current.commit({ before: 1, after: 2 }));

@@ -19,6 +19,9 @@ import { Cage } from '../types/gameTypes';
 const emptyBoard = (): number[][] =>
   Array.from({ length: 9 }, () => Array(9).fill(0));
 
+const emptyNotes = (): number[][][] =>
+  Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => []));
+
 const cage = (id: string, cells: { row: number; col: number }[], sum: number): Cage => ({
   id,
   cells,
@@ -257,9 +260,6 @@ describe('gameLogicService', () => {
   });
 
   describe('player notes', () => {
-    const emptyNotes = (): number[][][] =>
-      Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => []));
-
     test('toggles a note on and off', () => {
       const initial = emptyBoard();
       const values = emptyBoard();
@@ -323,6 +323,33 @@ describe('gameLogicService', () => {
   });
 
   describe('applyPlayerEntry', () => {
+    test('clears notes only for accepted cells without mutating the input grid', () => {
+      const board = emptyBoard();
+      const initial = emptyBoard();
+      const notes = emptyNotes();
+      notes[0][0] = [1, 4];
+      notes[0][1] = [2, 5];
+      const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 3);
+
+      const result = applyPlayerEntry(
+        board,
+        notes,
+        initial,
+        [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+        1,
+        [c]
+      );
+
+      expect(result.acceptedCells).toEqual([{ row: 0, col: 0 }]);
+      expect(result.rejectedCells).toEqual([{ row: 0, col: 1 }]);
+      expect(result.cellValues[0][0]).toBe(1);
+      expect(result.notes[0][0]).toEqual([]);
+      expect(result.notes[0][1]).toEqual([2, 5]);
+      expect(result.notes).not.toBe(notes);
+      expect(result.notes[0]).not.toBe(notes[0]);
+      expect(notes[0][0]).toEqual([1, 4]);
+    });
+
     test('Level-27-Fall: speichert niemals zwei Neunen im 24er-Dreierkäfig', () => {
       const board = emptyBoard();
       const initial = emptyBoard();
@@ -336,6 +363,7 @@ describe('gameLogicService', () => {
 
       const result = applyPlayerEntry(
         board,
+        emptyNotes(),
         initial,
         [{ row: 8, col: 5 }, { row: 8, col: 6 }],
         9,
