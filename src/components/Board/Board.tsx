@@ -804,10 +804,12 @@ export const Board: React.FC<BoardProps> = ({
       </Box>
 
       <Box
-        p={2}
+        p={0}
         alignSelf={flexDirection === "column" ? "center" : "stretch"}
         mt={flexDirection === "column" ? 4 : 0}
-        pt={flexDirection === "row" ? "16px" : 2}
+        // Sidebar-Modus: kein Extra-Top-Padding — NumberPad soll bündig mit
+        // der Brett-Oberkante starten (Tablet-Hochformat), sonst wirkt die
+        // Sidebar künstlich nach unten verschoben.
         // Im Landscape keine Bottom-Nav-Overlap-Risk: Inhalt vor
         // Bottom-Nav enden lassen (Bottom-Nav ist 57 px + Safe-Area).
         pb={flexDirection === "row" ? "72px" : 2}
