@@ -128,10 +128,25 @@ export async function generateLevel(options: GenerateOptions): Promise<GameLevel
       }
 
       const initialValues = createEmptyBoard();
-      const cells = shuffle(allCells());
-      for (let i = 0; i < profile.baseGivens; i++) {
-        const { row, col } = cells[i];
+      // Map: cellKey -> Cage, damit der Given-Draw einen Käfig in O(1)
+      // finden kann statt c.cells.some(...) pro Iteration.
+      const cageByCell = new Map<string, Cage>();
+      for (const c of cages) {
+        for (const cell of c.cells) cageByCell.set(`${cell.row},${cell.col}`, c);
+      }
+      const shuffled = shuffle(allCells());
+      let givens = 0;
+      for (const { row, col } of shuffled) {
+        if (givens >= profile.baseGivens) break;
+        const cage = cageByCell.get(`${row},${col}`);
+        if (!cage) continue;
+        // Keine vollständig gelösten Käfigs: max. cells.length - 1 Givens
+        // pro Käfig. Der Spieler muss mindestens eine Zelle per Logik
+        // ermitteln, auch in kleinen Käfigs.
+        const givenInCage = cage.cells.filter((c) => initialValues[c.row][c.col] !== 0).length;
+        if (givenInCage >= cage.cells.length - 1) continue;
         initialValues[row][col] = solution[row][col];
+        givens++;
       }
 
       if (!enforceUniqueness(cages, initialValues, solution, profile.maxGivens)) { await yieldToBrowser(); continue; }
