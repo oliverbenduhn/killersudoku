@@ -16,12 +16,15 @@ export default defineConfig({
         name: 'Killer Sudoku PWA',
         short_name: 'KillerSudoku',
         description: 'Spiele Killer Sudoku als Progressive Web App.',
-        theme_color: '#2196F3',
-        background_color: '#f5f5f5',
+        theme_color: '#3182CE',
+        background_color: '#F7FAFC',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
-        icons: [], // Icons folgen in Phase 1 (Branding)
+        icons: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+        ],
       },
       workbox: {
         // Level-JSONs statisch vorcachen — App soll offline spielbar bleiben.

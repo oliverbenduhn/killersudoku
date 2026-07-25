@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="96" fill="#3182CE"/>
+  <!-- 3×3 block grid -->
+  <g stroke="white" stroke-width="6" fill="none" opacity="0.9">
+    <line x1="192" y1="80" x2="192" y2="432"/>
+    <line x1="320" y1="80" x2="320" y2="432"/>
+    <line x1="80" y1="192" x2="432" y2="192"/>
+    <line x1="80" y1="320" x2="432" y2="320"/>
+    <rect x="80" y="80" width="352" height="352" rx="4" stroke-width="8"/>
+  </g>
+  <!-- dashed cage outline on 3 blocks (top-middle, top-right, middle-right),
+       inset ~15px from grid lines so it doesn't overlap solid lines -->
+  <path d="M 207 95 L 417 95 L 417 305 L 305 305 L 305 207 L 207 207 Z"
+        fill="none" stroke="white" stroke-width="5" stroke-dasharray="14 8"
+        opacity="0.75"/>
+</svg>
