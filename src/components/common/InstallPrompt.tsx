@@ -23,15 +23,6 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Prüfe, ob die App bereits installiert ist
-    const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
-                         (window.navigator as any).standalone === true;
-    
-    if (isAppInstalled) {
-      // App ist bereits installiert, kein Prompt anzeigen
-      onClose();
-    }
-
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
@@ -42,14 +33,14 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
 
     // Zeige den nativen Installationsdialog
     deferredPrompt.prompt();
-    
+
     // Warte auf die Antwort des Benutzers
     const choiceResult = await deferredPrompt.userChoice;
-    
+
     // Cleanup
     setDeferredPrompt(null);
     onClose();
-    
+
     if (choiceResult.outcome === 'accepted') {
       console.log('Benutzer hat die App installiert');
       if (onInstall) onInstall();
@@ -61,18 +52,26 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
   const handleDismiss = () => {
     onClose();
     if (onDismiss) onDismiss();
-    
+
     // Speichere in localStorage, dass der Benutzer abgelehnt hat (für 1 Woche)
     localStorage.setItem('installPromptDismissed', (Date.now() + 7*24*60*60*1000).toString());
   };
 
-  // Wenn wir keinen deferredPrompt haben oder die Aufforderung geschlossen ist, nichts anzeigen
-  if (!deferredPrompt || !isOpen) return null;
+  // Bereits installiert (PWA standalone) → nichts rendern, egal
+  // welcher State. Steht im render-Pfad, nicht im Effect, damit der
+  // Check bei jedem Re-Render gilt und nicht nur zum Mount-Zeitpunkt.
+  const isAppInstalled =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true;
+
+  // Wenn wir keinen deferredPrompt haben, die Aufforderung geschlossen
+  // ist, oder die App bereits installiert ist, nichts anzeigen.
+  if (!deferredPrompt || !isOpen || isAppInstalled) return null;
 
   return (
     <Slide direction="bottom" in={isOpen} style={{ zIndex: 10 }}>
-      <Box 
-        position="fixed" 
+      <Box
+        position="fixed"
         bottom="70px" // Platz für die Bottom Navigation lassen
         left="0"
         right="0"
@@ -88,20 +87,20 @@ const InstallPrompt: React.FC<InstallPromptProps> = ({ onInstall, onDismiss }) =
               Installiere Killer Sudoku für schnelleren Zugriff
             </Text>
           </Box>
-          
+
           <Flex gap={2}>
-            <Button 
-              variant="ghost" 
-              colorScheme="whiteAlpha" 
+            <Button
+              variant="ghost"
+              colorScheme="whiteAlpha"
               onClick={handleDismiss}
               size="sm"
               p={1}
             >
               <Icon as={CloseIcon} boxSize={5} />
             </Button>
-            
-            <Button 
-              colorScheme="whiteAlpha" 
+
+            <Button
+              colorScheme="whiteAlpha"
               onClick={handleInstallClick}
               leftIcon={<Icon as={DownloadIcon} />}
               variant="outline"

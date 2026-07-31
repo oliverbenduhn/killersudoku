@@ -203,6 +203,34 @@ describe('Board Component', () => {
     }
   });
 
+  test('hebt nach Auswahl einer Ziffer alle gleichen Ziffern größer und fett hervor', () => {
+    mockGameState.cellValues[0][0] = 3;
+    mockGameState.cellValues[1][1] = 3;
+    mockGameState.cellValues[2][2] = 4;
+
+    try {
+      render(<Board levelData={mockLevelData} />);
+      fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+
+      const matchingDigits = [
+        screen.getByTestId('value-0-0'),
+        screen.getByTestId('value-1-1')
+      ];
+      const normalDigit = screen.getByTestId('value-2-2');
+
+      expect(matchingDigits).toHaveLength(2);
+      expect(getComputedStyle(normalDigit).transform).toContain('scale(1)');
+      for (const digit of matchingDigits) {
+        expect(getComputedStyle(digit).fontWeight).toBe('800');
+        expect(getComputedStyle(digit).transform).toContain('scale(1.15)');
+      }
+    } finally {
+      mockGameState.cellValues[0][0] = 0;
+      mockGameState.cellValues[1][1] = 0;
+      mockGameState.cellValues[2][2] = 0;
+    }
+  });
+
   test('rendert sidebarFooter NICHT im Column-Modus (Mobil, Standard im Test-Viewport)', () => {
     render(
       <Board levelData={mockLevelData} sidebarFooter={<button>Mein Footer</button>} />

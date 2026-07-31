@@ -1,9 +1,8 @@
 // Tab-Inhalte. Aus App.tsx ausgelagert, damit App.tsx das Layout hält
 // und jede Tab-Seite eigenständig testbar/lesbar bleibt.
 
-import { Box, Heading, Text, Link, Button, SimpleGrid, Flex, IconButton } from '@chakra-ui/react';
+import { Box, Heading, Text, Link, Flex, IconButton } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
-import { Difficulty } from '../types/gameTypes';
 import LevelSelector from './LevelSelector/LevelSelector';
 
 import { Board } from './Board/Board';
@@ -65,18 +64,10 @@ export function HomeTab({
 interface LevelsTabProps extends TabPanelProps {
   currentLevel: number;
   onLevelChange: (level: number) => void;
-  onGenerateLevel: (difficulty: Exclude<Difficulty, 'unknown'>) => void;
   onBack: () => void;
 }
 
-const GENERATOR_DIFFICULTIES: Array<{ key: Exclude<Difficulty, 'unknown'>; label: string; color: string }> = [
-  { key: 'easy', label: 'Einfach', color: 'green' },
-  { key: 'medium', label: 'Mittel', color: 'blue' },
-  { key: 'hard', label: 'Schwer', color: 'orange' },
-  { key: 'expert', label: 'Experte', color: 'red' },
-];
-
-export function LevelsTab({ currentLevel, onLevelChange, onGenerateLevel, onBack, transitionDirection }: LevelsTabProps) {
+export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirection }: LevelsTabProps) {
   return (
     <FadeInView direction={transitionDirection === 'left' ? 'left' : 'right'} duration={300} key="levels-tab">
       <Flex align="center" gap={2} mb={4}>
@@ -91,27 +82,6 @@ export function LevelsTab({ currentLevel, onLevelChange, onGenerateLevel, onBack
         </Heading>
       </Flex>
 
-      <Box bg="surface.raised" p={5} borderRadius="xl" boxShadow="sm" mb={4}>
-        <Heading as="h2" size="lg" mb={2} color="text.primary">
-          Zufallslevel erstellen
-        </Heading>
-        <Text fontSize="sm" color="text.secondary" mb={3}>
-          Erzeugt ein frisches Rätsel mit garantiert eindeutiger Lösung.
-        </Text>
-        <SimpleGrid columns={[2, 4]} spacing={3}>
-          {GENERATOR_DIFFICULTIES.map(({ key, label, color }) => (
-            <Button
-              key={key}
-              aria-label={`Neues Zufallslevel erstellen: ${label}`}
-              colorScheme={color}
-              variant="outline"
-              onClick={() => onGenerateLevel(key)}
-            >
-              Zufall · {label}
-            </Button>
-          ))}
-        </SimpleGrid>
-      </Box>
       <Box bg="surface.raised" p={5} borderRadius="xl" boxShadow="sm">
         <Heading as="h2" size="lg" mb={4} color="text.primary">
           Level-Auswahl

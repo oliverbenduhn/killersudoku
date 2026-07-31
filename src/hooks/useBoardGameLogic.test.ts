@@ -304,7 +304,8 @@ describe('useBoardGameLogic – Bleistiftmodus (Issues #5/#6)', () => {
       options.selectedCells,
       4,
       options.cages,
-      options.size
+      options.size,
+      options.levelData?.solution
     );
     expect(applyMove).toHaveBeenCalledTimes(1);
     expect(applyMove).toHaveBeenCalledWith(expect.objectContaining({

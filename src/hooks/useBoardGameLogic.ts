@@ -112,7 +112,8 @@ export const useBoardGameLogic = ({
         selectedCells,
         number,
         cages,
-        size
+        size,
+        levelData.solution
       );
       const anyInvalid = entry.rejectedCells.length > 0;
       const lastCell = anyInvalid

@@ -9,7 +9,6 @@ import {
   Text,
   useBreakpointValue,
   useColorModeValue,
-  useToast,
 } from '@chakra-ui/react';
 
 import InstallPrompt from './components/common/InstallPrompt';
@@ -21,8 +20,7 @@ import { TutorialOverlay } from './components/common/TutorialOverlay';
 import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
 import { loadLevelByNumber } from './services/levelService';
-import { generateLevel } from './services/puzzleGeneratorService';
-import { Difficulty, GameLevel } from './types/gameTypes';
+import { GameLevel } from './types/gameTypes';
 
 type TabName = 'home' | 'levels';
 
@@ -39,8 +37,6 @@ function App() {
     }
   });
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
-  // Generiertes Zufallslevel; hat Vorrang vor dem geladenen Standard-Level.
-  const [generatedLevel, setGeneratedLevel] = useState<GameLevel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabName>('home');
@@ -56,7 +52,6 @@ function App() {
   const [blackAndWhiteMode, setBlackAndWhiteMode] = useState<boolean>(() => {
     try { return localStorage.getItem('killersudoku_bw') === '1'; } catch { return false; }
   });
-  const toast = useToast();
   const tutorial = useTutorial();
 
   const headerHeight = useBreakpointValue({ base: '52px', md: '60px' });
@@ -121,24 +116,7 @@ function App() {
   };
 
   const handleSelectLevel = (level: number) => {
-    setGeneratedLevel(null);
     setCurrentLevel(level);
-  };
-
-  const handleGenerateLevel = async (difficulty: Exclude<Difficulty, 'unknown'>) => {
-    handleTabChange('home');
-    setIsLoading(true);
-    // Generator läuft async und yielded zwischen Versuchen, damit der
-    // Lade-Spinner auch auf Mobile-CPUs weiter rendert.
-    try {
-      const level = await generateLevel({ difficulty });
-      setGeneratedLevel(level);
-    } catch (err) {
-      console.error('Fehler beim Generieren des Levels:', err);
-      toast({ title: 'Fehler', description: 'Zufallslevel konnte nicht erzeugt werden.', status: 'error', duration: 3000, isClosable: true });
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   return (
@@ -216,8 +194,7 @@ function App() {
           {activeTab === 'home' && (
             <HomeTab
               currentLevel={currentLevel}
-              levelData={generatedLevel ?? levelData}
-              puzzleId={generatedLevel ? `generated-${generatedLevel.id}` : undefined}
+              levelData={levelData}
               isLoading={isLoading}
               error={error}
               blackAndWhiteMode={blackAndWhiteMode}
@@ -228,7 +205,6 @@ function App() {
             <LevelsTab
               currentLevel={currentLevel}
               onLevelChange={(l) => { handleSelectLevel(l); handleTabChange('home'); }}
-              onGenerateLevel={handleGenerateLevel}
               onBack={() => handleTabChange('home')}
               transitionDirection={tabTransition}
             />

@@ -375,6 +375,31 @@ describe('gameLogicService', () => {
       expect(result.rejectedCells).toHaveLength(1);
     });
 
+    test('lehnt eine formal gültige, aber falsche Lösungziffer ab', () => {
+      const board = emptyBoard();
+      const initial = emptyBoard();
+      const c = cage('r4c8-c9', [{ row: 3, col: 7 }, { row: 3, col: 8 }], 10);
+      const solution = emptyBoard();
+      solution[3][7] = 8;
+      solution[3][8] = 2;
+
+      const result = applyPlayerEntry(
+        board,
+        emptyNotes(),
+        initial,
+        [{ row: 3, col: 7 }, { row: 3, col: 8 }],
+        6,
+        [c],
+        9,
+        solution
+      );
+
+      expect(result.acceptedCells).toEqual([]);
+      expect(result.rejectedCells).toEqual([{ row: 3, col: 7 }, { row: 3, col: 8 }]);
+      expect(result.cellValues[3][7]).toBe(0);
+      expect(result.cellValues[3][8]).toBe(0);
+    });
+
     test('bereinigt einen alten Level-27-Spielstand mit zwei Neunen', () => {
       const initial = emptyBoard();
       initial[8][4] = 7;

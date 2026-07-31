@@ -17,16 +17,6 @@ test('renders Killer Sudoku header', async () => {
   expect(headingElement).toBeInTheDocument();
 });
 
-test('Zufallslevel-Generator ist über den Level-Button erreichbar', async () => {
-  render(<App />);
-
-  fireEvent.click(screen.getByRole('button', { name: /^Überspringen$/ }));
-  fireEvent.click(await screen.findByRole('button', { name: 'Level' }));
-
-  expect(screen.getByRole('heading', { name: 'Zufallslevel erstellen' })).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Neues Zufallslevel erstellen: Einfach' })).toBeInTheDocument();
-});
-
 test('Zurück-Button auf dem Level-Screen führt zurück zum Start', async () => {
   render(<App />);
 

@@ -295,7 +295,8 @@ export const applyPlayerEntry = (
   selectedCells: CellPosition[],
   value: number,
   cages: Cage[],
-  size: number = 9
+  size: number = 9,
+  solution?: number[][]
 ): PlayerEntryResult => {
   const next = cellValues.map((row) => [...row]);
   const nextNotes = notes.map((row) => row.map((cell) => [...cell]));
@@ -306,7 +307,8 @@ export const applyPlayerEntry = (
     if (initialValues[cell.row]?.[cell.col] !== 0 || next[cell.row]?.[cell.col] === value) continue;
     const candidate = next.map((row) => [...row]);
     candidate[cell.row][cell.col] = value;
-    if (isCellValid(candidate, cell.row, cell.col, value, cages, size)) {
+    const matchesSolution = !solution || solution[cell.row]?.[cell.col] === value;
+    if (matchesSolution && isCellValid(candidate, cell.row, cell.col, value, cages, size)) {
       next[cell.row][cell.col] = value;
       nextNotes[cell.row][cell.col] = [];
       acceptedCells.push(cell);

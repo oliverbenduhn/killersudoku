@@ -376,13 +376,12 @@ export const Board: React.FC<BoardProps> = ({
     if ((isSameRow || isSameCol) && (blackAndWhiteMode || !cage) && !isSelected) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
-    // Selection hat hoechste Prio: sie ueberlagert Cage-Tint und Peer-Highlight
-    // und liegt als inset boxShadow UNTER dem SVG-Cage-Linien-Layer — sonst
-    // waeren die gestrichelten Kaefigraender unter der Selection-Outline weg.
+    // Die Auswahl ist nur eine Kontur, damit die jeweilige Kaefigfarbe auch
+    // bei markierten Zellen sichtbar bleibt. Sie liegt als inset boxShadow
+    // UNTER dem SVG-Cage-Linien-Layer, damit dessen Linien erhalten bleiben.
     const selectionShadow = isSelected
-      ? 'inset 0 0 0 2px var(--chakra-colors-brand-primary)'
+      ? 'inset 0 0 0 3px var(--chakra-colors-cell-selected-border)'
       : undefined;
-    if (isSelected) bgColor = 'cell.selected.bg';
 
     const noteCandidates = gameState.notes?.[row]?.[col] ?? [];
     return (
@@ -481,16 +480,17 @@ export const Board: React.FC<BoardProps> = ({
         )}
 
         <Text
+          data-testid={`value-${row}-${col}`}
           position="absolute"
           top="50%"
           left="50%"
-          transform="translate(-50%, -50%)"
-          fontSize={isSameValue ? `calc(${valueFontSize} * 1.15)` : valueFontSize}
-          fontWeight={(!valid && value !== 0) || isSameValue ? 'bold' : 'normal'}
+          transform={`translate(-50%, -50%) scale(${isSameValue ? 1.15 : 1})`}
+          fontSize={valueFontSize}
+          fontWeight={isSameValue ? 800 : (!valid && value !== 0) ? 'bold' : 'normal'}
           color={cageComplete ? successColor : (!valid && value !== 0) ? errorColor : (isInitialValue ? 'cell.given.text' : 'cell.user.text')}
           opacity={isSameValue || cageComplete || (!valid && value !== 0) ? 1 : 0.75}
           userSelect="none"
-          transition="color 0.3s, font-size 0.2s, opacity 0.2s"
+          transition="color 0.3s, transform 0.2s, opacity 0.2s"
         >
           {value || ''}
         </Text>

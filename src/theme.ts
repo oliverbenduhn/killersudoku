@@ -63,7 +63,9 @@ const semanticTokens = {
     'cell.given.text':      { default: 'gray.900',  _dark: 'gray.50'  },
     'cell.user.text':       { default: 'blue.600',  _dark: 'blue.300' },
     'cell.error.text':      { default: 'red.500',   _dark: 'red.300'  },
-    'cell.selected.bg':     { default: 'blue.100',  _dark: 'blue.800' },
+    // Auswahl bewusst orange statt blau: Blau ist bereits eine Käfigfarbe.
+    // Nur als Kontur verwenden, damit die Käfigfarbe sichtbar bleibt.
+    'cell.selected.border': { default: 'orange.500', _dark: 'orange.300' },
     'cell.peer.bg':         { default: 'blue.50',   _dark: 'blue.900' },
     'cell.cage.bg':         { default: 'gray.50',   _dark: 'gray.800' },
 
