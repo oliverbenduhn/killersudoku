@@ -114,6 +114,7 @@ export const Board: React.FC<BoardProps> = ({
     handleDragStart,
     handleDragEnter,
     handleDragEnd,
+    handleDoubleClick,
     clearSelection,
     setSelectedCell,
     setSelectedCells,
@@ -418,6 +419,7 @@ export const Board: React.FC<BoardProps> = ({
             onCellPointerDown={handleDragStart}
             onCellPointerEnter={handleDragEnter}
             onCellPointerEnd={handleDragEnd}
+            onCellDoubleClick={handleDoubleClick}
             blackAndWhiteMode={blackAndWhiteMode}
           />
         )}

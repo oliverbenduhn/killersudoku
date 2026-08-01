@@ -91,6 +91,8 @@ export interface BoardSurfaceProps {
   onCellPointerEnter: (row: number, col: number) => void;
   /** Drag-Ende bei Mouseup / Touchend. */
   onCellPointerEnd: () => void;
+  /** Doppelklick / Doppeltipp: markiert den Käfig der Cell. */
+  onCellDoubleClick: (row: number, col: number) => void;
   /** Schwarz-Weiß-Modus aktiv (siehe CONTEXT.md). */
   blackAndWhiteMode: boolean;
 }
@@ -139,6 +141,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   onCellPointerDown,
   onCellPointerEnter,
   onCellPointerEnd,
+  onCellDoubleClick,
   blackAndWhiteMode,
 }) => {
   // ── Flächen-Schicht (unten): Zell-Hintergrund + Interaktion ──────────────
@@ -178,6 +181,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
         onMouseDown={() => onCellPointerDown(row, col)}
         onMouseEnter={() => onCellPointerEnter(row, col)}
         onMouseUp={onCellPointerEnd}
+        onDoubleClick={() => onCellDoubleClick(row, col)}
         onTouchStart={() => onCellPointerDown(row, col)}
         onTouchMove={(e) => {
           if (boardRef.current && e.touches.length > 0) {

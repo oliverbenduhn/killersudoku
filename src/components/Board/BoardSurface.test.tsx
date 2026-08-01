@@ -66,6 +66,7 @@ function defaultProps(overrides: Partial<BoardSurfaceProps> = {}): BoardSurfaceP
     onCellPointerDown: jest.fn(),
     onCellPointerEnter: jest.fn(),
     onCellPointerEnd: jest.fn(),
+    onCellDoubleClick: jest.fn(),
     blackAndWhiteMode: false,
     ...overrides,
   };

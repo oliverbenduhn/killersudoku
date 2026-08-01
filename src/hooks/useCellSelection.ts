@@ -10,6 +10,8 @@ export interface UseCellSelectionResult {
   handleDragStart: (row: number, col: number) => void;
   handleDragEnter: (row: number, col: number) => void;
   handleDragEnd: () => void;
+  /** Doppelklick / Doppeltipp: markiert den Käfig der Cell (oder nur die Cell, falls käfig-los). */
+  handleDoubleClick: (row: number, col: number) => void;
   clearSelection: () => void;
   /** Setter exportiert, damit externe Hooks (Keyboard) die Auswahl mutieren können. */
   setSelectedCell: (cell: CellPosition | null) => void;
@@ -20,9 +22,12 @@ export interface UseCellSelectionResult {
 /**
  * Verwaltet die Zellauswahl per Drag/Touch/Click.
  *
- * Wichtige Eigenschaft:
- * - Mehrfachauswahl wird automatisch auf den Käfig der Startzelle beschränkt,
- *   weil Killer-Sudoku doppelte Werte innerhalb eines Käfigs verbietet.
+ * Selection-Semantik:
+ * - Single-Click markiert die angeklickte Cell.
+ * - Drag markiert das Rechteck vom Start bis zur aktuellen Mausposition
+ *   (1×1, 1×2, 2×2, 2×4 usw. — freie Auswahl, kein Cage-Constraint).
+ *   Cage-Validität greift erst beim Zahl-Eingeben in useBoardGameLogic.
+ * - Doppelklick / Doppeltipp markiert den gesamten Käfig der Cell.
  */
 export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
   const [selectedCell, setSelectedCell] = useState<CellPosition | null>(null);
@@ -42,20 +47,10 @@ export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
     (row: number, col: number) => {
       if (!isDragging || !dragStart) return;
 
-      // Nur Zellen innerhalb des Käfigs der Startzelle zulassen.
-      const startCage = getCageForCell(cages, dragStart.row, dragStart.col);
-      // Ohne Cage-Treffer ist die Startzelle käfig-los (z. B. cages noch leer
-      // beim Levelwechsel): Rechteck-Drag ohne Constraint würde sonst das
-      // ganze Brett füllen, weil jede Cell als „im Käfig" gälte. Stattdessen
-      // nur die Startzelle behalten — Multi-Select funktioniert weiter, sobald
-      // der Drag in einem echten Käfig startet.
-      if (!startCage) {
-        setSelectedCells([dragStart]);
-        return;
-      }
-      const inCage = (r: number, c: number) =>
-        startCage.cells.some(cell => cell.row === r && cell.col === c);
-
+      // Freies Rechteck vom dragStart bis zur aktuellen Position.
+      // Cage-Constraint entfällt — User kann beliebige 1×1, 1×2, 2×2,
+      // 2×4 etc. markieren. Validität gegen Käfig-Regeln greift erst
+      // beim Zahl-Eingeben (applyPlayerEntry).
       const minRow = Math.min(dragStart.row, row);
       const maxRow = Math.max(dragStart.row, row);
       const minCol = Math.min(dragStart.col, col);
@@ -64,20 +59,31 @@ export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
       const next: CellPosition[] = [];
       for (let r = minRow; r <= maxRow; r++) {
         for (let c = minCol; c <= maxCol; c++) {
-          if (inCage(r, c)) {
-            next.push({ row: r, col: c });
-          }
+          next.push({ row: r, col: c });
         }
       }
       setSelectedCells(next);
     },
-    [cages, dragStart, isDragging]
+    [dragStart, isDragging]
   );
 
   const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setDragStart(null);
   }, []);
+
+  const handleDoubleClick = useCallback(
+    (row: number, col: number) => {
+      const cellPosition = { row, col };
+      const cage = getCageForCell(cages, row, col);
+      const cells: CellPosition[] = cage ? [...cage.cells] : [cellPosition];
+      setSelectedCell(cellPosition);
+      setDragStart(null);
+      setSelectedCells(cells);
+      setIsDragging(false);
+    },
+    [cages]
+  );
 
   const clearSelection = useCallback(() => {
     setSelectedCell(null);
@@ -94,6 +100,7 @@ export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
     handleDragStart,
     handleDragEnter,
     handleDragEnd,
+    handleDoubleClick,
     clearSelection,
     setSelectedCell,
     setSelectedCells,
