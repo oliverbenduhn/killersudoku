@@ -86,9 +86,10 @@ export interface BoardSurfaceProps {
   /** Board-Root-Ref — für Touch-Bounds-Berechnung im Bg-Layer. */
   boardRef: RefObject<HTMLDivElement>;
   /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch. */
-  onCellPointerDown: (row: number, col: number) => void;
-  /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl. */
-  onCellPointerMove: (row: number, col: number) => void;
+  onCellPointerDown: (row: number, col: number, x: number, y: number) => void;
+  /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl.
+   *  (x, y) sind die Pixel der Pointer-Position relativ zum Board. */
+  onCellPointerMove: (x: number, y: number) => void;
   /** Pointer-Up / Pointer-Cancel: beendet den Drag. */
   onCellPointerEnd: () => void;
   /** Reines Doppelklick-Event (Maus). Auf Touch wird Doppel-Tipp
@@ -203,41 +204,52 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
           if (typeof el.setPointerCapture === 'function') {
             el.setPointerCapture(e.pointerId);
           }
-          onCellPointerDown(row, col);
-        }}
-        onPointerMove={(e) => {
-          // Mit Pointer-Capture landet pointermove auf der Start-Cell,
-          // auch wenn der Finger woanders ist. Aktuelle Cell aus
-          // Client-Koordinaten + Board-Bounds berechnen — nicht die
-          // statische (row, col) der gerenderten Cell verwenden.
-          // ponytail: Fallback auf statische Cell wenn clientX/Y fehlen
-          // (z. B. jsdom-Test, wo PointerEvent-Properties nicht gesetzt
-          // sind). In echten Browsern liefert das native Event die Werte.
-          let moveRow: number;
-          let moveCol: number;
+          // Pixel-Position der Pointer-Down-Stelle relativ zum Board-
+          // Ursprung. Die Selection-Hook braucht das, um beim Move die
+          // 50%-Schwelle pro Achse sauber zu prüfen (sonst würde 1px
+          // über die Zellgrenze das volle Rechteck auslösen).
+          let downX = 0;
+          let downY = 0;
           if (
             boardRef.current &&
-            cellSize &&
             typeof e.clientX === 'number' &&
             typeof e.clientY === 'number'
           ) {
             const rect = boardRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            if (x >= 0 && y >= 0) {
-              moveCol = Math.floor(x / cellSize);
-              moveRow = Math.floor(y / cellSize);
-              if (moveRow < 0 || moveRow >= size || moveCol < 0 || moveCol >= size) return;
-            } else {
-              return;
-            }
+            downX = e.clientX - rect.left;
+            downY = e.clientY - rect.top;
           } else {
-            // Fallback: statische Cell. Sollte nur in Tests ohne
-            // clientX/Y greifen.
-            moveRow = row;
-            moveCol = col;
+            // Fallback: Mitte der gerenderten Zelle. Sollte nur in
+            // Tests ohne clientX/Y greifen.
+            downX = col * cellSize + cellSize / 2;
+            downY = row * cellSize + cellSize / 2;
           }
-          onCellPointerMove(moveRow, moveCol);
+          onCellPointerDown(row, col, downX, downY);
+        }}
+        onPointerMove={(e) => {
+          // Mit Pointer-Capture landet pointermove auf der Start-Cell,
+          // auch wenn der Finger woanders ist. Pixel-Position aus
+          // Client-Koordinaten + Board-Bounds berechnen. Wenn clientX/Y
+          // fehlen (jsdom), statische Cell-Mitte als Fallback.
+          let moveX: number;
+          let moveY: number;
+          if (
+            boardRef.current &&
+            typeof e.clientX === 'number' &&
+            typeof e.clientY === 'number'
+          ) {
+            const rect = boardRef.current.getBoundingClientRect();
+            moveX = e.clientX - rect.left;
+            moveY = e.clientY - rect.top;
+            if (moveX < 0 || moveY < 0) return;
+          } else {
+            // Fallback: Mitte der gerenderten Zelle. Sollte nur in
+            // Tests ohne clientX/Y greifen → in dem Fall bleibt die
+            // Auswahl auf der Start-Zelle.
+            moveX = col * cellSize + cellSize / 2;
+            moveY = row * cellSize + cellSize / 2;
+          }
+          onCellPointerMove(moveX, moveY);
         }}
         onPointerUp={onCellPointerEnd}
         onPointerCancel={onCellPointerEnd}

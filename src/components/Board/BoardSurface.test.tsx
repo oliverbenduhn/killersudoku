@@ -82,12 +82,18 @@ describe('BoardSurface', () => {
     }
   });
 
-  test('Pointer-Callbacks werden mit Zelle (row, col) aufgerufen', () => {
+  test('Pointer-Callbacks werden mit Zelle (row, col) und Pixel-Position aufgerufen', () => {
+    // Die Hook braucht die Pixel-Position der Pointer-Down-Stelle, um beim
+    // Move die 50%-Schwelle pro Achse zu prüfen. Ohne korrekte Pixel
+    // würde jeder Mini-Wackler das volle Rechteck auslösen.
     const onDown = jest.fn();
-    render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown })} />);
+    render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown, cellSize: 48 })} />);
     const cell = screen.getByTestId('cell-4-3');
-    fireEvent.pointerDown(cell);
-    expect(onDown).toHaveBeenCalledWith(4, 3);
+    fireEvent.pointerDown(cell, { clientX: 200, clientY: 220 });
+    // row=4, col=3, cellSize=48 → erwartete Pixel = (col*48+24, row*48+24) = (168, 216).
+    // jsdom liefert clientX/Y; ohne boardRef-Bounds fällt der Surface auf
+    // die static-cell-Mitte zurück, was hier identisch ist.
+    expect(onDown).toHaveBeenCalledWith(4, 3, 168, 216);
   });
 
   test('Käfigsumme wird in der Top-Left-Zelle des Käfigs gerendert', () => {

@@ -119,7 +119,7 @@ export const Board: React.FC<BoardProps> = ({
     setSelectedCell,
     setSelectedCells,
     setDragStart
-  } = useCellSelection(cages);
+  } = useCellSelection(cages, cellSize);
 
   // Animation
   const animation = useCellAnimation();
