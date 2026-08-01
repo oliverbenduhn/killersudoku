@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { saveGameState, loadGameState } from '../services/storageService';
+import { loadGameState, enqueueGameStateSave } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
 import { createEmptyBoard } from '../services/puzzleGeneratorService';
@@ -18,9 +18,9 @@ interface GameState extends GlobalGameState {
 export const useGameState = (puzzleId: string, size: number = 9) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Ref zum Verfolgen der letzten Speicheroperation
-  const saveOperationRef = useRef<Promise<void>>(Promise.resolve());
-  // Ref zum Verfolgen der aktuellen puzzleId
+  // Ref, damit der Hydration-Effect den aktuellen puzzleId mit dem
+  // asynchronen Lade-Pfad abgleichen kann (Race-Bedingung beim schnellen
+  // Levelwechsel).
   const currentPuzzleIdRef = useRef<string>(puzzleId);
   const gameStateRef = useRef<GameState | null>(null);
   const lastAutoSaveRef = useRef<number>(0);
@@ -36,8 +36,6 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     const loadState = async () => {
       try {
         setIsLoading(true);
-
-        await saveOperationRef.current;
 
         const savedState = await loadGameState(puzzleId);
 
@@ -80,7 +78,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                 console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
               }
             }
-            await saveGameState(puzzleId, restored);
+            enqueueGameStateSave(puzzleId, restored);
             setGameState(restored);
           }
         } else {
@@ -181,16 +179,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
       if (now - lastAutoSaveRef.current >= 15000) {
         lastAutoSaveRef.current = now;
         const targetPuzzleId = currentPuzzleIdRef.current;
-        saveOperationRef.current = (async () => {
-          try {
-            await saveOperationRef.current;
-            if (targetPuzzleId === currentPuzzleIdRef.current) {
-              await saveGameState(targetPuzzleId, updatedState);
-            }
-          } catch (error) {
-            console.error('Fehler beim automatischen Speichern:', error);
-          }
-        })();
+        enqueueGameStateSave(targetPuzzleId, updatedState);
       }
     };
 
@@ -210,22 +199,8 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
 
     // Bugfix: Sofort persistieren statt auf den 15s-Timer zu warten.
     // Vorher konnten bis zu 15 Sekunden Spielverlust beim Tab-Close entstehen.
-    const saveOperation = (async () => {
-      try {
-        const targetPuzzleId = currentPuzzleIdRef.current;
-        await saveOperationRef.current;
-        if (targetPuzzleId === currentPuzzleIdRef.current) {
-          await saveGameState(targetPuzzleId, updatedState);
-        }
-      } catch (error) {
-        console.error('Fehler beim Speichern des Spielstands:', error);
-      }
-    })();
-
-    saveOperationRef.current = saveOperation;
     lastAutoSaveRef.current = Date.now();
-
-    return saveOperation;
+    return enqueueGameStateSave(currentPuzzleIdRef.current, updatedState);
   };
 
   /**
@@ -259,38 +234,16 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     const previous = undo.undo();
     if (!previous) return;
     setGameState(previous);
-    const saveOperation = (async () => {
-      try {
-        const targetPuzzleId = currentPuzzleIdRef.current;
-        await saveOperationRef.current;
-        if (targetPuzzleId === currentPuzzleIdRef.current) {
-          await saveGameState(targetPuzzleId, previous);
-        }
-      } catch (error) {
-        console.error('Fehler beim Speichern nach Undo:', error);
-      }
-    })();
-    saveOperationRef.current = saveOperation;
     lastAutoSaveRef.current = Date.now();
+    enqueueGameStateSave(currentPuzzleIdRef.current, previous);
   };
 
   const performRedo = async () => {
     const next = undo.redo();
     if (!next) return;
     setGameState(next);
-    const saveOperation = (async () => {
-      try {
-        const targetPuzzleId = currentPuzzleIdRef.current;
-        await saveOperationRef.current;
-        if (targetPuzzleId === currentPuzzleIdRef.current) {
-          await saveGameState(targetPuzzleId, next);
-        }
-      } catch (error) {
-        console.error('Fehler beim Speichern nach Redo:', error);
-      }
-    })();
-    saveOperationRef.current = saveOperation;
     lastAutoSaveRef.current = Date.now();
+    enqueueGameStateSave(currentPuzzleIdRef.current, next);
   };
 
   return {
