@@ -77,6 +77,30 @@ describe('useCellSelection', () => {
     expect(result.current.selectedCells).toEqual([]);
   });
 
+  test('Move innerhalb der Startzelle: Auswahl bleibt 1×1 (kein Zittern → Rechteck)', () => {
+    // Regression: User drückt Maus auf Zelle, bewegt Maus nur INNERHALB
+    // dieser Zelle. Solange der Pointer die Startzelle nicht verlässt,
+    // bleibt die Auswahl 1×1 — kein 1×1-Rechteck-Aufbau, der das
+    // visuelle Feedback verfälscht. Erst beim echten Zellenwechsel
+    // wächst die Auswahl zum Rechteck.
+    const { result } = renderHook(() => useCellSelection([]));
+    act(() => result.current.handlePointerDown(2, 2));
+    act(() => result.current.handlePointerMove(2, 2)); // gleiche Zelle
+    expect(result.current.selectedCells).toEqual([{ row: 2, col: 2 }]);
+  });
+
+  test('Erster Move in andere Zelle: Rechteck wächst ab 1×2', () => {
+    // Gegenstück zum vorherigen Test: Sobald der Pointer die Startzelle
+    // verlässt, springt die Rechteck-Auswahl an (1×2 beim ersten Schritt).
+    const { result } = renderHook(() => useCellSelection([]));
+    act(() => result.current.handlePointerDown(2, 2));
+    act(() => result.current.handlePointerMove(2, 3));
+    expect(result.current.selectedCells).toHaveLength(2);
+    expect(result.current.selectedCells).toEqual(
+      expect.arrayContaining([{ row: 2, col: 2 }, { row: 2, col: 3 }])
+    );
+  });
+
   test('Doppelklick auf Cell im Käfig: gesamter Käfig wird selektiert', () => {
     // User-Spec: Doppelklick oder Doppeltipp markiert den ganzen Käfig.
     // Cage mit 3 Zellen → alle 3 markiert.

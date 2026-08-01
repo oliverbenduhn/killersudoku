@@ -114,6 +114,12 @@ export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
       // Cage-Constraint entfällt — User kann beliebige 1×1, 1×2, 2×2,
       // 2×4 etc. markieren. Validität gegen Käfig-Regeln greift erst
       // beim Zahl-Eingeben (applyPlayerEntry).
+      //
+      // Solange der Pointer noch in der Start-Zelle ist, kein Rechteck
+      // aufspannen — der User will die Zelle erst auswählen, nicht sofort
+      // ein 1×1 + n×m markieren, wenn die Maus nur innerhalb der Zelle
+      // zittert. Erst beim echten Zellenwechsel greift die Rechteck-Logik.
+      if (row === ds.row && col === ds.col) return;
       const minRow = Math.min(ds.row, row);
       const maxRow = Math.max(ds.row, row);
       const minCol = Math.min(ds.col, col);
