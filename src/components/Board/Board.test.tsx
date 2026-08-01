@@ -33,17 +33,8 @@ jest.mock('../../hooks/useGameState', () => ({
   })
 }));
 
-// Mock der neuen Hooks, damit das Test-Setup deterministisch ist
-jest.mock('../../hooks/useCellSelection', () => {
-  const actual = jest.requireActual('../../hooks/useCellSelection');
-  return {
-    __esModule: true,
-    useCellSelection: () => {
-      const hook = actual.useCellSelection([]);
-      return { ...hook };
-    }
-  };
-});
+// useCellSelection ist eine pure state machine — kein Mock nötig, der
+// echte Hook läuft mit den cages aus dem mockLevelData.
 
 jest.mock('../../hooks/useBoardResize', () => ({
   __esModule: true,

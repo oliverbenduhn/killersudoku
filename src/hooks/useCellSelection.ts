@@ -44,8 +44,17 @@ export const useCellSelection = (cages: Cage[]): UseCellSelectionResult => {
 
       // Nur Zellen innerhalb des Käfigs der Startzelle zulassen.
       const startCage = getCageForCell(cages, dragStart.row, dragStart.col);
+      // Ohne Cage-Treffer ist die Startzelle käfig-los (z. B. cages noch leer
+      // beim Levelwechsel): Rechteck-Drag ohne Constraint würde sonst das
+      // ganze Brett füllen, weil jede Cell als „im Käfig" gälte. Stattdessen
+      // nur die Startzelle behalten — Multi-Select funktioniert weiter, sobald
+      // der Drag in einem echten Käfig startet.
+      if (!startCage) {
+        setSelectedCells([dragStart]);
+        return;
+      }
       const inCage = (r: number, c: number) =>
-        startCage?.cells.some(cell => cell.row === r && cell.col === c) ?? true;
+        startCage.cells.some(cell => cell.row === r && cell.col === c);
 
       const minRow = Math.min(dragStart.row, row);
       const maxRow = Math.max(dragStart.row, row);

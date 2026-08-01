@@ -60,7 +60,12 @@ export const Board: React.FC<BoardProps> = ({
   const toast = useToast();
   const { gameState, isLoading: stateLoading, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size);
   const strategicHint = useStrategicHint();
-  const [cages, setCages] = useState<Cage[]>([]);
+  // Käfige sind derived state — kommen direkt aus levelData. Vorher als
+  // useState+useEffect gehalten, was im ersten Render-Tick ein leeres
+  // Array lieferte; Drag-Events in diesem Fenster umgingen die Cage-
+  // Constraint und fluteten die Auswahl (User-Report: "zwei Felder
+  // markiert, plötzlich drei oder das ganze Brett dabei").
+  const cages: Cage[] = levelData?.cages ?? [];
   const [hasError, setHasError] = useState<boolean>(false);
   // Bleistiftmodus: rein clientseitiger UI-State (Issue #4). Kein Teil von
   // GameState, nicht persistiert. Reset auf "aus" erfolgt explizit beim
@@ -190,10 +195,7 @@ export const Board: React.FC<BoardProps> = ({
 
   // Level-Initialisierung: nur beim Wechsel einmalig
   useEffect(() => {
-    if (levelData && levelData.cages) {
-      setCages(levelData.cages);
-      setHasError(false);
-    } else if (!levelData && !externalLoading) {
+    if (!levelData && !externalLoading) {
       setHasError(true);
     } else {
       setHasError(false);
