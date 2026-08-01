@@ -50,6 +50,6 @@ body {
   outline: none;
 }
 :where(button, [role="button"], [role="gridcell"], a, input, select, textarea):focus-visible {
-  outline: 2px solid var(--chakra-colors-brand-primary, #3182ce);
+  outline: 2px solid var(--chakra-colors-brand-primary, #E15A3C);
   outline-offset: 2px;
 }

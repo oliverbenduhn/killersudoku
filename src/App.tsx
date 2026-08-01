@@ -164,10 +164,17 @@ function App() {
         >
           <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
             <Flex align="baseline" gap={2}>
-              <Heading as="h1" color={headerTextColor} fontSize={{ base: '18px', md: '20px' }} fontWeight="700" letterSpacing="-0.02em">
+              <Heading
+                as="h1"
+                color={headerTextColor}
+                fontSize={{ base: '19px', md: '22px' }}
+                fontWeight="700"
+                letterSpacing="-0.025em"
+                fontFamily="heading"
+              >
                 Killer Sudoku
               </Heading>
-              <Text color={headerTextColor} opacity={0.5} fontSize="xs" fontFamily="mono">
+              <Text color={headerTextColor} opacity={0.45} fontSize="2xs" fontFamily="mono" fontWeight="400">
                 v{APP_VERSION}
               </Text>
             </Flex>

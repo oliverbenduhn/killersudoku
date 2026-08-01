@@ -1,8 +1,10 @@
 // Killer Sudoku Theme.
-// Light + Dark Tokens. Mobile-first, modern (2024er-Stil):
-//   - größere Border-Radien (12–20px statt Material-Default 6px)
-//   - weichere Schatten (Blur-basierte statt 1px-Linien)
-//   - zurückhaltende Käfig-Farben mit höherem Kontrast im Dark Mode
+// Hallmark · genre: playful · theme: Hum (custom-tuned) · macrostructure: Workbench (app)
+// Light + Dark Tokens. Mobile-first, warm-tactile:
+//   - warmes Cream-Paper statt kühlem Grau
+//   - 4 Käfig-Farben als multi-accent (Hum-Register), niedrige Chroma
+//   - Bricolage Grotesque Display / Satoshi Body / Space Mono Zahlen
+//   - große Border-Radien (12–20px), weiche Blur-Schatten
 
 import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
 
@@ -15,13 +17,14 @@ const config: ThemeConfig = {
 // Komponenten benutzen NUR diese Tokens, nie direkte Farben.
 const semanticTokens = {
   colors: {
-    // Surface-Hierarchie (Hintergrund → Karte → Zelle)
-    'surface.canvas':       { default: 'gray.50',   _dark: 'gray.900' },
-    'surface.raised':       { default: 'white',     _dark: 'gray.800' },
-    'surface.sunken':       { default: 'gray.100',  _dark: 'gray.700' },
+    // Surface-Hierarchie (Hintergrund → Karte → Zelle). Warmes Creme statt
+    // kühlem Grau — Hum-Register. Chakra-Palette reicht nicht, daher Hex.
+    'surface.canvas':       { default: '#FAF6EF', _dark: '#1B1712' },
+    'surface.raised':       { default: '#FFFDF8', _dark: '#26201A' },
+    'surface.sunken':       { default: '#F0E9DC', _dark: '#332A22' },
     'surface.overlay':      { default: 'blackAlpha.500', _dark: 'blackAlpha.700' },
-    'surface.header':       { default: 'white',     _dark: 'gray.800' },
-    'surface.header.text':  { default: 'gray.900',  _dark: 'gray.50'  },
+    'surface.header':       { default: '#FFFDF8', _dark: '#26201A' },
+    'surface.header.text':  { default: '#221A12', _dark: '#F5EEE2' },
 
     // Käfig-Hintergründe — weicher. Light .100 (pastell), Dark .900
     // (sehr dunkel, fast schwarz mit Farbstich). .800 war zu sattig
@@ -69,18 +72,18 @@ const semanticTokens = {
     'cell.peer.bg':         { default: 'blue.50',   _dark: 'blue.900' },
     'cell.cage.bg':         { default: 'gray.50',   _dark: 'gray.800' },
 
-    // Text-Hierarchie
-    'text.primary':         { default: 'gray.900',  _dark: 'gray.50'  },
-    'text.secondary':       { default: 'gray.600',  _dark: 'gray.400' },
-    'text.muted':           { default: 'gray.500',  _dark: 'gray.500' },
-    'text.inverse':         { default: 'white',     _dark: 'gray.900' },
+    // Text-Hierarchie — warme Tinte (hue ~35), kein reines Schwarz/Grau.
+    'text.primary':         { default: '#221A12', _dark: '#F5EEE2' },
+    'text.secondary':       { default: '#6B5D4D', _dark: '#B8A98F' },
+    'text.muted':           { default: '#94836E', _dark: '#8A7B66' },
+    'text.inverse':         { default: '#FFFDF8', _dark: '#221A12' },
 
-    // Brand: einzige Akzentfarbe. Buttons benutzen ausschließlich diese
-    // Schiene, kein Lila/Türkis/Hellblau-Mischmasch mehr.
-    'brand.primary':        { default: 'blue.500',  _dark: 'blue.400' },
-    'brand.primary.hover':  { default: 'blue.600',  _dark: 'blue.300' },
-    'brand.primary.subtle': { default: 'blue.50',   _dark: 'blue.900' },
-    'brand.onPrimary':      { default: 'white',     _dark: 'gray.900' },
+    // Brand: warmes Coral als einzige Akzentfarbe (Hum-Register). Chakra
+    // hat kein passendes Coral in der Standardpalette → Hex.
+    'brand.primary':        { default: '#E15A3C', _dark: '#F07B5E' },
+    'brand.primary.hover':  { default: '#C94A2F', _dark: '#E89A83' },
+    'brand.primary.subtle': { default: '#FBE3DC', _dark: '#3E241C' },
+    'brand.onPrimary':      { default: '#FFFDF8', _dark: '#221A12' },
 
     // Status
     'status.success':       { default: 'green.500', _dark: 'green.300' },
@@ -88,9 +91,9 @@ const semanticTokens = {
     'status.error':         { default: 'red.500',   _dark: 'red.300' },
 
     // Bottom-Nav-Pill für aktiven Tab (moderne Mobile-UX).
-    'nav.active.bg':        { default: 'blue.50',   _dark: 'blue.900' },
-    'nav.active.text':      { default: 'blue.600',  _dark: 'blue.200' },
-    'nav.inactive.text':    { default: 'gray.500',  _dark: 'gray.400' },
+    'nav.active.bg':        { default: '#FBE3DC', _dark: '#3E241C' },
+    'nav.active.text':      { default: '#C94A2F', _dark: '#F07B5E' },
+    'nav.inactive.text':    { default: '#94836E', _dark: '#8A7B66' },
   },
   radii: {
     // Größere Radien überall für weicheren, modernen Look.
@@ -117,9 +120,11 @@ export const theme = extendTheme({
   config,
   semanticTokens,
   fonts: {
-    body: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    heading: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    mono: "ui-monospace, SFMono-Regular, Menlo, Monaco, 'Cascadia Mono', monospace",
+    // Hallmark 2+1: Display Bricolage Grotesque, Body Satoshi, Outlier Space Mono.
+    // Satoshi deckt denselben x-height-Bereich ab wie system-ui → kein CLS beim Swap.
+    body: `'Satoshi', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif`,
+    heading: `'Bricolage Grotesque', 'Satoshi', ui-sans-serif, system-ui, sans-serif`,
+    mono: `'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Cascadia Mono', monospace`,
   },
   styles: {
     global: {
@@ -147,11 +152,20 @@ export const theme = extendTheme({
         fontWeight: '600',
         borderRadius: 'lg',
         letterSpacing: '0.01em',
-        transition: 'background-color 0.15s, transform 0.1s',
+        transition: 'background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1)',
         _active: { transform: 'scale(0.97)' },
       },
       defaultProps: {
-        colorScheme: 'blue',
+        // Kein colorScheme-Default: brand.primary wird direkt über die
+        // solid-Variante unten gesetzt; ghost/outline bleiben neutral.
+      },
+      variants: {
+        solid: {
+          bg: 'brand.primary',
+          color: 'brand.onPrimary',
+          _hover: { bg: 'brand.primary.hover', _disabled: { bg: 'surface.sunken' } },
+          _active: { bg: 'brand.primary.hover' },
+        },
       },
     },
     IconButton: {

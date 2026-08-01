@@ -231,7 +231,7 @@ export function TutorialOverlay({
                 Zurück
               </Button>
             )}
-            <Button colorScheme="blue" onClick={onNext} size="sm">
+            <Button variant="solid" onClick={onNext} size="sm">
               {isLastStep ? 'Loslegen' : 'Weiter'}
             </Button>
           </HStack>

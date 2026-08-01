@@ -871,7 +871,6 @@ export const Board: React.FC<BoardProps> = ({
               aria-pressed trägt den Modus-Zustand für Screenreader. */}
           <RippleButton
             onClick={() => setPencilMode(v => !v)}
-            colorScheme="blue"
             variant={pencilMode ? 'solid' : 'outline'}
             aria-label="Bleistiftmodus"
             aria-pressed={pencilMode}
@@ -884,7 +883,6 @@ export const Board: React.FC<BoardProps> = ({
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
             variant="outline"
-            colorScheme="blue"
             onClick={() => {
               if (!gameState) return;
               if (cages.length === 0) {
@@ -928,7 +926,7 @@ export const Board: React.FC<BoardProps> = ({
           </RippleButton>
           {/* Direkter Reveal-Hinweis: brand primary, klar als primäre Aktion. */}
           <RippleButton
-            colorScheme="blue"
+            variant="solid"
             onClick={handleRevealHint}
             isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
             aria-label={`Hinweis (${MAX_HINTS - (gameState?.hintsUsed || 0)})`}
