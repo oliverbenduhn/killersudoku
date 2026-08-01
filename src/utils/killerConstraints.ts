@@ -1,5 +1,6 @@
 import { BOARD_SIZE, Cage, CellPosition } from '../types/gameTypes';
 import { getCageCombinations } from './killerCombinations';
+import { cageOfCell } from '../services/board';
 
 const ALL_DIGITS_MASK = 0b1111111110;
 
@@ -151,9 +152,7 @@ export function getLegalValuesForCell(
   cell: CellPosition,
   cages: Cage[]
 ): number[] {
-  const cage = cages.find((candidate) =>
-    candidate.cells.some((entry) => entry.row === cell.row && entry.col === cell.col)
-  );
+  const cage = cageOfCell(cages, cell);
   if (!cage) return [];
 
   const copy = board.map((row) => [...row]);

@@ -3,6 +3,12 @@
 
 import { Cage, CellPosition } from '../types/gameTypes';
 import { analyzeCage, getLegalValuesForCell, isBoardValueInRange } from '../utils/killerConstraints';
+import { cageOfCell } from './board';
+
+// Cell→Cage-Lookup. Delegiert an board.ts — die Lookup-Tabelle lebt zentral
+// in services/board.ts. Re-Export unter dem alten Namen, weil gameLogicService
+// historisch der einzige Import-Pfad war.
+export const getCageForCell = cageOfCell;
 
 // Standard-Sudoku-Regeln: Keine Duplikate in Zeilen, Spalten, Blöcken
 export const isCellValidForSudokuRules = (
@@ -115,16 +121,7 @@ export const isCellValid = (
   return analyzeCage(tempValues, cage).valid;
 };
 
-// Hilfsfunktion zum Finden des Käfigs für eine Zelle
-export const getCageForCell = (
-  cages: Cage[],
-  row: number,
-  col: number
-): Cage | undefined => {
-  return cages.find(cage => 
-    cage.cells.some(cell => cell.row === row && cell.col === col)
-  );
-};
+// Hilfsfunktion zum Finden des Käfigs für eine Zelle — siehe Import oben.
 
 // Überprüft, ob das gesamte Board gültig und vollständig ist
 export const isBoardComplete = (
@@ -193,10 +190,9 @@ export const areCellsInSameCage = (
   row2: number,
   col2: number
 ): boolean => {
-  const cage = getCageForCell(cages, row1, col1);
-  if (!cage) return false;
-  
-  return cage.cells.some(cell => cell.row === row2 && cell.col === col2);
+  const cage1 = getCageForCell(cages, row1, col1);
+  if (!cage1) return false;
+  return getCageForCell(cages, row2, col2) === cage1;
 };
 
 export interface PlayerNotesResult {
