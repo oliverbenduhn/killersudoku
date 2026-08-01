@@ -85,13 +85,14 @@ export interface BoardSurfaceProps {
   isCageComplete: (cage: Cage) => boolean;
   /** Board-Root-Ref — für Touch-Bounds-Berechnung im Bg-Layer. */
   boardRef: RefObject<HTMLDivElement>;
-  /** Drag-Start bei Mousedown / Touchstart. */
+  /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch. */
   onCellPointerDown: (row: number, col: number) => void;
-  /** Drag-Continue bei Mouseenter / Touchmove. */
-  onCellPointerEnter: (row: number, col: number) => void;
-  /** Drag-Ende bei Mouseup / Touchend. */
+  /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl. */
+  onCellPointerMove: (row: number, col: number) => void;
+  /** Pointer-Up / Pointer-Cancel: beendet den Drag. */
   onCellPointerEnd: () => void;
-  /** Doppelklick / Doppeltipp: markiert den Käfig der Cell. */
+  /** Reines Doppelklick-Event (Maus). Auf Touch wird Doppel-Tipp
+   *  intern im Hook via handlePointerDown-Zeitfenster erkannt. */
   onCellDoubleClick: (row: number, col: number) => void;
   /** Schwarz-Weiß-Modus aktiv (siehe CONTEXT.md). */
   blackAndWhiteMode: boolean;
@@ -139,7 +140,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   isCageComplete,
   boardRef,
   onCellPointerDown,
-  onCellPointerEnter,
+  onCellPointerMove,
   onCellPointerEnd,
   onCellDoubleClick,
   blackAndWhiteMode,
@@ -178,29 +179,62 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
         w={`${cellSize}px`}
         h={`${cellSize}px`}
         bg={bgColor}
-        onMouseDown={() => onCellPointerDown(row, col)}
-        onMouseEnter={() => onCellPointerEnter(row, col)}
-        onMouseUp={onCellPointerEnd}
-        onDoubleClick={() => onCellDoubleClick(row, col)}
-        onTouchStart={() => onCellPointerDown(row, col)}
-        onTouchMove={(e) => {
-          if (boardRef.current && e.touches.length > 0) {
-            const touch = e.touches[0];
-            const rect = boardRef.current.getBoundingClientRect();
-            const x = touch.clientX - rect.left;
-            const y = touch.clientY - rect.top;
-            const touchCol = Math.floor(x / cellSize);
-            const touchRow = Math.floor(y / cellSize);
-            if (
-              touchRow >= 0 && touchRow < size &&
-              touchCol >= 0 && touchCol < size &&
-              (selectedCell?.row !== touchRow || selectedCell?.col !== touchCol)
-            ) {
-              onCellPointerEnter(touchRow, touchCol);
-            }
+        // Pointer-Events vereinheitlichen Maus + Touch + Stylus. Kein
+        // separates onMouse*/onTouch*-Handling mehr nötig. setPointerCapture
+        // hält pointermove/up auf der Cell, auch wenn der Finger/die Maus
+        // über die Cell-Grenze rutscht.
+        // ponytail: touch-action: none deaktiviert Browser-Gesten
+        // (Pull-to-refresh, Scroll, Pinch-Zoom) für diese Region.
+        // Ohne das schluckt iOS den Drag und scrollt statt zu selektieren.
+        sx={{ touchAction: 'none' }}
+        onPointerDown={(e) => {
+          // setPointerCapture hält pointermove/up auf dieser Cell, auch
+          // wenn der Finger/die Maus über die Cell-Grenze rutscht. Im
+          // echten Browser nativ, in jsdom nicht definiert.
+          // ponytail: defensive typeof-Prüfung hält Tests lauffähig.
+          const el = e.currentTarget;
+          if (typeof el.setPointerCapture === 'function') {
+            el.setPointerCapture(e.pointerId);
           }
+          onCellPointerDown(row, col);
         }}
-        onTouchEnd={onCellPointerEnd}
+        onPointerMove={(e) => {
+          // Mit Pointer-Capture landet pointermove auf der Start-Cell,
+          // auch wenn der Finger woanders ist. Aktuelle Cell aus
+          // Client-Koordinaten + Board-Bounds berechnen — nicht die
+          // statische (row, col) der gerenderten Cell verwenden.
+          // ponytail: Fallback auf statische Cell wenn clientX/Y fehlen
+          // (z. B. jsdom-Test, wo PointerEvent-Properties nicht gesetzt
+          // sind). In echten Browsern liefert das native Event die Werte.
+          let moveRow: number;
+          let moveCol: number;
+          if (
+            boardRef.current &&
+            cellSize &&
+            typeof e.clientX === 'number' &&
+            typeof e.clientY === 'number'
+          ) {
+            const rect = boardRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            if (x >= 0 && y >= 0) {
+              moveCol = Math.floor(x / cellSize);
+              moveRow = Math.floor(y / cellSize);
+              if (moveRow < 0 || moveRow >= size || moveCol < 0 || moveCol >= size) return;
+            } else {
+              return;
+            }
+          } else {
+            // Fallback: statische Cell. Sollte nur in Tests ohne
+            // clientX/Y greifen.
+            moveRow = row;
+            moveCol = col;
+          }
+          onCellPointerMove(moveRow, moveCol);
+        }}
+        onPointerUp={onCellPointerEnd}
+        onPointerCancel={onCellPointerEnd}
+        onDoubleClick={() => onCellDoubleClick(row, col)}
         cursor="pointer"
         transition="background-color 0.15s"
         style={{ boxShadow: selectionShadow }}

@@ -141,7 +141,7 @@ describe('Board Component', () => {
   test('mousedown auf Zelle startet Drag-Select', () => {
     render(<Board levelData={mockLevelData} />);
     const cell = screen.getByTestId('cell-0-0');
-    fireEvent.mouseDown(cell);
+    fireEvent.pointerDown(cell);
     expect(cell).toHaveAttribute('aria-selected', 'true');
   });
 
@@ -201,7 +201,7 @@ describe('Board Component', () => {
 
     try {
       render(<Board levelData={mockLevelData} />);
-      fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+      fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
 
       const matchingDigits = [
         screen.getByTestId('value-0-0'),
@@ -407,7 +407,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     // Mock-Hook mit aktivem Overlay und möglichen Werten initialisieren.
     setHintsForTest(true, [2, 4]);
     render(<Board levelData={mockLevelData} />);
-    fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+    fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
     // Optisch ausgeblendet, Daten unverändert.
     expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
     expect(mockGameState.notes[0][0]).toEqual([1, 5, 9]);
@@ -420,8 +420,14 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     render(<Board levelData={mockLevelData} />);
 
     const first = screen.getByTestId('cell-0-0');
-    fireEvent.mouseDown(first);
-    fireEvent.mouseEnter(screen.getByTestId('cell-0-1'));
+    fireEvent.pointerDown(first);
+    // clientX/Y müssen explizit gesetzt werden — sonst sind sie 0
+    // und die Bounds-Berechnung im Surface schlägt fehl. cellSize ist
+    // 50 (Mock), also clientX 60 → moveCol=1, moveRow=1.
+    fireEvent.pointerMove(screen.getByTestId('cell-0-1'), {
+      clientX: 60,
+      clientY: 60,
+    });
 
     expect(first).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('cell-0-1')).toHaveAttribute('aria-selected', 'true');
@@ -433,7 +439,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     mockGameState.notes[0][0] = [1, 5, 9];
     setHintsForTest(true, [2, 4]);
     render(<Board levelData={mockLevelData} />);
-    fireEvent.mouseDown(screen.getByTestId('cell-0-0'));
+    fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
     expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
     // F5 schaltet das Overlay im echten Board-Pfad aus — Mock-Toggle aktualisiert
     // useState, Board rendert erneut, Notizen sind wieder sichtbar.

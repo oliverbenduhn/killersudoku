@@ -111,9 +111,9 @@ export const Board: React.FC<BoardProps> = ({
   const {
     selectedCell,
     selectedCells,
-    handleDragStart,
-    handleDragEnter,
-    handleDragEnd,
+    handlePointerDown,
+    handlePointerMove,
+    handlePointerEnd,
     handleDoubleClick,
     clearSelection,
     setSelectedCell,
@@ -416,9 +416,9 @@ export const Board: React.FC<BoardProps> = ({
             possibleValues={possibleValues}
             isCageComplete={isCageComplete}
             boardRef={boardRef}
-            onCellPointerDown={handleDragStart}
-            onCellPointerEnter={handleDragEnter}
-            onCellPointerEnd={handleDragEnd}
+            onCellPointerDown={handlePointerDown}
+            onCellPointerMove={handlePointerMove}
+            onCellPointerEnd={handlePointerEnd}
             onCellDoubleClick={handleDoubleClick}
             blackAndWhiteMode={blackAndWhiteMode}
           />

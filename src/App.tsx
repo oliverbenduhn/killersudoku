@@ -196,7 +196,13 @@ function App() {
         </Container>
       </Box>
 
-      <Box minH="calc(100vh - 56px)" bg="surface.canvas">
+      <Box minH="calc(100vh - 56px)" bg="surface.canvas"
+        // iOS-Pull-to-Refresh am Brett-Rand unterdrücken. Ohne das
+        // triggert ein Drag vom Brett nach unten einen Reload der PWA.
+        // ponytail: overscroll-behavior am Body/Outer-Container, nicht an
+        // der Cell — die Scroll-Chain kommt vom Viewport, nicht vom Brett.
+        sx={{ overscrollBehaviorY: 'contain' }}
+      >
         <Container maxW={containerMaxWidth} px={3} pt={2} pb="env(safe-area-inset-bottom, 0px)" mx="auto" w="100%">
           {activeTab === 'home' && (
             <HomeTab

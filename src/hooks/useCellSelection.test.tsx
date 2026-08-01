@@ -21,59 +21,59 @@ describe('useCellSelection', () => {
     expect(result.current.isDragging).toBe(false);
   });
 
-  test('handleDragStart setzt Auswahl + isDragging', () => {
+  test('handlePointerDown setzt Auswahl + isDragging', () => {
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragStart(2, 3));
+    act(() => result.current.handlePointerDown(2, 3));
     expect(result.current.selectedCell).toEqual({ row: 2, col: 3 });
     expect(result.current.selectedCells).toEqual([{ row: 2, col: 3 }]);
     expect(result.current.isDragging).toBe(true);
   });
 
-  test('handleDragEnter ignoriert wenn nicht dragging', () => {
+  test('handlePointerMove ignoriert wenn nicht dragging', () => {
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragEnter(1, 1));
+    act(() => result.current.handlePointerMove(1, 1));
     expect(result.current.selectedCells).toEqual([]);
   });
 
   test('Drag-Select: rechteckig, freie Auswahl', () => {
-    // Rechteck vom dragStart bis zur aktuellen Mausposition. Auswahl
+    // Rechteck vom dragStart bis zur aktuellen Pointer-Position. Auswahl
     // ist NICHT auf den Cage der Startzelle beschränkt — User will
     // beliebige 1×1, 1×2, 2×2, 2×4 etc. markieren können.
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragStart(1, 1));
-    act(() => result.current.handleDragEnter(3, 3));
+    act(() => result.current.handlePointerDown(1, 1));
+    act(() => result.current.handlePointerMove(3, 3));
     expect(result.current.selectedCells).toHaveLength(9); // 3×3
   });
 
-  test('Drag-Select 2×4: sechs Cells', () => {
+  test('Drag-Select 2×4: acht Cells', () => {
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragStart(0, 0));
-    act(() => result.current.handleDragEnter(1, 3));
+    act(() => result.current.handlePointerDown(0, 0));
+    act(() => result.current.handlePointerMove(1, 3));
     expect(result.current.selectedCells).toHaveLength(8); // 2×4
   });
 
-  test('handleDragEnd beendet Drag', () => {
+  test('handlePointerEnd beendet Drag', () => {
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragStart(0, 0));
-    act(() => result.current.handleDragEnd());
+    act(() => result.current.handlePointerDown(0, 0));
+    act(() => result.current.handlePointerEnd());
     expect(result.current.isDragging).toBe(false);
     expect(result.current.dragStart).toBeNull();
   });
 
   test('clearSelection leert alles', () => {
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragStart(1, 1));
+    act(() => result.current.handlePointerDown(1, 1));
     act(() => result.current.clearSelection());
     expect(result.current.selectedCell).toBeNull();
     expect(result.current.selectedCells).toEqual([]);
     expect(result.current.isDragging).toBe(false);
   });
 
-  test('handleDragEnter vor handleDragStart: ignoriert (kein Dragging)', () => {
-    // Regression: Browser schickt mouseenter auf Nachbarzellen beim
-    // mousedown desselben Ticks. Ohne Drag-Start keine Auswahl.
+  test('handlePointerMove vor handlePointerDown: ignoriert (kein Dragging)', () => {
+    // Regression: Browser schickt pointermove auf Nachbarzellen beim
+    // pointerdown desselben Ticks. Ohne Down keine Auswahl.
     const { result } = renderHook(() => useCellSelection([]));
-    act(() => result.current.handleDragEnter(1, 0));
+    act(() => result.current.handlePointerMove(1, 0));
     expect(result.current.selectedCells).toEqual([]);
   });
 
@@ -94,5 +94,58 @@ describe('useCellSelection', () => {
     const { result } = renderHook(() => useCellSelection([cageOther]));
     act(() => result.current.handleDoubleClick(0, 0));
     expect(result.current.selectedCells).toEqual([{ row: 0, col: 0 }]);
+  });
+
+  test('Doppel-Tipp auf gleiche Cell in <300ms: Käfig wird markiert', () => {
+    // Touch-Pfad: Pointer-Events haben kein eingebautes dblclick-Äquivalent.
+    // Stattdessen zwei pointerdown-Calls innerhalb 300ms auf derselben Cell
+    // → Doppel-Tipp-Pfad → Käfig-Select.
+    const cageA: Cage = { id: 'a', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }], sum: 6, color: 'blue.100' };
+    const { result } = renderHook(() => useCellSelection([cageA]));
+    jest.useFakeTimers();
+    try {
+      act(() => result.current.handlePointerDown(0, 0));
+      act(() => {
+        jest.advanceTimersByTime(150); // 150 ms < 300 ms
+      });
+      act(() => result.current.handlePointerDown(0, 0));
+      expect(result.current.selectedCells).toHaveLength(3);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('Zwei Taps auf gleiche Cell, aber >300ms auseinander: kein Doppel-Tipp', () => {
+    // Tap, lange warten, Tap → zwei separate Single-Selects, kein Käfig.
+    const cageA: Cage = { id: 'a', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 1, col: 0 }], sum: 6, color: 'blue.100' };
+    const { result } = renderHook(() => useCellSelection([cageA]));
+    jest.useFakeTimers();
+    try {
+      act(() => result.current.handlePointerDown(0, 0));
+      act(() => {
+        jest.advanceTimersByTime(500); // > 300 ms
+      });
+      act(() => result.current.handlePointerDown(0, 0));
+      // Drag-Start vom zweiten Tap überschreibt Single-Select; KEIN Cage.
+      expect(result.current.selectedCells).toEqual([{ row: 0, col: 0 }]);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('Zwei Taps auf verschiedene Cells in <300ms: kein Doppel-Tipp', () => {
+    // Tap auf A, kurz warten, Tap auf B → zweite Single-Select auf B,
+    // kein Cage-Select von A.
+    const cageA: Cage = { id: 'a', cells: [{ row: 0, col: 0 }, { row: 0, col: 1 }], sum: 3, color: 'blue.100' };
+    const { result } = renderHook(() => useCellSelection([cageA]));
+    jest.useFakeTimers();
+    try {
+      act(() => result.current.handlePointerDown(0, 0));
+      act(() => jest.advanceTimersByTime(150));
+      act(() => result.current.handlePointerDown(0, 1));
+      expect(result.current.selectedCells).toEqual([{ row: 0, col: 1 }]);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

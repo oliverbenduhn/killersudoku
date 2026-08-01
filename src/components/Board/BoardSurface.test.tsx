@@ -2,7 +2,7 @@
 // das Verhalten — das macht useCellSelection — sondern das Surface rendert
 // für die Zellen, die zu einem Käfig gehören, andere Klassen als für freie.
 import React, { RefObject } from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import BoardSurface, { BoardSurfaceProps } from './BoardSurface';
 import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
@@ -64,7 +64,7 @@ function defaultProps(overrides: Partial<BoardSurfaceProps> = {}): BoardSurfaceP
     isCageComplete: () => false,
     boardRef,
     onCellPointerDown: jest.fn(),
-    onCellPointerEnter: jest.fn(),
+    onCellPointerMove: jest.fn(),
     onCellPointerEnd: jest.fn(),
     onCellDoubleClick: jest.fn(),
     blackAndWhiteMode: false,
@@ -86,7 +86,7 @@ describe('BoardSurface', () => {
     const onDown = jest.fn();
     render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown })} />);
     const cell = screen.getByTestId('cell-4-3');
-    cell.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    fireEvent.pointerDown(cell);
     expect(onDown).toHaveBeenCalledWith(4, 3);
   });
 
