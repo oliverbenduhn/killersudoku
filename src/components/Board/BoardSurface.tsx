@@ -163,8 +163,15 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
     if ((isSameRow || isSameCol) && (blackAndWhiteMode || !cage) && !isSelected) {
       bgColor = blackAndWhiteMode ? 'surface.sunken' : 'cell.peer.bg';
     }
+    // Selektion als weiches inneres Glühen statt harter 3px-Rand: bei
+    // benachbarten Zellen überlappen sich keine dicken Linien mehr, der
+    // Übergang verschmilzt visuell. Mehrere inset-Shadows mit steigender
+    // Spreizung und sinkender Opazität erzeugen den Schein nach innen.
     const selectionShadow = isSelected
-      ? 'inset 0 0 0 3px var(--chakra-colors-cell-selected-border)'
+      ? [
+          'inset 0 0 0 2px var(--chakra-colors-cell-selected-border)',
+          'inset 0 0 12px 2px var(--chakra-colors-cell-selected-glow)',
+        ].join(', ')
       : undefined;
 
     const noteCandidates = notes?.[row]?.[col] ?? [];

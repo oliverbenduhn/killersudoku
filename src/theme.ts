@@ -67,8 +67,11 @@ const semanticTokens = {
     'cell.user.text':       { default: 'blue.600',  _dark: 'blue.300' },
     'cell.error.text':      { default: 'red.500',   _dark: 'red.300'  },
     // Auswahl bewusst orange statt blau: Blau ist bereits eine Käfigfarbe.
-    // Nur als Kontur verwenden, damit die Käfigfarbe sichtbar bleibt.
+    // Border bleibt schmal; ein zusätzlicher Glow-Schein nach innen lässt
+    // benachbarte Zellen sanft verschmelzen statt harte Doppelkanten zu
+    // bilden. RGBA hier, weil Chakra-Tokens keine Alphas erlauben.
     'cell.selected.border': { default: 'orange.500', _dark: 'orange.300' },
+    'cell.selected.glow':   { default: 'rgba(237, 137, 54, 0.45)', _dark: 'rgba(251, 146, 60, 0.35)' },
     'cell.peer.bg':         { default: 'blue.50',   _dark: 'blue.900' },
     'cell.cage.bg':         { default: 'gray.50',   _dark: 'gray.800' },
 
