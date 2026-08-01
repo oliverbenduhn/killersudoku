@@ -415,7 +415,6 @@ export const Board: React.FC<BoardProps> = ({
             showHints={showHints}
             possibleValues={possibleValues}
             isCageComplete={isCageComplete}
-            boardRef={boardRef}
             onCellPointerDown={handlePointerDown}
             onCellPointerMove={handlePointerMove}
             onCellPointerEnd={handlePointerEnd}

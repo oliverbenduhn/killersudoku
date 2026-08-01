@@ -31,7 +31,7 @@ describe('useCellSelection', () => {
   test('handlePointerDown setzt Auswahl + isDragging', () => {
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(2, 3);
-    act(() => result.current.handlePointerDown(2, 3, p.x, p.y));
+    act(() => result.current.handlePointerDown(2, 3));
     expect(result.current.selectedCell).toEqual({ row: 2, col: 3 });
     expect(result.current.selectedCells).toEqual([{ row: 2, col: 3 }]);
     expect(result.current.isDragging).toBe(true);
@@ -52,54 +52,35 @@ describe('useCellSelection', () => {
   });
 
   test('Move innerhalb der Startzelle: Auswahl bleibt 1×1 (kein Zittern → Rechteck)', () => {
-    // User drückt Maus auf Zelle (2,2), wackelt nur INNERHALB dieser Zelle
-    // (z. B. 10px nach rechts). Schwelle 50% nicht überschritten →
-    // Auswahl bleibt auf der Startzelle.
+    // User drückt Maus auf Zelle (2,2) und bewegt sie innerhalb ihrer Grenzen.
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(2, 2);
-    act(() => result.current.handlePointerDown(2, 2, p.x, p.y));
-    // 10px nach rechts — innerhalb der 50px-Zelle, unter der 50%-Schwelle (25px).
+    act(() => result.current.handlePointerDown(2, 2));
+    // 10px nach rechts — weiterhin innerhalb derselben 50px-Zelle.
     act(() => result.current.handlePointerMove(p.x + 10, p.y));
     expect(result.current.selectedCells).toEqual([{ row: 2, col: 2 }]);
   });
 
-  test('1px über Zellgrenze: Auswahl bleibt 1×1 (kein Rechteck bei Mini-Wackler)', () => {
-    // Regression: User wackelt mit der Maus 1-2 Pixel über die Zellgrenze
-    // hinaus, ohne die Nachbarzelle wirklich "betreten" zu wollen. Ohne
-    // Schwelle würde das volle 1×2-Rechteck entstehen — verwirrend, weil
-    // der Cursor visuell noch knapp in der Startzelle liegt.
+  test('1px über Zellgrenze: Nachbarzelle gehört exakt zum Rechteck', () => {
+    // User-Spec: keine künstliche Schwelle. Entscheidend ist nur die echte
+    // Zellgrenze. 1px innerhalb der Nachbarzelle bedeutet 1×2-Auswahl.
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(2, 2);
-    act(() => result.current.handlePointerDown(2, 2, p.x, p.y));
-    // 26px nach rechts — 1px über der Zellgrenze, aber weit unter 50%
-    // (25px = Mitte der Nachbarzelle).
+    act(() => result.current.handlePointerDown(2, 2));
+    // Down war in der Zellmitte; +26px liegt 1px in der Nachbarzelle.
     act(() => result.current.handlePointerMove(p.x + 26, p.y));
-    expect(result.current.selectedCells).toEqual([{ row: 2, col: 2 }]);
+    expect(result.current.selectedCells).toEqual([
+      { row: 2, col: 2 },
+      { row: 2, col: 3 },
+    ]);
   });
 
-  test('Mitte der Nachbarzelle erreicht: Rechteck wächst auf 1×2', () => {
-    // Cursor erreicht die Mitte der Nachbarzelle → sie wird ins Rechteck
-    // aufgenommen. Mitte der Spalte col+1 = (col+1.5) * cellSize.
-    const { result } = renderHook(() => useCellSelection([], CELL));
-    const p = px(2, 2);
-    act(() => result.current.handlePointerDown(2, 2, p.x, p.y));
-    // 25px über die Zellgrenze hinaus → in der Mitte der Nachbarzelle.
-    act(() => result.current.handlePointerMove(p.x + 25 + 25, p.y));
-    expect(result.current.selectedCells).toHaveLength(2);
-    expect(result.current.selectedCells).toEqual(
-      expect.arrayContaining([{ row: 2, col: 2 }, { row: 2, col: 3 }])
-    );
-  });
 
   test('Drag-Select 2×4: acht Cells', () => {
-    // Vom Zentrum der (0,0) zwei Zellen nach unten und drei nach rechts.
-    // Mitte der Zeile 1 = (1+0.5)*50 = 75 → maxRow=1.
-    // Mitte der Spalte 3 = (3+0.5)*50 = 175 → x>=75 (rightEdge), delta=100,
-    //   extra=floor(100/50)+1=3 → maxCol=0+3=3. → 4 Spalten.
-    // Ergebnis: 2 Zeilen × 4 Spalten = 8 Zellen.
+    // Pointer liegt in Zeile 1 / Spalte 3 → Rechteck (0,0) bis (1,3).
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(0, 0);
-    act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+    act(() => result.current.handlePointerDown(0, 0));
     act(() => result.current.handlePointerMove(175, 75));
     expect(result.current.selectedCells).toHaveLength(8); // 2×4
   });
@@ -107,7 +88,7 @@ describe('useCellSelection', () => {
   test('handlePointerEnd beendet Drag', () => {
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(0, 0);
-    act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+    act(() => result.current.handlePointerDown(0, 0));
     act(() => result.current.handlePointerEnd());
     expect(result.current.isDragging).toBe(false);
     expect(result.current.dragStart).toBeNull();
@@ -116,7 +97,7 @@ describe('useCellSelection', () => {
   test('clearSelection leert alles', () => {
     const { result } = renderHook(() => useCellSelection([], CELL));
     const p = px(1, 1);
-    act(() => result.current.handlePointerDown(1, 1, p.x, p.y));
+    act(() => result.current.handlePointerDown(1, 1));
     act(() => result.current.clearSelection());
     expect(result.current.selectedCell).toBeNull();
     expect(result.current.selectedCells).toEqual([]);
@@ -144,9 +125,9 @@ describe('useCellSelection', () => {
     const p = px(0, 0);
     jest.useFakeTimers();
     try {
-      act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+      act(() => result.current.handlePointerDown(0, 0));
       act(() => { jest.advanceTimersByTime(150); });
-      act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+      act(() => result.current.handlePointerDown(0, 0));
       expect(result.current.selectedCells).toHaveLength(3);
     } finally {
       jest.useRealTimers();
@@ -159,9 +140,9 @@ describe('useCellSelection', () => {
     const p = px(0, 0);
     jest.useFakeTimers();
     try {
-      act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+      act(() => result.current.handlePointerDown(0, 0));
       act(() => { jest.advanceTimersByTime(500); });
-      act(() => result.current.handlePointerDown(0, 0, p.x, p.y));
+      act(() => result.current.handlePointerDown(0, 0));
       expect(result.current.selectedCells).toEqual([{ row: 0, col: 0 }]);
     } finally {
       jest.useRealTimers();
@@ -175,9 +156,9 @@ describe('useCellSelection', () => {
     const p1 = px(0, 1);
     jest.useFakeTimers();
     try {
-      act(() => result.current.handlePointerDown(0, 0, p0.x, p0.y));
+      act(() => result.current.handlePointerDown(0, 0));
       act(() => jest.advanceTimersByTime(150));
-      act(() => result.current.handlePointerDown(0, 1, p1.x, p1.y));
+      act(() => result.current.handlePointerDown(0, 1));
       expect(result.current.selectedCells).toEqual([{ row: 0, col: 1 }]);
     } finally {
       jest.useRealTimers();

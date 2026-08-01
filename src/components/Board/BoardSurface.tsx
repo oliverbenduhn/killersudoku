@@ -9,7 +9,7 @@
 // (NumberPad + Action-Buttons), Modals (Game-Over-Banner, Solved-Banner),
 // Solve-Detection. Das alles hängt am Game-Lifecycle; das Surface nicht.
 
-import React, { RefObject } from 'react';
+import React from 'react';
 import { Box, Grid, Text, keyframes } from '@chakra-ui/react';
 
 import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
@@ -83,10 +83,8 @@ export interface BoardSurfaceProps {
   possibleValues: number[];
   /** Käfig-Status. */
   isCageComplete: (cage: Cage) => boolean;
-  /** Board-Root-Ref — für Touch-Bounds-Berechnung im Bg-Layer. */
-  boardRef: RefObject<HTMLDivElement>;
   /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch. */
-  onCellPointerDown: (row: number, col: number, x: number, y: number) => void;
+  onCellPointerDown: (row: number, col: number) => void;
   /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl.
    *  (x, y) sind die Pixel der Pointer-Position relativ zum Board. */
   onCellPointerMove: (x: number, y: number) => void;
@@ -139,7 +137,6 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   showHints,
   possibleValues,
   isCageComplete,
-  boardRef,
   onCellPointerDown,
   onCellPointerMove,
   onCellPointerEnd,
@@ -176,6 +173,19 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       : undefined;
 
     const noteCandidates = notes?.[row]?.[col] ?? [];
+    const pointerGridPosition = (e: React.PointerEvent<HTMLDivElement>) => {
+      if (typeof e.clientX === 'number' && typeof e.clientY === 'number') {
+        const cellRect = e.currentTarget.getBoundingClientRect();
+        return {
+          x: col * cellSize + e.clientX - cellRect.left,
+          y: row * cellSize + e.clientY - cellRect.top,
+        };
+      }
+      return {
+        x: col * cellSize + cellSize / 2,
+        y: row * cellSize + cellSize / 2,
+      };
+    };
     return (
       <Box
         key={`bg-${row}-${col}`}
@@ -204,51 +214,15 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
           if (typeof el.setPointerCapture === 'function') {
             el.setPointerCapture(e.pointerId);
           }
-          // Pixel-Position der Pointer-Down-Stelle relativ zum Board-
-          // Ursprung. Die Selection-Hook braucht das, um beim Move die
-          // 50%-Schwelle pro Achse sauber zu prüfen (sonst würde 1px
-          // über die Zellgrenze das volle Rechteck auslösen).
-          let downX = 0;
-          let downY = 0;
-          if (
-            boardRef.current &&
-            typeof e.clientX === 'number' &&
-            typeof e.clientY === 'number'
-          ) {
-            const rect = boardRef.current.getBoundingClientRect();
-            downX = e.clientX - rect.left;
-            downY = e.clientY - rect.top;
-          } else {
-            // Fallback: Mitte der gerenderten Zelle. Sollte nur in
-            // Tests ohne clientX/Y greifen.
-            downX = col * cellSize + cellSize / 2;
-            downY = row * cellSize + cellSize / 2;
-          }
-          onCellPointerDown(row, col, downX, downY);
+          onCellPointerDown(row, col);
         }}
         onPointerMove={(e) => {
           // Mit Pointer-Capture landet pointermove auf der Start-Cell,
-          // auch wenn der Finger woanders ist. Pixel-Position aus
-          // Client-Koordinaten + Board-Bounds berechnen. Wenn clientX/Y
-          // fehlen (jsdom), statische Cell-Mitte als Fallback.
-          let moveX: number;
-          let moveY: number;
-          if (
-            boardRef.current &&
-            typeof e.clientX === 'number' &&
-            typeof e.clientY === 'number'
-          ) {
-            const rect = boardRef.current.getBoundingClientRect();
-            moveX = e.clientX - rect.left;
-            moveY = e.clientY - rect.top;
-            if (moveX < 0 || moveY < 0) return;
-          } else {
-            // Fallback: Mitte der gerenderten Zelle. Sollte nur in
-            // Tests ohne clientX/Y greifen → in dem Fall bleibt die
-            // Auswahl auf der Start-Zelle.
-            moveX = col * cellSize + cellSize / 2;
-            moveY = row * cellSize + cellSize / 2;
-          }
+          // auch wenn der Finger woanders ist. Die bekannte Startzelle
+          // plus deren DOM-Position ergeben weiterhin Gitterkoordinaten.
+          const { x: moveX, y: moveY } = pointerGridPosition(e);
+          const boardPx = size * cellSize;
+          if (moveX < 0 || moveY < 0 || moveX >= boardPx || moveY >= boardPx) return;
           onCellPointerMove(moveX, moveY);
         }}
         onPointerUp={onCellPointerEnd}

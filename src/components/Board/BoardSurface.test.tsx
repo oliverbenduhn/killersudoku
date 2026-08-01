@@ -1,7 +1,7 @@
 // Reagiert auf eine Auswahl, die einen Käfig enthält. Hier testen wir nicht
 // das Verhalten — das macht useCellSelection — sondern das Surface rendert
 // für die Zellen, die zu einem Käfig gehören, andere Klassen als für freie.
-import React, { RefObject } from 'react';
+import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import BoardSurface, { BoardSurfaceProps } from './BoardSurface';
@@ -36,7 +36,6 @@ const cages: Cage[] = [
 ];
 
 function defaultProps(overrides: Partial<BoardSurfaceProps> = {}): BoardSurfaceProps {
-  const boardRef = { current: null } as RefObject<HTMLDivElement>;
   return {
     selectedCell: null,
     selectedCells: [],
@@ -62,7 +61,6 @@ function defaultProps(overrides: Partial<BoardSurfaceProps> = {}): BoardSurfaceP
     showHints: false,
     possibleValues: [],
     isCageComplete: () => false,
-    boardRef,
     onCellPointerDown: jest.fn(),
     onCellPointerMove: jest.fn(),
     onCellPointerEnd: jest.fn(),
@@ -82,18 +80,28 @@ describe('BoardSurface', () => {
     }
   });
 
-  test('Pointer-Callbacks werden mit Zelle (row, col) und Pixel-Position aufgerufen', () => {
-    // Die Hook braucht die Pixel-Position der Pointer-Down-Stelle, um beim
-    // Move die 50%-Schwelle pro Achse zu prüfen. Ohne korrekte Pixel
-    // würde jeder Mini-Wackler das volle Rechteck auslösen.
+  test('Mauskoordinaten sind relativ zum Gitter, nicht zum gepaddeten Board-Container', () => {
+    // Regression: Board.tsx hängt boardRef an den gepaddeten, zentrierenden
+    // Container. Dessen linke/obere Kante ist NICHT der Ursprung des Gitters.
+    // Bei der Maus wurden dadurch schon beim Pointer-Down mehrere Zellen
+    // Abstand addiert; wenige Pixel Move spannten sofort ein großes Rechteck.
     const onDown = jest.fn();
-    render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown, cellSize: 48 })} />);
+    const onMove = jest.fn();
+    render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown, onCellPointerMove: onMove, cellSize: 48 })} />);
     const cell = screen.getByTestId('cell-4-3');
-    fireEvent.pointerDown(cell, { clientX: 200, clientY: 220 });
-    // row=4, col=3, cellSize=48 → erwartete Pixel = (col*48+24, row*48+24) = (168, 216).
-    // jsdom liefert clientX/Y; ohne boardRef-Bounds fällt der Surface auf
-    // die static-cell-Mitte zurück, was hier identisch ist.
-    expect(onDown).toHaveBeenCalledWith(4, 3, 168, 216);
+    cell.getBoundingClientRect = () => ({ left: 500, top: 300 } as DOMRect);
+    fireEvent(cell, new MouseEvent('pointerdown', {
+      bubbles: true,
+      clientX: 510,
+      clientY: 310,
+    }));
+    expect(onDown).toHaveBeenCalledWith(4, 3);
+    fireEvent(cell, new MouseEvent('pointermove', {
+      bubbles: true,
+      clientX: 512,
+      clientY: 312,
+    }));
+    expect(onMove).toHaveBeenCalledWith(156, 204);
   });
 
   test('Käfigsumme wird in der Top-Left-Zelle des Käfigs gerendert', () => {
