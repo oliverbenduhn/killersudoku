@@ -112,6 +112,30 @@ export const useBoardKeyboard = ({
     }
   }, [selectedCell, selectedCells]);
 
+  useEffect(() => {
+    // Initial-Auswahl der ersten Zelle, sobald das Brett interaktionsbereit
+    // ist (Level geladen) und noch nichts selektiert wurde. Damit greifen
+    // Pfeile/WASD/Tab/Ziffern sofort — der User muss nicht erst eine Zelle
+    // antippen, um den Brett-Fokus zu aktivieren. Der bestehende
+    // selectedCell-Effekt oben setzt dann den DOM-Fokus automatisch.
+    if (!selectedCell && selectedCells.length === 0) {
+      const boardEl = document.querySelector<HTMLElement>('[data-board-root="true"]');
+      // Nur initialisieren, wenn das Brett wirklich da ist (nicht während
+      // Loading/No-Level). data-board-root-Query ist implizit der
+      // Existenz-Check.
+      if (boardEl) {
+        const first = { row: 0, col: 0 };
+        setSelectedCell(first);
+        setSelectedCells([first]);
+      }
+    }
+    // Bewusst KEINE Deps auf selectedCell/selectedCells — der Effekt soll
+    // nur einmalig beim Mount/Level-Wechsel laufen und nicht bei jedem
+    // Selection-Wechsel erneut feuern. Die "no-op-if-already-set"-Logik
+    // oben verhindert Endlosschleifen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return { handleKeyDown };
 };
 
