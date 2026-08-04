@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { CellPosition } from '../types/gameTypes';
 
 export interface UseBoardKeyboardOptions {
@@ -36,6 +36,11 @@ export const useBoardKeyboard = ({
   onClear,
   size
 }: UseBoardKeyboardOptions): { handleKeyDown: (e: React.KeyboardEvent) => void } => {
+  // Shift-Selection-Anker: bleibt über mehrere Shift+Pfeil-Calls hinweg
+  // gleich, bis eine Bewegung OHNE Shift folgt (dann wird der Anker
+  // gelöscht und ein neuer Zyclus beginnt). Modell: Anker = dort, wo der
+  // User Shift gedrückt hat; Cursor = aktuelle selectedCell.
+  const shiftAnchorRef = useRef<CellPosition | null>(null);
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (!selectedCell) {
@@ -85,8 +90,35 @@ export const useBoardKeyboard = ({
       }
 
       if (next.row !== row || next.col !== col) {
-        setSelectedCell(next);
-        if (!e.shiftKey) {
+        if (e.shiftKey) {
+          // Shift+Pfeil: Rechteck vom Anker bis zum neuen Endpunkt (next).
+          // Anker = dort, wo Shift gedrückt wurde (bleibt über mehrere
+          // Shift+Pfeil-Calls hinweg). Cursor = selectedCell (bewegt sich).
+          // Semantik identisch zu Maus-Drag (Anker fest, Cursor beweglich)
+          // und zu Excel/Sheets-Sheet-Selection.
+          if (!shiftAnchorRef.current) {
+            shiftAnchorRef.current = selectedCell;
+          }
+          const anchor = shiftAnchorRef.current;
+          const minRow = Math.min(anchor.row, next.row);
+          const maxRow = Math.max(anchor.row, next.row);
+          const minCol = Math.min(anchor.col, next.col);
+          const maxCol = Math.max(anchor.col, next.col);
+          const rect: CellPosition[] = [];
+          for (let r = minRow; r <= maxRow; r++) {
+            for (let c = minCol; c <= maxCol; c++) {
+              rect.push({ row: r, col: c });
+            }
+          }
+          setSelectedCells(rect);
+          setDragStart(anchor);
+          // Cursor (= selectedCell) bewegt sich auf next.
+          setSelectedCell(next);
+        } else {
+          // Normale Pfeilbewegung: Shift-Anker verwerfen, Cursor + Selection
+          // auf next.
+          shiftAnchorRef.current = null;
+          setSelectedCell(next);
           setSelectedCells([next]);
           setDragStart(null);
         }

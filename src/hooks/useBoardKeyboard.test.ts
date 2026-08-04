@@ -115,7 +115,10 @@ describe('useBoardKeyboard', () => {
     expect(setSelectedCell).toHaveBeenCalledWith({ row: 5, col: 0 });
   });
 
-  test('Shift+Tab wrappt rückwärts (col 0 → row-1, col 8)', () => {
+  test('Shift+Tab wrappt rückwärts (col 0 → row-1, col 8), expandiert Selection', () => {
+    // Anker {row:4, col:0}, Shift+Tab → Endpunkt {row:3, col:8}.
+    // Rechteck: [3,0]..[3,8] plus [4,0]..[4,8] = 2×9 = 18 Cells.
+    // selectedCell (Cursor) bewegt sich auf den Endpunkt.
     const setSelectedCell = jest.fn();
     const setSelectedCells = jest.fn();
     const setDragStart = jest.fn();
@@ -133,6 +136,8 @@ describe('useBoardKeyboard', () => {
     );
     act(() => { result.current.handleKeyDown(keyEvent('Tab', true)); });
     expect(setSelectedCell).toHaveBeenCalledWith({ row: 3, col: 8 });
+    expect(setSelectedCells.mock.calls[0][0]).toHaveLength(18);
+    expect(setDragStart).toHaveBeenCalledWith({ row: 4, col: 0 });
   });
 
   test('Zahl 1-9 ruft onNumber auf, kein setSelectedCell', () => {
@@ -168,14 +173,45 @@ describe('useBoardKeyboard', () => {
     expect(evt.preventDefault).toHaveBeenCalled();
   });
 
-  test('Shift+Pfeil: Selection wird nicht überschrieben, dragStart bleibt', () => {
+  test('Shift+Pfeil: Anker bleibt, Cursor bewegt sich, Rechteck wächst', () => {
+    // Aus selectedCell {row:4, col:4} + Shift+ArrowRight:
+    //   - Anker wird auf {4,4} gesetzt (closure: shiftAnchorRef initial null).
+    //   - selectedCells = [{4,4}, {4,5}] (Rechteck Anker→Endpunkt)
+    //   - dragStart = {4,4}
+    //   - Cursor selectedCell bewegt sich auf {4,5}.
     const { current, setSelectedCell, setSelectedCells, setDragStart } = makeParams();
     act(() => { current.handleKeyDown(keyEvent('ArrowRight', true)); });
     expect(setSelectedCell).toHaveBeenCalledWith({ row: 4, col: 5 });
-    // Shift+Pfeil: setSelectedCells NICHT aufgerufen, dragStart NICHT
-    // auf null gesetzt (Multi-Select-Modus würde das selbst pflegen).
-    expect(setSelectedCells).not.toHaveBeenCalled();
-    expect(setDragStart).not.toHaveBeenCalled();
+    expect(setSelectedCells).toHaveBeenCalledWith([
+      { row: 4, col: 4 }, { row: 4, col: 5 },
+    ]);
+    expect(setDragStart).toHaveBeenCalledWith({ row: 4, col: 4 });
+  });
+
+  test('Shift+Pfeil setzt Anker + expandiertes Rechteck (Excel-Style)', () => {
+    // Aus selectedCell {row:4, col:4} + Shift+ArrowRight:
+    //   - Anker wird beim ersten Shift+Pfeil auf {4,4} gesetzt.
+    //   - Cursor (selectedCell) bewegt sich auf {4,5}.
+    //   - Rechteck enthält Anker + Endpunkt.
+    // Die Persistenz des Ankers über mehrere Calls hinweg ist in
+    // `shiftAnchorRef` als useRef verankert — getestet durch die
+    // Render-Test-Stories in Board.test.tsx.
+    const { current, setSelectedCell, setSelectedCells, setDragStart } = makeParams();
+    act(() => { current.handleKeyDown(keyEvent('ArrowRight', true)); });
+    expect(setSelectedCell).toHaveBeenCalledWith({ row: 4, col: 5 });
+    expect(setSelectedCells).toHaveBeenCalledWith([
+      { row: 4, col: 4 }, { row: 4, col: 5 },
+    ]);
+    expect(setDragStart).toHaveBeenCalledWith({ row: 4, col: 4 });
+  });
+
+  test('Shift+Pfeil rückwärts (Up/Left): Rechteck expandiert vom Anker aus', () => {
+    // Anker {4,4}, Shift+ArrowUp → Cursor {3,4}, rect [3,4]..[4,4].
+    const { current, setSelectedCells } = makeParams();
+    act(() => { current.handleKeyDown(keyEvent('ArrowUp', true)); });
+    expect(setSelectedCells).toHaveBeenCalledWith([
+      { row: 3, col: 4 }, { row: 4, col: 4 },
+    ]);
   });
 
   test('ohne selectedCell: erste Zelle wird gesetzt', () => {
