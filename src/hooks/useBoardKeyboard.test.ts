@@ -10,6 +10,7 @@ const makeParams = () => {
   const { result } = renderHook(() =>
     useBoardKeyboard({
       selectedCell: { row: 4, col: 4 },
+      selectedCells: [{ row: 4, col: 4 }],
       setSelectedCell,
       setSelectedCells,
       setDragStart,
@@ -73,6 +74,7 @@ describe('useBoardKeyboard', () => {
     const { result } = renderHook(() =>
       useBoardKeyboard({
         selectedCell: { row: 0, col: 0 },
+        selectedCells: [{ row: 0, col: 0 }],
         setSelectedCell,
         setSelectedCells,
         setDragStart,
@@ -100,6 +102,7 @@ describe('useBoardKeyboard', () => {
     const { result } = renderHook(() =>
       useBoardKeyboard({
         selectedCell: { row: 4, col: 8 },
+        selectedCells: [{ row: 4, col: 8 }],
         setSelectedCell,
         setSelectedCells,
         setDragStart,
@@ -119,6 +122,7 @@ describe('useBoardKeyboard', () => {
     const { result } = renderHook(() =>
       useBoardKeyboard({
         selectedCell: { row: 4, col: 0 },
+        selectedCells: [{ row: 4, col: 0 }],
         setSelectedCell,
         setSelectedCells,
         setDragStart,
@@ -181,6 +185,7 @@ describe('useBoardKeyboard', () => {
     const { result } = renderHook(() =>
       useBoardKeyboard({
         selectedCell: null,
+        selectedCells: [],
         setSelectedCell,
         setSelectedCells,
         setDragStart,
@@ -214,6 +219,7 @@ describe('useBoardKeyboard', () => {
     renderHook(() =>
       useBoardKeyboard({
         selectedCell: null,
+        selectedCells: [],
         setSelectedCell: jest.fn(),
         setSelectedCells: jest.fn(),
         setDragStart: jest.fn(),
@@ -223,6 +229,28 @@ describe('useBoardKeyboard', () => {
       })
     );
     expect(focusSpy).not.toHaveBeenCalled();
+    document.body.removeChild(div);
+  });
+
+  test('setzt board-Fokus auch ohne selectedCell, wenn selectedCells gefüllt (Drag)', () => {
+    const div = document.createElement('div');
+    div.setAttribute('data-board-root', 'true');
+    div.tabIndex = 0;
+    document.body.appendChild(div);
+    const focusSpy = jest.spyOn(div, 'focus');
+    renderHook(() =>
+      useBoardKeyboard({
+        selectedCell: null,
+        selectedCells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
+        setSelectedCell: jest.fn(),
+        setSelectedCells: jest.fn(),
+        setDragStart: jest.fn(),
+        onNumber: jest.fn(),
+        onClear: jest.fn(),
+        size: 9,
+      })
+    );
+    expect(focusSpy).toHaveBeenCalled();
     document.body.removeChild(div);
   });
 });

@@ -26,6 +26,9 @@ interface HomeTabProps {
   transitionDirection: 'left' | 'right' | null;
   /** Überschreibt die Storage-Id (z. B. für generierte Zufallslevel). */
   puzzleId?: string;
+  /** Öffnet den Tastenkombinationen-Hilfe-Dialog. Reicht vom App-State
+   *  durch bis in Board, wo der ?-Shortcut ebenfalls triggert. */
+  onOpenHelp: () => void;
 }
 
 export function HomeTab({
@@ -36,6 +39,7 @@ export function HomeTab({
   blackAndWhiteMode,
   transitionDirection,
   puzzleId,
+  onOpenHelp,
 }: HomeTabProps) {
   return (
     <FadeInView
@@ -56,6 +60,7 @@ export function HomeTab({
           isLoading={isLoading}
           error={error}
           blackAndWhiteMode={blackAndWhiteMode}
+          onOpenHelp={onOpenHelp}
         />
       </Box>
     </FadeInView>
@@ -85,9 +90,35 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
   const progress = Math.round((solvedCount / TOTAL_LEVELS) * 100);
 
   return (
-    <FadeInView direction={transitionDirection === 'left' ? 'left' : 'right'} duration={300} key="levels-tab">
-      {/* Zurück-Header */}
-      <Flex align="center" gap={2} mb={4}>
+    <FadeInView
+      direction={transitionDirection === 'left' ? 'left' : 'right'}
+      duration={300}
+      key="levels-tab"
+      // Body hat overflow:hidden (index.css) — die Levels-Liste muss daher
+      // selbst scrollen. 100 Level × Grid sind auf Phone länger als der
+      // Viewport. Header sticky, damit "Zurück" immer erreichbar bleibt.
+      // ponytail: ein scrollbarer Container pro Tab, kein globaler Body-Scroll
+      // (Body-Scroll würde die Drag-Mehrfachauswahl auf dem Brett zerstören).
+      h="calc(100dvh - 56px)"
+      overflowY="auto"
+      overscrollBehaviorY="contain"
+      pb="env(safe-area-inset-bottom, 0px)"
+      px={1}
+    >
+      {/* Zurück-Header (sticky, damit "Zurück" immer erreichbar bleibt) */}
+      <Flex
+        align="center"
+        gap={2}
+        mb={4}
+        position="sticky"
+        top={0}
+        bg="surface.canvas"
+        zIndex={1}
+        pt={2}
+        pb={2}
+        mx={-1}
+        px={1}
+      >
         <IconButton
           aria-label="Zurück"
           icon={<ArrowBackIcon />}

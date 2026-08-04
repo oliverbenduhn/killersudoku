@@ -134,30 +134,30 @@ describe('Board Component', () => {
   });
 
   test('rendert ohne Crash', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     expect(screen.getByTestId('cell-0-0')).toBeInTheDocument();
   });
 
   test('mousedown auf Zelle startet Drag-Select', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const cell = screen.getByTestId('cell-0-0');
     fireEvent.pointerDown(cell);
     expect(cell).toHaveAttribute('aria-selected', 'true');
   });
 
   test('zeigt Fehler-Alert bei externalError', () => {
-    render(<Board levelData={mockLevelData} error="Level kaputt" />);
+    render(<Board levelData={mockLevelData} error="Level kaputt"  onOpenHelp={jest.fn()} />);
     expect(screen.getByText('Fehler beim Laden des Levels')).toBeInTheDocument();
   });
 
   test('zeigt Spinner während Loading', () => {
     // Loading-Spinner anzeigen: isLoading=true, kein levelData
-    const { container } = render(<Board levelData={null} isLoading={true} />);
+    const { container } = render(<Board levelData={null} isLoading={true}  onOpenHelp={jest.fn()} />);
     expect(container.querySelector('.chakra-spinner')).toBeTruthy();
   });
 
   test('Zellen haben ARIA-Labels', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const cell = screen.getByTestId('cell-0-0');
     expect(cell).toHaveAttribute('aria-label');
     expect(cell.getAttribute('aria-label')).toContain('Zeile 1 Spalte 1');
@@ -167,7 +167,7 @@ describe('Board Component', () => {
     mockGameState.mistakesUsed = 3;
     mockGameState.gameOver = true;
 
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
 
     expect(screen.getByRole('heading', { name: 'Game Over' })).toBeInTheDocument();
     const restartButton = screen.getByRole('button', { name: 'Neu starten' });
@@ -181,7 +181,7 @@ describe('Board Component', () => {
   test('zeigt Notiz-Kandidaten an festen Positionen im 3×3-Raster', () => {
     mockGameState.notes[0][0] = [1, 5, 9];
     try {
-      render(<Board levelData={mockLevelData} />);
+      render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
       const grid = screen.getByTestId('notes-0-0');
       const slots = Array.from(grid.children);
       expect(slots).toHaveLength(9);
@@ -200,7 +200,7 @@ describe('Board Component', () => {
     mockGameState.cellValues[2][2] = 4;
 
     try {
-      render(<Board levelData={mockLevelData} />);
+      render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
       fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
 
       const matchingDigits = [
@@ -224,7 +224,7 @@ describe('Board Component', () => {
 
   test('rendert sidebarFooter NICHT im Column-Modus (Mobil, Standard im Test-Viewport)', () => {
     render(
-      <Board levelData={mockLevelData} sidebarFooter={<button>Mein Footer</button>} />
+      <Board levelData={mockLevelData} onOpenHelp={jest.fn()} sidebarFooter={<button>Mein Footer</button>} />
     );
     expect(screen.queryByText('Mein Footer')).not.toBeInTheDocument();
   });
@@ -233,7 +233,7 @@ describe('Board Component', () => {
     setBreakpointMock((values: any) => values.lg ?? values.md ?? values.base);
     try {
       render(
-        <Board levelData={mockLevelData} sidebarFooter={<button>Mein Footer</button>} />
+        <Board levelData={mockLevelData} onOpenHelp={jest.fn()} sidebarFooter={<button>Mein Footer</button>} />
       );
       expect(screen.getByText('Mein Footer')).toBeInTheDocument();
     } finally {
@@ -271,13 +271,13 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('Button hat eindeutigen zugänglichen Namen und startet im Modus "aus"', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     expect(btn).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('Klick auf den Button togglet sichtbaren Aktivzustand und aria-pressed', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     fireEvent.click(btn);
     expect(btn).toHaveAttribute('aria-pressed', 'true');
@@ -286,7 +286,7 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('P-Taste togglet den Modus ohne selektierte Zelle und nach Button-Klick', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     // Erst einen anderen Button klicken (Fokus verschieben).
     const numberBtn = screen.getByRole('button', { name: 'Zahl 1' });
     fireEvent.click(numberBtn);
@@ -298,7 +298,7 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('Gedrückt gehaltenes P (event.repeat) togglet nur einmal', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     fireEvent.keyDown(window, { key: 'p' });
     expect(btn).toHaveAttribute('aria-pressed', 'true');
@@ -308,7 +308,7 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('Shift+P (Großbuchstabe) togglet ebenfalls', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     fireEvent.keyDown(window, { key: 'P' });
     expect(btn).toHaveAttribute('aria-pressed', 'true');
@@ -317,7 +317,7 @@ describe('Bleistiftmodus (#4)', () => {
   test('P in einem fokussierten Texteingabefeld togglet NICHT', () => {
     render(
       <div>
-        <Board levelData={mockLevelData} />
+        <Board levelData={mockLevelData} onOpenHelp={jest.fn()} />
         <input data-testid="text-input" />
       </div>
     );
@@ -329,7 +329,7 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('P mit gedrückter Ctrl/Meta/Alt-Taste togglet NICHT', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     fireEvent.keyDown(window, { key: 'p', ctrlKey: true });
     fireEvent.keyDown(window, { key: 'p', metaKey: true });
@@ -338,23 +338,23 @@ describe('Bleistiftmodus (#4)', () => {
   });
 
   test('Modus ist beim ersten Mount "aus"', () => {
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('Modus wird bei puzzleId-Wechsel automatisch auf "aus" zurückgesetzt', () => {
     mockGameState.levelId = 'level-a';
-    const { rerender } = render(<Board levelData={mockLevelData} puzzleId="level-a" />);
+    const { rerender } = render(<Board levelData={mockLevelData} puzzleId="level-a"  onOpenHelp={jest.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: /Bleistiftmodus/ }));
     expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'true');
     mockGameState.levelId = 'level-b';
-    rerender(<Board levelData={mockLevelData} puzzleId="level-b" />);
+    rerender(<Board levelData={mockLevelData} puzzleId="level-b"  onOpenHelp={jest.fn()} />);
     expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
   test('P ohne Level/Board-Kontext togglet ebenfalls (Button-Klick-Symmetrie)', () => {
     // Reines Mode-Toggle-Verhalten ohne Renders von Brett.
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     fireEvent.click(btn);
     expect(btn).toHaveAttribute('aria-pressed', 'true');
@@ -398,7 +398,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
 
   test('Notiz-Kandidaten erscheinen ohne Hint-Overlay', () => {
     mockGameState.notes[0][0] = [1, 5, 9];
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     expect(screen.getByTestId('notes-0-0')).toBeInTheDocument();
   });
 
@@ -406,7 +406,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     mockGameState.notes[0][0] = [1, 5, 9];
     // Mock-Hook mit aktivem Overlay und möglichen Werten initialisieren.
     setHintsForTest(true, [2, 4]);
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
     // Optisch ausgeblendet, Daten unverändert.
     expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
@@ -417,7 +417,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
     mockGameState.notes[0][0] = [1];
     mockGameState.notes[0][1] = [2];
     setHintsForTest(true, [3, 4]);
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
 
     const first = screen.getByTestId('cell-0-0');
     fireEvent.pointerDown(first);
@@ -438,7 +438,7 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
   test('Nach Deaktivieren des Hint-Modus erscheinen die Notizen unverändert wieder', () => {
     mockGameState.notes[0][0] = [1, 5, 9];
     setHintsForTest(true, [2, 4]);
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     fireEvent.pointerDown(screen.getByTestId('cell-0-0'));
     expect(screen.queryByTestId('notes-0-0')).not.toBeInTheDocument();
     // F5 schaltet das Overlay im echten Board-Pfad aus — Mock-Toggle aktualisiert
@@ -453,14 +453,14 @@ describe('Hint-Overlay & Notiz-Koexistenz (#7)', () => {
 
   test('aria-label der Flächen-Schicht-Zelle listet gesetzte Notiz-Kandidaten mit auf', () => {
     mockGameState.notes[0][0] = [2, 7];
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const cell = screen.getByTestId('cell-0-0');
     expect(cell.getAttribute('aria-label')).toContain('Notizen 2, 7');
   });
 
   test('aria-label enthält keinen Notiz-Suffix, wenn die Zelle leer ist', () => {
     mockGameState.notes[0][0] = [];
-    render(<Board levelData={mockLevelData} />);
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const cell = screen.getByTestId('cell-0-0');
     expect(cell.getAttribute('aria-label')).not.toContain('Notizen');
   });

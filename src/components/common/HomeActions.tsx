@@ -12,13 +12,16 @@ export interface HomeActionsProps {
    *  der Button-State mit document.fullscreenElement synchron bleibt. */
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
+  /** Optional: öffnet den Tastenkombinationen-Hilfe-Dialog. Wird nicht
+   *  übergeben, wenn der Parent den Dialog-State nicht verwaltet. */
+  onOpenHelp?: () => void;
 }
 
 // Layoutlose Aktions-Gruppe für den Start-Screen: Level-Button, Dark-Mode-
 // und Schwarzweiß-Toggle. Wird sowohl in der mobilen Kopfzeile (App.tsx)
 // als auch in Board.tsx's Sidebar (Desktop) gerendert — der jeweilige
 // Aufrufer bestimmt die Anordnung (horizontal/vertikal).
-export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndWhite, currentLevel, isFullscreen, onToggleFullscreen }: HomeActionsProps) {
+export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndWhite, currentLevel, isFullscreen, onToggleFullscreen, onOpenHelp }: HomeActionsProps) {
   const { colorMode, toggleColorMode } = useColorMode();
 
   return (
@@ -66,6 +69,22 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
         icon={blackAndWhiteMode ? <ViewIcon /> : <ViewOffIcon />}
         onClick={onToggleBlackAndWhite}
       />
+      {onOpenHelp && (
+        <IconButton
+          size="sm"
+          variant="ghost"
+          aria-label="Tastenkombinationen anzeigen"
+          // Inline-SVG: stilisiertes "?" — konsistent mit dem Fullscreen-Toggle,
+          // der auch ein Inline-SVG statt eines Chakra-Icons verwendet.
+          icon={
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6.2 6.2c0-1 .8-1.9 1.8-1.9s1.8.9 1.8 1.9c0 .8-.5 1.3-1.1 1.7-.7.4-1.2.9-1.2 1.7V10" />
+              <circle cx="7.5" cy="12.2" r="0.7" fill="currentColor" stroke="none" />
+            </svg>
+          }
+          onClick={onOpenHelp}
+        />
+      )}
     </>
   );
 }

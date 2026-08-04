@@ -3,6 +3,9 @@ import { CellPosition } from '../types/gameTypes';
 
 export interface UseBoardKeyboardOptions {
   selectedCell: CellPosition | null;
+  /** Drag-Multi-Selection. Der Fokus-Effekt reagiert auf beide Slots, weil
+   *  selectedCell beim Wachsen der Drag-Auswahl unverändert bleibt (Startzelle). */
+  selectedCells: CellPosition[];
   setSelectedCell: (cell: CellPosition | null) => void;
   setSelectedCells: (cells: CellPosition[]) => void;
   setDragStart: (cell: CellPosition | null) => void;
@@ -25,6 +28,7 @@ const ARROW_KEY_MAP: Record<string, string> = {
  */
 export const useBoardKeyboard = ({
   selectedCell,
+  selectedCells,
   setSelectedCell,
   setSelectedCells,
   setDragStart,
@@ -92,12 +96,21 @@ export const useBoardKeyboard = ({
   );
 
   useEffect(() => {
-    // Fokus auf das Board-Element, sobald eine Zelle ausgewählt ist.
+    // Fokus auf das Board-Element, sobald der User mit dem Brett interagiert:
+    //   • selectedCell gesetzt → Single-Tap oder Käfig-Doppel-Tipp.
+    //   • selectedCells nicht-leer → Drag-Auswahl (selectedCell bleibt die
+    //     Startzelle und ändert sich beim Wachsen des Rechtecks NICHT mehr).
+    // Ohne den Drag-Pfad verliert das Brett den Fokus nie wieder, sobald der
+    // User per Drag selektiert — Tastatur-Eingaben (Ziffern/Pfeile) laufen
+    // dann ins Leere, weil der DOM-Fokus auf body oder einem Action-Button
+    // liegt.
+    // ponytail: idempotentes .focus() auf bereits-fokussiertem Element ist
+    // ein No-Op im Browser — die Häufigkeit (Drag-Move) ist kein Cost.
     const boardEl = document.querySelector<HTMLElement>('[data-board-root="true"]');
-    if (selectedCell && boardEl) {
+    if ((selectedCell || selectedCells.length > 0) && boardEl) {
       boardEl.focus();
     }
-  }, [selectedCell]);
+  }, [selectedCell, selectedCells]);
 
   return { handleKeyDown };
 };

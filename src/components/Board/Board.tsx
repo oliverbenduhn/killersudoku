@@ -25,12 +25,14 @@ import { useCellAnimation } from '../../hooks/useCellAnimation';
 import { useBoardKeyboard } from '../../hooks/useBoardKeyboard';
 import { useHints } from '../../hooks/useHints';
 import { useBoardGameLogic, recordBoardSolved } from '../../hooks/useBoardGameLogic';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { markLevelSolved, markLevelStarted, parseLevelNumber } from '../../services/progressService';
 
 import NumberPad from '../NumberPad/NumberPad';
 import { Cage, GameLevel } from '../../types/gameTypes';
 import RippleButton from '../common/RippleButton';
 import FadeInView from '../common/FadeInView';
+import HelpDialog from '../common/HelpDialog';
 import BoardSurface from './BoardSurface';
 
 interface BoardProps {
@@ -43,6 +45,8 @@ interface BoardProps {
   /** Wird nur im Sidebar-Layout (flexDirection "row") unten in der
    *  Sidebar-Spalte gerendert, unterhalb der Aktions-Buttons. */
   sidebarFooter?: React.ReactNode;
+  /** Öffnet den Tastenkombinationen-Hilfe-Dialog (Modal lebt in App). */
+  onOpenHelp: () => void;
 }
 
 const MAX_HINTS = 3;
@@ -55,7 +59,8 @@ export const Board: React.FC<BoardProps> = ({
   isLoading: externalLoading = false,
   error: externalError = null,
   blackAndWhiteMode = false,
-  sidebarFooter = null
+  sidebarFooter = null,
+  onOpenHelp,
 }) => {
   const toast = useToast();
   const { gameState, isLoading: stateLoading, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size);
@@ -72,6 +77,8 @@ export const Board: React.FC<BoardProps> = ({
   // Mount (Initialwert false) und bei jedem puzzleId-Wechsel — Board wird
   // bei Levelwechsel innerhalb der Sitzung NICHT neu gemountet.
   const [pencilMode, setPencilMode] = useState<boolean>(false);
+  // Help-Dialog lebt in App.tsx; Board bekommt onOpenHelp als Prop und
+  // reicht es an den ?-Shortcut im useKeyboardShortcuts-Hook.
   const solveRecordedRef = useRef<string | null>(null);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const boardFocusRef = useRef<HTMLDivElement | null>(null);
@@ -186,6 +193,7 @@ export const Board: React.FC<BoardProps> = ({
   // Keyboard-Navigation
   const { handleKeyDown } = useBoardKeyboard({
     selectedCell,
+    selectedCells,
     setSelectedCell,
     setSelectedCells,
     setDragStart,
@@ -212,39 +220,70 @@ export const Board: React.FC<BoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleId]);
 
-  // F5 für Hints an/aus
+  // Pencil-Toggle-Klick verschiebt den DOM-Fokus auf den Button (Browser-
+  // Default). Danach laufen Tastatur-Eingaben (Ziffern/Pfeile) ins Leere,
+  // weil der Keyboard-Handler an der Brett-Box hängt. Fokus direkt zurück
+  // aufs Brett holen, damit Ziffern unmittelbar Notizen setzen.
+  // ponytail: nur falls eine Auswahl existiert — sonst kein Brett-Kontext,
+  // und der User hat bewusst geklickt, ohne zu selektieren.
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'F5') {
-        e.preventDefault();
-        toggleHints();
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [toggleHints]);
+    if (pencilMode && selectedCell) {
+      const boardEl = document.querySelector<HTMLElement>('[data-board-root="true"]');
+      boardEl?.focus();
+    }
+  }, [pencilMode, selectedCell]);
 
-  // P für Bleistiftmodus an/aus (Issue #4). Globaler window-Listener —
-  // funktioniert unabhängig vom Zell-/Button-Fokus. Wiederholtes Halten
-  // (event.repeat) togglet nur einmal; Modifier-Tasten und Texteingabe-
-  // Elemente werden ignoriert, damit der Shortcut nicht kollidiert.
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key !== 'p' && e.key !== 'P') return;
-      if (e.repeat) return;
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const active = document.activeElement as HTMLElement | null;
-      if (active) {
-        const tag = active.tagName;
-        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-        if (active.isContentEditable) return;
-      }
-      e.preventDefault();
-      setPencilMode(v => !v);
+  // Strategischer Tipp: extrahiert als Callback, damit Button und
+  // Tastatur-"H" denselben Code-Pfad nutzen. Vorher dupliziert.
+  const requestStrategicHintToast = useCallback(() => {
+    if (!gameState) return;
+    if (cages.length === 0) {
+      toast({ title: 'Hinweis nicht verfügbar', description: 'Level noch nicht geladen.', status: 'warning', duration: 2500, isClosable: true });
+      return;
+    }
+    const hint = strategicHint.requestHint(gameState.cellValues, cages);
+    if (!hint) {
+      toast({
+        title: 'Kein einfacher Hinweis',
+        description: 'Die Engine hat nichts gefunden — versuch eine andere Technik.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true
+      });
+      return;
+    }
+    const techLabels: Record<typeof hint.technique, string> = {
+      'naked-single-cage': 'Käfig-Naked Single',
+      'hidden-single-cage': 'Käfig-Hidden Single',
+      'naked-single-sudoku': 'Sudoku-Naked Single',
+      'hidden-single-sudoku': 'Sudoku-Hidden Single',
+      'innie': '45er-Regel (Innie)',
+      'outie': '45er-Regel (Outie)',
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, []);
+    toast({
+      title: `${techLabels[hint.technique]} → ${hint.value}`,
+      description: hint.explanation,
+      status: 'info',
+      duration: 8000,
+      isClosable: true,
+      position: 'top',
+    });
+    setSelectedCell(hint.cell);
+  }, [gameState, cages, strategicHint, toast, setSelectedCell]);
+
+  // F5 für Hints an/aus, P für Bleistiftmodus, H/R/Esc/?/Mod+Z/Mod+Y für
+  // die neuen Shortcuts. Ein einziger Hook ersetzt die alten zwei
+  // useEffect-Listener — Modifier-/Input-Feld-Prüfung an einer Stelle.
+  useKeyboardShortcuts({
+    onTogglePencil: () => setPencilMode((v) => !v),
+    onToggleHints: toggleHints,
+    onHint: requestStrategicHintToast,
+    onRevealHint: () => { void handleRevealHint(); },
+    onUndo: () => { void undo(); },
+    onRedo: () => { void redo(); },
+    onClearSelection: clearSelection,
+    onOpenHelp,
+  });
 
   // Solve-Detection
   useEffect(() => {
@@ -540,6 +579,50 @@ export const Board: React.FC<BoardProps> = ({
           disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
           remainingDigits={remainingDigits}
         />
+
+        {/* Fehlversuche-Anzeige (3 Leben): sichtbar zwischen NumberPad und
+            Action-Grid, damit der Spieler ohne Game-Over-Tab weiß, wo er steht.
+            Verbrauchte Versuche = rote Füllung, offene = grauer Ring.
+            Versteckt nach Lösen — dann ist die Info irrelevant. */}
+        {gameState && !gameState.solved && (
+          <Box
+            mt={4}
+            width={actionGridWidth}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap={2}
+            role="status"
+            aria-label={`${gameState.mistakesUsed || 0} von ${MAX_MISTAKES} Fehlversuchen verbraucht`}
+          >
+            {Array.from({ length: MAX_MISTAKES }, (_, i) => {
+              const used = i < (gameState.mistakesUsed || 0);
+              return (
+                <Box
+                  key={i}
+                  as="svg"
+                  width="20px"
+                  height="20px"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="7"
+                    fill={used ? 'var(--chakra-colors-status-error)' : 'none'}
+                    stroke={used ? 'var(--chakra-colors-status-error)' : 'var(--chakra-colors-text-muted)'}
+                    strokeWidth="1.6"
+                  />
+                </Box>
+              );
+            })}
+            <Text fontSize="xs" color="text.muted" fontFamily="mono" ml={1}>
+              {gameState.mistakesUsed || 0} / {MAX_MISTAKES}
+            </Text>
+          </Box>
+        )}
+
         <Grid
           // 3×2-Gitter analog NumberPad: Buttons so breit wie eine
           // Pad-Zelle (halbe Pad-Breite) — schafft Platz fürs Brett.
@@ -549,7 +632,6 @@ export const Board: React.FC<BoardProps> = ({
           templateColumns="repeat(2, 1fr)"
           gap={2}
           width={actionGridWidth}
-          mt={4}
         >
           {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
               Visual: solid + outline-Ring bei aktiv = nicht rein farblich.
@@ -568,41 +650,7 @@ export const Board: React.FC<BoardProps> = ({
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
             variant="outline"
-            onClick={() => {
-              if (!gameState) return;
-              if (cages.length === 0) {
-                toast({ title: 'Hinweis nicht verfügbar', description: 'Level noch nicht geladen.', status: 'warning', duration: 2500, isClosable: true });
-                return;
-              }
-              const hint = strategicHint.requestHint(gameState.cellValues, cages);
-              if (!hint) {
-                toast({
-                  title: 'Kein einfacher Hinweis',
-                  description: 'Die Engine hat nichts gefunden — versuch eine andere Technik.',
-                  status: 'info',
-                  duration: 3000,
-                  isClosable: true
-                });
-                return;
-              }
-              const techLabels: Record<typeof hint.technique, string> = {
-                'naked-single-cage': 'Käfig-Naked Single',
-                'hidden-single-cage': 'Käfig-Hidden Single',
-                'naked-single-sudoku': 'Sudoku-Naked Single',
-                'hidden-single-sudoku': 'Sudoku-Hidden Single',
-                'innie': '45er-Regel (Innie)',
-                'outie': '45er-Regel (Outie)',
-              };
-              toast({
-                title: `${techLabels[hint.technique]} → ${hint.value}`,
-                description: hint.explanation,
-                status: 'info',
-                duration: 8000,
-                isClosable: true,
-                position: 'top',
-              });
-              setSelectedCell(hint.cell);
-            }}
+            onClick={requestStrategicHintToast}
             isDisabled={!gameState || isGameOver || cages.length === 0}
             aria-label="Tipp"
             width="100%"

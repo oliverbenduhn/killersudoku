@@ -17,6 +17,7 @@ import { APP_VERSION } from './version';
 
 import { HomeTab, LevelsTab } from './components/Tabs';
 import { TutorialOverlay } from './components/common/TutorialOverlay';
+import HelpDialog from './components/common/HelpDialog';
 import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
 import { loadLevelByNumber } from './services/levelService';
@@ -53,6 +54,9 @@ function App() {
     try { return localStorage.getItem('killersudoku_bw') === '1'; } catch { return false; }
   });
   const tutorial = useTutorial();
+  // Help-Dialog-State: in App, weil sowohl HomeActions-Button als auch
+  // der ?-Shortcut (über useKeyboardShortcuts in Board) ihn öffnen.
+  const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
 
   const headerHeight = useBreakpointValue({ base: '52px', md: '60px' });
   // Device-Layout:
@@ -190,6 +194,7 @@ function App() {
                   try { localStorage.setItem('killersudoku_bw', next ? '1' : '0'); } catch {}
                   return next;
                 })}
+                onOpenHelp={() => setIsHelpOpen(true)}
               />
             </Flex>
           </Flex>
@@ -212,6 +217,7 @@ function App() {
               error={error}
               blackAndWhiteMode={blackAndWhiteMode}
               transitionDirection={tabTransition}
+              onOpenHelp={() => setIsHelpOpen(true)}
             />
           )}
           {activeTab === 'levels' && (
@@ -239,6 +245,8 @@ function App() {
         onJump={tutorial.jumpTo}
         onSkip={tutorial.skip}
       />
+
+      <HelpDialog isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </ChakraProvider>
   );
 }
