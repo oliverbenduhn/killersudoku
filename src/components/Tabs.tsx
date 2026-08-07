@@ -3,7 +3,6 @@
 
 import { Box, Heading, Text, Link, Flex, IconButton, SimpleGrid } from '@chakra-ui/react';
 import { ArrowBackIcon } from '@chakra-ui/icons';
-import LevelSelector from './LevelSelector/LevelSelector';
 
 import { Board } from './Board/Board';
 import FadeInView from './common/FadeInView';
