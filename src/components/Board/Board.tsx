@@ -186,6 +186,7 @@ export const Board: React.FC<BoardProps> = ({
       /* Toast zeigt bereits den Fehler an; das Banner wird via gameState.gameOver gerendert */
     },
     onSolveRecorded: handleSolveRecorded,
+    puzzleId,
     showError,
     pencilMode
   });
@@ -303,7 +304,7 @@ export const Board: React.FC<BoardProps> = ({
     const finishedAt = Date.now();
     const startTime = gameState.startTime || finishedAt;
 
-    recordBoardSolved(levelData, startTime, levelData.difficulty).then(elapsedMs => {
+    recordBoardSolved(levelData, startTime, levelData.difficulty, puzzleId).then(elapsedMs => {
       updateGameState({
         solved: true,
         endTime: finishedAt,

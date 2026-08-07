@@ -9,6 +9,12 @@ export interface GameStatistics {
   solvedByDifficulty: Partial<Record<Difficulty, number>>;
   bestTimeMsByDifficulty: Partial<Record<Difficulty, number>>;
   lastSolvedAt?: number;
+  /** Set von Puzzle-IDs, für die bereits ein Solve gezählt wurde. Verhindert
+   *  Doppel-Inkrement, falls recordSolve für dasselbe Puzzle zweimal aufgerufen
+   *  wird (Undo-Repro: Solve → Undo → Solve). Wird beim Lesen ohne diese Felder
+   *  mit leerem Set initialisiert — alte Statistiken werden so behandelt, als
+   *  hätte es nie eine zweite Aufzeichnung gegeben. */
+  solvedPuzzles?: string[];
 }
 
 const defaultStats: GameStatistics = {
@@ -37,9 +43,16 @@ export const saveStatistics = async (stats: GameStatistics): Promise<void> => {
 
 export const recordSolve = async (
   difficulty: string | undefined,
-  elapsedMs: number
+  elapsedMs: number,
+  puzzleId?: string
 ): Promise<GameStatistics> => {
   const stats = await loadStatistics();
+  // Idempotenz-Guard: derselbe Puzzle-ID wurde in dieser Statistik-Lifetime
+  // bereits gezählt. Verhindert Doppel-Inkrement nach Undo einer gelösten
+  // Lösung (Audit-Finding 🚨 #1).
+  if (puzzleId && (stats.solvedPuzzles || []).includes(puzzleId)) {
+    return stats;
+  }
   const difficultyKey = difficulty || 'unknown';
   // Bugfix: 0ms als Bestzeit verhindern (theoretisch möglich, aber unsinnig).
   // Echte Solver brauchen mindestens eine Sekunde.
@@ -65,7 +78,10 @@ export const recordSolve = async (
       ...stats.bestTimeMsByDifficulty,
       [difficultyKey]: newBest
     },
-    lastSolvedAt: Date.now()
+    lastSolvedAt: Date.now(),
+    solvedPuzzles: puzzleId
+      ? [...(stats.solvedPuzzles || []), puzzleId]
+      : stats.solvedPuzzles
   };
 
   await saveStatistics(updatedStats);
