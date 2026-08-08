@@ -1,4 +1,9 @@
-# To-Do-Liste (aktualisiert nach Audit)
+# To-Do-Liste
+
+> **Hinweis**: Diese Datei ist ein historischer Schnappschuss, kein aktives
+> Backlog. Neue Aufgaben bitte als [GitHub-Issues](https://github.com/oliverbenduhn/killersudoku/issues)
+> anlegen — siehe [`docs/agents/issue-tracker.md`](./docs/agents/issue-tracker.md).
+> Architektur-relevante Ideen als ADR in [`docs/adr/`](./docs/adr/).
 
 ## Projekt Setup
 
