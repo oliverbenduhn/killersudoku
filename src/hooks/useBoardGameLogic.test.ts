@@ -110,6 +110,22 @@ describe('useBoardGameLogic – Game Over', () => {
     expect(options.applyMove).not.toHaveBeenCalled();
     expect(options.clearHistory).toHaveBeenCalledTimes(1);
   });
+
+  test('handleReset zeigt Success-Toast mit "Level zurückgesetzt" (#30)', () => {
+    // Regression: handleReset hat updateGameState still ausgeführt —
+    // kein User-Feedback, dass der Reset erfolgreich war.
+    const options = makeOptions();
+    const { result } = renderHook(() => useBoardGameLogic(options));
+
+    act(() => result.current.handleReset());
+
+    expect(options.showError).toHaveBeenCalledWith({
+      title: 'Level zurückgesetzt',
+      description: 'Eingaben und Notizen wurden geleert.',
+      status: 'info',
+      duration: 1500
+    });
+  });
 });
 
 describe('useBoardGameLogic – Bleistiftmodus (Issues #5/#6)', () => {

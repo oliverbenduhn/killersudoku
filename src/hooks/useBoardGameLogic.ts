@@ -224,7 +224,8 @@ export const useBoardGameLogic = ({
     clearHistory(); // Reset verwirft die Undo-History, sonst könnte
                     // der User nach Reset auf „Undo" drücken und wäre
                     // wieder vor dem Reset.
-  }, [gameState, levelData, size, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory]);
+    showError({ title: 'Level zurückgesetzt', description: 'Eingaben und Notizen wurden geleert.', status: 'info', duration: 1500 });
+  }, [gameState, levelData, size, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory, showError]);
 
   const handleRevealHint = useCallback(() => {
     if (!gameState || !levelData) return;
