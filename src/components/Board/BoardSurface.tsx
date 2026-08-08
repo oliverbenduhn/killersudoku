@@ -60,6 +60,8 @@ export interface BoardSurfaceProps {
   initialValues: number[][];
   /** Käfige des Levels. */
   cages: Cage[];
+  /** Käfig, der durch den aktuellen strategischen Hint hervorgehoben wird. */
+  hintCage: Cage | null;
   /** Aktuell geladenes Level (für Cage-Summen, Hint-Vergleich). */
   levelData: GameLevel;
   /** Pixel pro Zelle. */
@@ -129,6 +131,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   notes,
   initialValues,
   cages,
+  hintCage,
   levelData,
   cellSize,
   cageInsetPx,
@@ -171,6 +174,18 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       ? [
           'inset 0 0 0 2px var(--chakra-colors-cell-selected-border)',
           'inset 0 0 12px 2px var(--chakra-colors-cell-selected-glow)',
+        ].join(', ')
+      : undefined;
+
+    // #38: Hint-Käfig aufleuchten lassen — helleres Glühen als die
+    // normale Selektion, damit er sich davon abhebt.
+    const isHintCageCell = hintCage?.cells.some(
+      (c) => c.row === row && c.col === col
+    ) ?? false;
+    const hintShadow = isHintCageCell
+      ? [
+          'inset 0 0 0 2px var(--chakra-colors-cell-selected-border)',
+          'inset 0 0 18px 4px var(--chakra-colors-cell-selected-glow)',
         ].join(', ')
       : undefined;
 
@@ -236,7 +251,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
         onDoubleClick={() => onCellDoubleClick(row, col)}
         cursor="pointer"
         transition="background-color 0.15s"
-        style={{ boxShadow: selectionShadow }}
+        style={{ boxShadow: hintShadow ?? selectionShadow }}
       />
     );
   };
