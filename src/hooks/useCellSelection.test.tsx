@@ -157,11 +157,43 @@ describe('useCellSelection', () => {
     jest.useFakeTimers();
     try {
       act(() => result.current.handlePointerDown(0, 0));
-      act(() => jest.advanceTimersByTime(150));
+      act(() => { jest.advanceTimersByTime(150); });
       act(() => result.current.handlePointerDown(0, 1));
       expect(result.current.selectedCells).toEqual([{ row: 0, col: 1 }]);
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  // Audit 🔴 #5: Drag-to-Touch-Layer. User down(0,0), drag nach (1,1),
+  // dann ohne handlePointerEnd direkt down(2,2). Vorher: isDragging hing
+  // auf true, neuer Down überschrieb Selection unkoordiniert; nach dem
+  // Fix: handlePointerDown ruft handlePointerEnd auf, sauberer Übergang.
+  test('Mid-Drag-Tap beendet laufenden Drag (Audit 🔴 #5)', () => {
+    const { result } = renderHook(() => useCellSelection([], CELL));
+    act(() => result.current.handlePointerDown(0, 0));
+    // Drag in Bewegung simulieren (Move-Handler) — muss isDragging noch
+    // true und selectedCells auf Rechteck 0,0 → 2,2.
+    act(() => result.current.handlePointerMove(125, 125));
+    expect(result.current.isDragging).toBe(true);
+    expect(result.current.selectedCells.length).toBeGreaterThan(1);
+
+    // User drückt — ohne Loslassen — auf eine andere Zelle.
+    act(() => result.current.handlePointerDown(4, 4));
+
+    // Audit-Fix: Drag-State wurde sauber beendet, neuer Drag ist Single-Cell.
+    expect(result.current.isDragging).toBe(true);
+    expect(result.current.selectedCell).toEqual({ row: 4, col: 4 });
+    expect(result.current.selectedCells).toEqual([{ row: 4, col: 4 }]);
+    expect(result.current.dragStart).toEqual({ row: 4, col: 4 });
+  });
+
+  test('Einfacher Down ohne Drag-Vorgeschichte: handlePointerEnd nicht aufgerufen', () => {
+    const { result } = renderHook(() => useCellSelection([], CELL));
+    // Erster Down — kein Drag läuft, Audit-Fix-Branch darf nicht in den
+    // negativen Pfad laufen.
+    act(() => result.current.handlePointerDown(2, 3));
+    expect(result.current.isDragging).toBe(true);
+    expect(result.current.dragStart).toEqual({ row: 2, col: 3 });
   });
 });

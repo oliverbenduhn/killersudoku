@@ -75,11 +75,32 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
     [cages]
   );
 
+  // Vor handlePointerDown deklariert, damit handlePointerDown die
+  // Beendigungs-Routine für den Mid-Drag-Tap-Pfad direkt aufrufen kann
+  // (Audit 🔴 #5: handlePointerEnd ist die zentrale Beendigungs-Logik,
+  // nicht dupliziert in handlePointerDown).
+  const handlePointerEnd = useCallback(() => {
+    setIsDragging(false);
+    isDraggingRef.current = false;
+    setDragStart(null);
+    dragStartRef.current = null;
+  }, []);
+
   const handlePointerDown = useCallback(
     (row: number, col: number) => {
       const cellPosition = { row, col };
       const now = Date.now();
       const last = lastTapRef.current;
+
+      // Audit 🔴 #5-Fix: wenn noch ein Drag aktiv ist (z. B. Touch-Gerät:
+      // User drückt Zelle A, zieht nach B, und tippt dann — ohne Loslassen —
+      // auf eine andere Stelle), sauber beenden, bevor der neue Drag startet.
+      // Sonst überschreiben sich State-Sets unkoordiniert.
+      // Ponytail: handlePointerEnd ist bereits die zentrale Beendigungs-
+      // Routine — wiederverwenden statt Logik zu duplizieren.
+      if (isDraggingRef.current) {
+        handlePointerEnd();
+      }
 
       // Doppel-Tipp: gleiche Cell + innerhalb DOUBLE_TAP_MS → Käfig wählen.
       if (
@@ -102,7 +123,7 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
       setIsDragging(true);
       isDraggingRef.current = true;
     },
-    [selectCage]
+    [selectCage, handlePointerEnd]
   );
 
   const handlePointerMove = useCallback(
@@ -132,13 +153,6 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
     },
     [cellSize]
   );
-
-  const handlePointerEnd = useCallback(() => {
-    setIsDragging(false);
-    isDraggingRef.current = false;
-    setDragStart(null);
-    dragStartRef.current = null;
-  }, []);
 
   const handleDoubleClick = useCallback(
     (row: number, col: number) => {
