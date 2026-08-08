@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Box, ButtonProps, keyframes } from '@chakra-ui/react';
 
 // Ripple Animation definieren
@@ -18,37 +18,65 @@ interface RippleButtonProps extends ButtonProps {
   duration?: number;
 }
 
+interface Ripple {
+  id: number;
+  x: number;
+  y: number;
+}
+
 export const RippleButton: React.FC<RippleButtonProps> = ({
   children,
   rippleColor = 'rgba(255, 255, 255, 0.3)',
   duration = 600,
   ...props
 }) => {
-  const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
+  const [ripples, setRipples] = useState<Ripple[]>([]);
   const [nextRippleId, setNextRippleId] = useState(0);
+  // Audit 🔴 #3-Fix: jeder Ripple hat seinen eigenen Timer, der genau diesen
+  // Ripple nach `duration` entfernt. Vorher entfernte der Effect immer nur
+  // die Liste-Kopfposition (`slice(1)`), was bei drei schnellen Klicks zwei
+  // Ripples stehen ließ. Map nur für Unmount-Cleanup.
+  const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
 
   // Ripple-Animation auslösen
   const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
     const buttonRect = e.currentTarget.getBoundingClientRect();
-    
+
     // Position des Klicks relativ zum Button
     const x = e.clientX - buttonRect.left;
     const y = e.clientY - buttonRect.top;
-    
-    // Neuer Ripple hinzufügen
-    setRipples([...ripples, { id: nextRippleId, x, y }]);
+
+    setRipples(prev => [...prev, { id: nextRippleId, x, y }]);
     setNextRippleId(nextRippleId + 1);
   };
 
-  // Ripples nach der Animation entfernen
+  // Audit 🔴 #3-Fix: pro Ripple EIN Timer, der NUR diesen Ripple entfernt.
+  // Ponytail: Map nur für Unmount — bei Remount des Parents wären sonst
+  // verwaiste Timer aktiv und könnten State-Updates auf eine unmontierte
+  // Komponente feuern.
   useEffect(() => {
-    if (ripples.length > 0) {
-      const timer = setTimeout(() => {
-        setRipples(ripples.slice(1));
-      }, duration);
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach(clearTimeout);
+      timers.clear();
+    };
+  }, []);
 
-      return () => clearTimeout(timer);
-    }
+  // Cleanup-Hook für jeden einzelnen Ripple-Timer (siehe unten)
+  useEffect(() => {
+    // Wenn der `ripples`-State wächst, registriere pro neuem Ripple einen
+    // Timer, der exakt diesen wieder rausnimmt.
+    const timers = timersRef.current;
+    const currentIds = new Set(ripples.map(r => r.id));
+    // Nur Timer für Ripples registrieren, die noch nicht erfasst sind.
+    currentIds.forEach(id => {
+      if (timers.has(id)) return;
+      const t = setTimeout(() => {
+        setRipples(prev => prev.filter(r => r.id !== id));
+        timers.delete(id);
+      }, duration);
+      timers.set(id, t);
+    });
   }, [ripples, duration]);
 
   return (
@@ -62,7 +90,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
       }}
     >
       {children}
-      
+
       {/* Ripple-Elemente rendern */}
       {ripples.map(ripple => (
         <Box
