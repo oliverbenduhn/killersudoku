@@ -29,6 +29,9 @@ describe('hintEngine', () => {
       expect(hint!.technique).toBe('naked-single-cage');
       expect(hint!.cell).toEqual({ row: 0, col: 2 });
       expect(hint!.value).toBe(3);
+      // Issue #38: Explanation muss die Rechnung zeigen, damit der User
+      // den Schluss nachvollziehen kann (Summe − belegte Werte = Rest).
+      expect(hint!.explanation).toContain('12 − 5 − 4 = 3');
     });
 
     test('kein Hint, wenn Käfig mehrere leere Zellen hat', () => {
