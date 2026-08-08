@@ -221,6 +221,17 @@ export const Board: React.FC<BoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleId]);
 
+  // 🟠 Audit #20: Selection-State bei Level-Wechsel zurücksetzen. Ohne
+  // diesen Reset bleibt selectedCell aus dem vorigen Level stehen (z. B.
+  // auf Käfig-Zelle, die im neuen Level eine andere Bedeutung hat). Der
+  // useBoardKeyboard-Initial-Effect setzt zwar (0,0), aber nur wenn BEIDE
+  // Selection-Slots leer sind — bei vorhandener Selection läuft er ins
+  // Leere. Symmetrisch zum pencilMode-Reset oben.
+  useEffect(() => {
+    clearSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleId]);
+
   // Pencil-Toggle-Klick verschiebt den DOM-Fokus auf den Button (Browser-
   // Default). Danach laufen Tastatur-Eingaben (Ziffern/Pfeile) ins Leere,
   // weil der Keyboard-Handler an der Brett-Box hängt. Fokus direkt zurück
