@@ -26,3 +26,23 @@ test('Zurück-Button auf dem Level-Screen führt zurück zum Start', async () =>
 
   expect(await screen.findByRole('button', { name: 'Level' })).toBeInTheDocument();
 });
+
+test('HomeActions-Buttons sind auch im Levels-Tab sichtbar (#24)', async () => {
+  // Regression: Header war auf activeTab !== 'home' ? 'none' : 'block'
+  // gesetzt, sodass Theme/Fullscreen/BW/Help-Buttons nur im Home-Tab
+  // erreichbar waren. Fix: display-Bedingung entfernt.
+  render(<App />);
+
+  // Tutorial überspringen und in den Levels-Tab wechseln.
+  fireEvent.click(screen.getByRole('button', { name: /^Überspringen$/ }));
+  await screen.findByRole('button', { name: 'Level' });
+  fireEvent.click(screen.getByRole('button', { name: 'Level' }));
+
+  // Im Levels-Tab müssen die HomeActions-Toggles sichtbar bleiben.
+  // queryBy* statt findBy*: schlägt sofort fehl, wenn das Element
+  // fehlt — kein Timeout, klare Fehlermeldung.
+  expect(screen.getByRole('button', { name: /Hellmodus wechseln|Dunkelmodus wechseln/ })).toBeVisible();
+  expect(screen.getByRole('button', { name: /Vollbild/ })).toBeVisible();
+  expect(screen.getByRole('button', { name: /Schwarzweiß|Farbmodus/ })).toBeVisible();
+  expect(screen.getByRole('button', { name: /Tastenkombinationen anzeigen/ })).toBeVisible();
+});
