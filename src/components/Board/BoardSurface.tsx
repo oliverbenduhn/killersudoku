@@ -83,8 +83,10 @@ export interface BoardSurfaceProps {
   possibleValues: number[];
   /** Käfig-Status. */
   isCageComplete: (cage: Cage) => boolean;
-  /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch. */
-  onCellPointerDown: (row: number, col: number) => void;
+  /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch.
+   *  (downX, downY) sind Pointer-Pixel relativ zur Cell — für die
+   *  Hook, um den Drag-Threshold (Audit 🟡 #26) zu prüfen. */
+  onCellPointerDown: (row: number, col: number, downX: number, downY: number) => void;
   /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl.
    *  (x, y) sind die Pixel der Pointer-Position relativ zum Board. */
   onCellPointerMove: (x: number, y: number) => void;
@@ -214,7 +216,11 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
           if (typeof el.setPointerCapture === 'function') {
             el.setPointerCapture(e.pointerId);
           }
-          onCellPointerDown(row, col);
+          // Audit 🟡 #26: downX/downY an die Hook reichen, damit sie
+          // den Drag-Threshold (DRAG_THRESHOLD_PX) gegen die Down-
+          // Position prüfen kann. Pixel relativ zur Cell.
+          const rect = el.getBoundingClientRect();
+          onCellPointerDown(row, col, e.clientX - rect.left, e.clientY - rect.top);
         }}
         onPointerMove={(e) => {
           // Mit Pointer-Capture landet pointermove auf der Start-Cell,
