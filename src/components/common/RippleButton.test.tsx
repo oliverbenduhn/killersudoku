@@ -16,6 +16,34 @@ describe('RippleButton', () => {
     expect(onClick).toHaveBeenCalled();
   });
 
+  // 🟠 Audit #25: Click-Bubbling ist beabsichtigt (kein preventDefault/
+  // stopPropagation). Doppel-Klick = 2× onClick. Vertrag dokumentiert
+  // in RippleButtonProps.onClick JSDoc.
+  test('🟠 #25 Doppel-Klick ruft onClick zweimal auf (Doku-Vertrag)', () => {
+    const onClick = jest.fn();
+    render(<RippleButton onClick={onClick}>Click</RippleButton>);
+    const button = screen.getByRole('button', { name: 'Click' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  // 🟠 Audit #25: kein preventDefault im Wrapper — der Event bubbelt
+  // normal nach oben, Parent-Handler sehen ihn. Falls ein Caller das
+  // nicht will, gehört der Stop in seinen onClick.
+  test('🟠 #25 RippleButton stoppt Event-Bubbling nicht', () => {
+    const parentClick = jest.fn();
+    const onClick = jest.fn();
+    render(
+      <div onClick={parentClick}>
+        <RippleButton onClick={onClick}>Click</RippleButton>
+      </div>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Click' }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(parentClick).toHaveBeenCalledTimes(1);
+  });
+
   test('Klick rendert Ripple-Element (Anzahl der Ripple-Container steigt)', () => {
     const { container } = render(<RippleButton>Click</RippleButton>);
     const button = screen.getByRole('button', { name: 'Click' });

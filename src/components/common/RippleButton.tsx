@@ -16,6 +16,14 @@ const rippleAnimation = keyframes`
 interface RippleButtonProps extends ButtonProps {
   rippleColor?: string;
   duration?: number;
+  /**
+   * Klick-Handler. Bewusst OHNE preventDefault/stopPropagation —
+   * das Event bubbelt normal nach oben (Chakra-Button-Default).
+   * Doppel-Klick löst erwartungsgemäß zwei onClick-Calls aus; falls
+   * ein Caller das verhindern will, gehört das in seinen onClick,
+   * nicht hier (Ponytail: API-Doku statt API-Lock).
+   */
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 interface Ripple {
