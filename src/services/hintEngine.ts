@@ -19,7 +19,7 @@ import {
   isCellValid,
 } from './gameLogicService';
 import { analyzeCage, cellKey, getLegalValuesForCell } from '../utils/killerConstraints';
-import { find45Deductions, getHouses } from '../utils/killerRegions';
+import { find45Deductions, getHouses, House } from '../utils/killerRegions';
 
 export type HintTechnique =
   | 'naked-single-cage'
@@ -89,16 +89,11 @@ function findHiddenSingleSudoku(cellValues: number[][], cages: Cage[]): Hint | n
       });
       if (possibleCells.length === 1) {
         const cell = possibleCells[0];
-        const houseName = house.kind === 'row'
-          ? `Zeile ${house.index + 1}`
-          : house.kind === 'column'
-            ? `Spalte ${house.index + 1}`
-            : `Box ${house.index + 1}`;
         return {
           technique: 'hidden-single-sudoku',
           cell,
           value,
-          explanation: `${houseName} hat nur noch an dieser Stelle Platz für die ${value}.`,
+          explanation: hiddenSudokuExplanation(cellValues, house, cell, value),
         };
       }
     }
@@ -123,6 +118,49 @@ function findHiddenSingleSudoku(cellValues: number[][], cages: Cage[]): Hint | n
 // Beispiel für reine Sudoku-Singularität: Käfig [a,b,c] mit drei
 // leeren Zellen, alle akzeptieren {4,5,9}. Zelle a liegt in einer
 // Zeile, in der 4 und 5 bereits stehen, einer Spalte, in der 9
+
+function hiddenSudokuExplanation(
+  cellValues: number[][],
+  house: House,
+  cell: CellPosition,
+  value: number
+): string {
+  const houseName = house.kind === 'row'
+    ? `Zeile ${house.index + 1}`
+    : house.kind === 'column'
+      ? `Spalte ${house.index + 1}`
+      : `Box ${house.index + 1}`;
+
+  // Warum können die anderen leeren Zellen im Haus die Zahl nicht?
+  const reasons: string[] = [];
+  for (const c of house.cells) {
+    if (c.row === cell.row && c.col === cell.col) continue;
+    if (cellValues[c.row][c.col] !== 0) continue; // schon belegt
+    // Welches Haus blockiert? Zeile, Spalte oder Box.
+    const rowHas = cellValues[c.row].includes(value);
+    const colHas = cellValues.some((row) => row[c.col] === value);
+    if (rowHas && colHas) {
+      reasons.push(`Zeile ${c.row + 1} und Spalte ${c.col + 1} haben schon eine ${value}`);
+    } else if (rowHas) {
+      reasons.push(`Zeile ${c.row + 1} hat schon eine ${value}`);
+    } else if (colHas) {
+      reasons.push(`Spalte ${c.col + 1} hat schon eine ${value}`);
+    } else {
+      // Box muss es sein — finde die Box-Nummer.
+      const boxIdx = Math.floor(c.row / 3) * 3 + Math.floor(c.col / 3);
+      reasons.push(`Box ${boxIdx + 1} hat schon eine ${value}`);
+    }
+  }
+
+  const uniqueReasons = [...new Set(reasons)];
+  if (uniqueReasons.length === 0) {
+    return `${houseName} hat nur noch an dieser Stelle Platz für die ${value}.`;
+  }
+  const reasonText = uniqueReasons.length === 1
+    ? uniqueReasons[0]
+    : `${uniqueReasons.slice(0, -1).join(', ')} und ${uniqueReasons[uniqueReasons.length - 1]}`;
+  return `${houseName} hat nur noch an dieser Stelle Platz für die ${value} — ${reasonText}.`;
+}
 // bereits steht, und einer Box, in der 4 und 5 bereits stehen →
 // nur 9 möglich. Cage-Singularität greift nicht (3 leere Zellen,
 // jede sieht im Käfig dieselben Kandidaten), Sudoku-Singularität

@@ -205,6 +205,34 @@ describe('hintEngine', () => {
         value: 1,
       }));
     });
+
+    test('Explanation nennt den Grund, warum andere Zellen blockiert sind', () => {
+      // #38: User konnte nicht nachvollziehen, WARUM nur eine Zelle
+      // für die Zahl in Frage kommt. Die Explanation muss die
+      // blockierenden Häuser nennen.
+      const cellValues = emptyBoard();
+      // Zeile 0: fast voll, nur (0,0) und (0,1) leer.
+      // Werte: 1,2,3,4,5,6,8,9 — fehlt 7.
+      cellValues[0] = [0, 0, 3, 4, 5, 6, 8, 9, 1];
+      // Spalte 1 hat schon eine 7 (in Zeile 3) → (0,1) kann keine 7 sein.
+      cellValues[3][1] = 7;
+      // Also muss (0,0) die 7 sein — Hidden Single in Zeile 1.
+      // Käfige: volle Zeilen-Abdeckung, damit Hidden Single feuert.
+      const cages = Array.from({ length: 9 }, (_, row) => ({
+        id: `row-${row}`,
+        cells: Array.from({ length: 9 }, (_, col) => ({ row, col })),
+        sum: 45,
+        color: 'blue.100' as const,
+      }));
+
+      const hint = findNextHint(cellValues, cages);
+      expect(hint).not.toBeNull();
+      expect(hint!.technique).toBe('hidden-single-sudoku');
+      expect(hint!.cell).toEqual({ row: 0, col: 1 });
+      expect(hint!.value).toBe(2);
+      // Der Grund: Box 1 hat schon eine 2.
+      expect(hint!.explanation).toContain('Box 1 hat schon eine 2');
+    });
   });
 
   describe('Priorisierung', () => {
