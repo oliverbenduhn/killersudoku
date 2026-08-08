@@ -134,10 +134,10 @@ function App() {
         top={0}
         zIndex={999}
         boxShadow="sm"
-        // Header bleibt sichtbar auf dem Start-Tab — auch im Sidebar-Layout,
-        // weil HomeActions (BW/Dark/Level-Toggles) hier wohnen und es keinen
-        // anderen Weg dorthin gibt (keine Bottom-Nav auf Mobile).
-        display={activeTab !== 'home' ? 'none' : 'block'}
+        // Header auf beiden Tabs sichtbar: HomeActions (BW/Dark/Level/
+        // Fullscreen/Help) brauchen einen UI-Weg in beiden Tabs — auf
+        // Mobile gibt es keine Bottom-Nav, und der ?-Shortcut allein
+        // deckt nur den Help-Dialog ab (#24).
       >
         <Container
           maxW={containerMaxWidth}
@@ -178,7 +178,7 @@ function App() {
               >
                 Killer Sudoku
               </Heading>
-              <Text color={headerTextColor} opacity={0.45} fontSize="2xs" fontFamily="mono" fontWeight="400">
+              <Text color="text.muted" fontSize="2xs" fontFamily="mono" fontWeight="400">
                 v{APP_VERSION}
               </Text>
             </Flex>

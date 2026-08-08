@@ -107,6 +107,21 @@ describe('useTutorial', () => {
     }
   });
 
+  // Audit 💡 #34: highlight-Werte müssen mit der Demo-Lösung
+  // übereinstimmen, sonst zeigt das Tutorial einen falschen Wert und
+  // der User lernt eine Lüge. Demo-Solution wird über den Hook
+  // exposed (siehe useTutorial.demoLevel), sonst hätte der Test
+  // keinen Zugriff darauf.
+  test('💡 #34 Highlight-Zellen matchen die Demo-Lösung', () => {
+    const { result } = renderHook(() => useTutorial());
+    const solution = result.current.demoLevel.solution;
+    for (const step of TUTORIAL_STEPS) {
+      for (const cell of step.highlightedCells) {
+        expect(cell.value).toBe(solution[cell.row][cell.col]);
+      }
+    }
+  });
+
   test('jumpTo springt zum angegebenen Schritt', () => {
     localStorage.clear();
     const { result } = renderHook(() => useTutorial());

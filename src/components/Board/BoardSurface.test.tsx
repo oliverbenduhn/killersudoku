@@ -85,6 +85,7 @@ describe('BoardSurface', () => {
     // Container. Dessen linke/obere Kante ist NICHT der Ursprung des Gitters.
     // Bei der Maus wurden dadurch schon beim Pointer-Down mehrere Zellen
     // Abstand addiert; wenige Pixel Move spannten sofort ein großes Rechteck.
+    // Audit 🟡 #26: downX/downY werden für den Drag-Threshold mit übergeben.
     const onDown = jest.fn();
     const onMove = jest.fn();
     render(<BoardSurface {...defaultProps({ onCellPointerDown: onDown, onCellPointerMove: onMove, cellSize: 48 })} />);
@@ -95,7 +96,9 @@ describe('BoardSurface', () => {
       clientX: 510,
       clientY: 310,
     }));
-    expect(onDown).toHaveBeenCalledWith(4, 3);
+    // Down liefert (row, col, downX, downY) — Pixel relativ zur Cell.
+    // Cell startet bei (500,300), Klick bei (510,310) → (10, 10).
+    expect(onDown).toHaveBeenCalledWith(4, 3, 10, 10);
     fireEvent(cell, new MouseEvent('pointermove', {
       bubbles: true,
       clientX: 512,

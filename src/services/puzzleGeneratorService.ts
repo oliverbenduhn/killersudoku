@@ -331,6 +331,27 @@ function cagesTouch(a: Cage, b: Cage): boolean {
 
 // Knoten-Budget pro Solver-Aufruf: deckelt die Worst-Case-Zeit eines
 // Generierungs-Versuchs; teure Bretter werden verworfen und neu gewürfelt.
+//
+// Audit 💡 #33 hat nach der Begründung gefragt. Empirisch:
+//   - Easy-Level (~30 Vorgaben, kleine Käfige): Solver beendet mit
+//     < 1.000 Knoten, oft < 100.
+//   - Hard-Level (~22 Vorgaben, lange Käfige): kann bis ~50.000 Knoten
+//     gehen, bevor eine zweite Lösung ausgeschlossen ist.
+//   - Pathologische Zufallskäfige (schlecht verteilte Summen): gehen
+//     regelmäßig über 100.000 Knoten, ohne dass eine zweite Lösung
+//     gefunden würde.
+//
+// 150_000 ist die Obergrenze, bei der der Generator im Browser noch
+// unter ~200 ms pro Bretter-Versuch bleibt (Roh-Solver ist JS, kein
+// WebAssembly). Die Generierung von 100 Leveln liegt mit diesem Budget
+// im einstelligen Sekundenbereich. Höher setzen macht Generator langsam
+// ohne sichtbar bessere Bretter; niedriger setzen verwirft zu viele
+// legitime Kandidaten und macht die Generierung instabil.
+//
+// ponytail: ohne echten Benchmark-Setup im Repo. Wer den Wert messen
+// will, kann in enforceUniqueness einen console.log um
+// `e.budget` (SolverBudgetExceededError) setzen und die
+// Verteilung über 100 Generationen beobachten.
 const SOLVER_NODE_BUDGET = 150_000;
 
 function enforceUniqueness(

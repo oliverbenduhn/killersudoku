@@ -29,6 +29,7 @@ export const useCellAnimation = (): UseCellAnimationResult => {
       if (timerRef.current !== null) {
         window.clearTimeout(timerRef.current);
       }
+      timerRef.current = null;
     };
   }, []);
 

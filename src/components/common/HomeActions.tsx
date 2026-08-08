@@ -1,4 +1,4 @@
-import { Button, IconButton, useColorMode } from '@chakra-ui/react';
+import { Button, IconButton, Tooltip, useColorMode } from '@chakra-ui/react';
 import { CopyIcon, MoonIcon, SunIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
 
 export interface HomeActionsProps {
@@ -70,20 +70,22 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
         onClick={onToggleBlackAndWhite}
       />
       {onOpenHelp && (
-        <IconButton
-          size="sm"
-          variant="ghost"
-          aria-label="Tastenkombinationen anzeigen"
-          // Inline-SVG: stilisiertes "?" — konsistent mit dem Fullscreen-Toggle,
-          // der auch ein Inline-SVG statt eines Chakra-Icons verwendet.
-          icon={
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6.2 6.2c0-1 .8-1.9 1.8-1.9s1.8.9 1.8 1.9c0 .8-.5 1.3-1.1 1.7-.7.4-1.2.9-1.2 1.7V10" />
-              <circle cx="7.5" cy="12.2" r="0.7" fill="currentColor" stroke="none" />
-            </svg>
-          }
-          onClick={onOpenHelp}
-        />
+        <Tooltip label="Tastenkombinationen (Drücke ?)" openDelay={200}>
+          <IconButton
+            size="sm"
+            variant="ghost"
+            aria-label="Tastenkombinationen anzeigen"
+            // Inline-SVG: stilisiertes "?" — konsistent mit dem Fullscreen-Toggle,
+            // der auch ein Inline-SVG statt eines Chakra-Icons verwendet.
+            icon={
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.2 6.2c0-1 .8-1.9 1.8-1.9s1.8.9 1.8 1.9c0 .8-.5 1.3-1.1 1.7-.7.4-1.2.9-1.2 1.7V10" />
+                <circle cx="7.5" cy="12.2" r="0.7" fill="currentColor" stroke="none" />
+              </svg>
+            }
+            onClick={onOpenHelp}
+          />
+        </Tooltip>
       )}
     </>
   );

@@ -106,7 +106,35 @@ function findHiddenSingleSudoku(cellValues: number[][], cages: Cage[]): Hint | n
   return null;
 }
 
-// --- Naked Single (Cage) --------------------------------------------------
+// --- Naked Single (Cage + Sudoku) ----------------------------------------
+//
+// Audit 💡 #32: Auf den ersten Blick wirken findNakedSingleCage und
+// findNakedSingleSudoku redundant — beide suchen Zellen mit genau
+// einem legalen Wert. Sie sind aber NICHT deckungsgleich:
+//
+//   findNakedSingleCage findet nur Fälle, in denen die Eindeutigkeit
+//     aus dem KÄFIG kommt: nur eine Zelle im Käfig leer (Restsumme
+//     erzwingt den Wert), oder alle anderen Zahlen im Käfig
+//     ausgeschlossen (Doublette / kombinatorisch eng).
+//   findNakedSingleSudoku findet Fälle, in denen die Eindeutigkeit
+//     nur aus den SUDOKU-HÄUSERN kommt: Käfig hätte mehrere mögliche
+//     Zellen, aber Zeile/Spalte/Box sperren alle bis auf eine.
+//
+// Beispiel für reine Sudoku-Singularität: Käfig [a,b,c] mit drei
+// leeren Zellen, alle akzeptieren {4,5,9}. Zelle a liegt in einer
+// Zeile, in der 4 und 5 bereits stehen, einer Spalte, in der 9
+// bereits steht, und einer Box, in der 4 und 5 bereits stehen →
+// nur 9 möglich. Cage-Singularität greift nicht (3 leere Zellen,
+// jede sieht im Käfig dieselben Kandidaten), Sudoku-Singularität
+// schon.
+//
+// Reihenfolge ist bewusst: Käfig-Variante zuerst, weil sie für den
+// User intuitiver zu erklären ist ("nur diese Zelle leer, also X")
+// und öfter vorkommt. Sudoku-Variante fängt den Rest ab.
+//
+// Audit 🔴 #17 hat den Helper legalValuesForCell vereinheitlicht;
+// der eigentliche Iterationsunterschied (Käfig-First vs. Brett-First)
+// bleibt aber semantisch und ist hier explizit dokumentiert.
 
 function findNakedSingleCage(
   cellValues: number[][],

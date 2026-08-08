@@ -8,8 +8,10 @@ export interface UseCellSelectionResult {
   isDragging: boolean;
   dragStart: CellPosition | null;
   /** Pointer-Down auf einer Cell. Vereinheitlicht Maus + Touch. Erkennt
-   *  Doppel-Tipp via Zeitfenster (<300ms auf derselben Cell). */
-  handlePointerDown: (row: number, col: number) => void;
+   *  Doppel-Tipp via Zeitfenster (<300ms auf derselben Cell).
+   *  (downX, downY) sind die Pointer-Pixel relativ zur Down-Cell —
+   *  werden für den Drag-Threshold gebraucht. */
+  handlePointerDown: (row: number, col: number, downX: number, downY: number) => void;
   /** Pointer-Move: aktualisiert die Drag-Rechteck-Auswahl.
    *  (x, y) sind die Pointer-Pixel relativ zum Board-Ursprung. Die Hook
    *  entscheidet daraus, welche Zellen ins Rechteck gehören — der
@@ -29,6 +31,17 @@ export interface UseCellSelectionResult {
 
 /** Zeitfenster für Doppel-Tipp-Erkennung in Millisekunden. */
 const DOUBLE_TAP_MS = 300;
+
+/** Audit 🟡 #26: Mindestabstand in Pixeln, bevor ein Pointer-Down als
+ *  Drag gewertet wird. Touch-User rutschen beim Tippen 2-3px; ohne
+ *  Schwelle würde ein versehentliches Wischen in eine 1×2-Selection
+ *  kippen. Wert ist kleiner als eine halbe Cell (~22-30px), damit
+ *  bewusstes Ziehen weiterhin schnell reagiert.
+ *  ponytail: fix in Pixeln, nicht relativ zur Cell-Size. Auf Phone
+ *  ist die Cell ~36-40px klein, 6px ≈ 17% Cell — sicher gegen
+ *  Finger-Zittern, aber nicht träge. Wenn wir Phone-spezifische
+ *  Schwellen brauchen, später hier anpassen. */
+const DRAG_THRESHOLD_PX = 6;
 
 /**
  * Verwaltet die Zellauswahl per Pointer-Events (Maus + Touch + Stylus).
@@ -52,6 +65,10 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
   // ponytail: useRef synchron, ohne Re-Render.
   const dragStartRef = useRef<CellPosition | null>(null);
   const isDraggingRef = useRef<boolean>(false);
+  // Audit 🟡 #26: Pointer-Down wartet auf Threshold, bevor er als Drag
+  // gilt. downRef hält die Down-Position in Pixeln (relativ zur Cell).
+  // pendingDownRef bleibt gesetzt, bis Schwelle gerissen oder Up.
+  const downRef = useRef<{ row: number; col: number; x: number; y: number } | null>(null);
   useEffect(() => { dragStartRef.current = dragStart; }, [dragStart]);
   useEffect(() => { isDraggingRef.current = isDragging; }, [isDragging]);
   // Letzter Tap-Zeitpunkt + Zelle für Doppel-Tipp-Detection.
@@ -84,10 +101,11 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
     isDraggingRef.current = false;
     setDragStart(null);
     dragStartRef.current = null;
+    downRef.current = null;
   }, []);
 
   const handlePointerDown = useCallback(
-    (row: number, col: number) => {
+    (row: number, col: number, downX: number, downY: number) => {
       const cellPosition = { row, col };
       const now = Date.now();
       const last = lastTapRef.current;
@@ -110,18 +128,24 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
         now - last.time < DOUBLE_TAP_MS
       ) {
         lastTapRef.current = { time: 0, cell: null };
+        downRef.current = null;
         selectCage(row, col);
         return;
       }
 
-      // Sonst: Single-Tap / Drag-Start.
+      // Audit 🟡 #26: Single-Tap markiert die Cell, aber isDragging
+      // bleibt false bis der Pointer die DRAG_THRESHOLD_PX-Schwelle
+      // reißt. Sonst kippt ein 2px Touch-Zittern sofort in ein 1×2-
+      // Rechteck. Bis dahin gilt: Down = Single-Select, kein Move.
       lastTapRef.current = { time: now, cell: cellPosition };
       setSelectedCell(cellPosition);
       setDragStart(cellPosition);
       dragStartRef.current = cellPosition;
       setSelectedCells([cellPosition]);
-      setIsDragging(true);
-      isDraggingRef.current = true;
+      // isDragging wird absichtlich NICHT gesetzt — handlePointerMove
+      // setzt es auf true, sobald die Schwelle gerissen ist. Bis dahin
+      // verhält sich jeder Move wie ein No-Op (siehe unten).
+      downRef.current = { row, col, x: downX, y: downY };
     },
     [selectCage, handlePointerEnd]
   );
@@ -132,7 +156,23 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
       // Down den frischen dragStart/isDragging sieht.
       const ds = dragStartRef.current;
       const dragging = isDraggingRef.current;
-      if (!dragging || !ds) return;
+      const down = downRef.current;
+
+      // Audit 🟡 #26 Threshold-Phase: Down steht, isDragging ist noch
+      // false. Erst ab DRAG_THRESHOLD_PX Pixel Bewegung gilt es als
+      // Drag und das Rechteck wird sichtbar.
+      if (!dragging && down) {
+        const dx = x - (down.col * cellSize + down.x);
+        const dy = y - (down.row * cellSize + down.y);
+        const dist = Math.hypot(dx, dy);
+        if (dist < DRAG_THRESHOLD_PX) return;
+        // Schwelle gerissen — ab jetzt Drag.
+        setIsDragging(true);
+        isDraggingRef.current = true;
+        // Fall through in die normale Rechteck-Berechnung.
+      }
+
+      if (!isDraggingRef.current || !ds) return;
 
       // Exakte Zellgrenzen, keine künstliche Schwelle: Die Zelle unter dem
       // Mauszeiger ist die äußere Ecke des Auswahlrechtecks.
@@ -168,6 +208,7 @@ export const useCellSelection = (cages: Cage[], cellSize: number): UseCellSelect
     dragStartRef.current = null;
     setIsDragging(false);
     isDraggingRef.current = false;
+    downRef.current = null;
     lastTapRef.current = { time: 0, cell: null };
   }, []);
 
