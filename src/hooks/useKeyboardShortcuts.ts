@@ -55,19 +55,13 @@ const matchesKey = (e: KeyboardEvent, spec: string, mod: boolean): boolean => {
 export const useKeyboardShortcuts = (handlers: ShortcutHandlers): void => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      // eslint-disable-next-line no-console
-      console.log('[DEBUG] keyDown', e.key, 'active=', document.activeElement?.tagName, 'repeat=', e.repeat);
       // Doppel-Trigger bei Halten unterdrücken.
       if (e.repeat) return;
       const inInput = isInputFocused();
       const mod = e.ctrlKey || e.metaKey;
 
-      // eslint-disable-next-line no-console
-      console.log('[DEBUG] inInput=', inInput, 'mod=', mod, 'key=', e.key);
       // Hilfs-Routing: jeder Branch prüft seine Input-Feld-Regel selbst,
       // damit "?" und Esc auch im Level-Input (Header) wirken.
-      // eslint-disable-next-line no-console
-      console.log('[DEBUG] checking P');
       // Bleistiftmodus (P) — Input-Felder ignorieren (Header-Level-Input);
       // Modifier (Ctrl/Meta/Alt) ebenfalls, weil Browser-Defaults (PWA,
       // Cmd+P drucken) nicht kollidieren dürfen.

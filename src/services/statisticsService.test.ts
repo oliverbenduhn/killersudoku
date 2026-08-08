@@ -66,4 +66,27 @@ describe('statisticsService', () => {
     const loaded = await loadStatistics();
     expect(loaded).toEqual(data);
   });
+
+  // Audit 🚨 #1: Doppel-Inkrement nach Undo einer gelösten Lösung
+  test('recordSolve mit gleichem puzzleId zählt nicht doppelt (Undo-Repro)', async () => {
+    await recordSolve('medium', 5000, 'level-1');
+    // Repro: Solve wird nach Undo nochmal aufgenommen
+    const afterUndo = await recordSolve('medium', 5000, 'level-1');
+
+    expect(afterUndo.totalSolved).toBe(1);
+    expect(afterUndo.solvedByDifficulty.medium).toBe(1);
+    expect(afterUndo.solvedPuzzles).toEqual(['level-1']);
+
+    // Unterschiedliche Puzzles zählen weiterhin normal
+    const afterSecondLevel = await recordSolve('medium', 4000, 'level-2');
+    expect(afterSecondLevel.totalSolved).toBe(2);
+    expect(afterSecondLevel.solvedPuzzles).toEqual(['level-1', 'level-2']);
+  });
+
+  test('recordSolve ohne puzzleId verhält sich legacy (immer inkrementieren)', async () => {
+    await recordSolve('medium', 5000);
+    // Ohne puzzleId keine Idempotenz — alte Aufrufer (z. B. Solver-Hint) dürfen weiter inkrementieren.
+    const second = await recordSolve('medium', 5000);
+    expect(second.totalSolved).toBe(2);
+  });
 });

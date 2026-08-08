@@ -29,7 +29,7 @@ export const useHints = (): UseHintsResult => {
         cages,
         size
       );
-      setPossibleValues(Array.isArray(result) ? result : result.values);
+      setPossibleValues(result.values);
     },
     []
   );

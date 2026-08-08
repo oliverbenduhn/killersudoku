@@ -27,6 +27,11 @@ export interface UseBoardGameLogicOptions {
   animation: UseCellAnimationResult;
   onGameOver: () => void;
   onSolveRecorded: (puzzleId: string) => void;
+  /** Aktueller Puzzle-Identifier (Level-Nummer als String), wird an
+   *  recordSolve weitergereicht, damit Doppel-Inkrement verhindert wird
+   *  (Audit 🚨 #1). Optional, damit Tests ohne Bug-Repro nicht erzwungen
+   *  werden, einen Mock-String zu liefern. */
+  puzzleId?: string;
   showError: (msg: { title: string; description: string; status?: string; duration?: number }) => void;
 }
 
@@ -352,11 +357,14 @@ export const useBoardGameLogic = ({
 export const recordBoardSolved = async (
   levelData: GameLevel,
   startTime: number,
-  difficulty: string | undefined
+  difficulty: string | undefined,
+  puzzleId?: string
 ): Promise<number> => {
   const finishedAt = Date.now();
   const elapsedMs = Math.max(0, finishedAt - startTime);
-  await recordSolve(difficulty ?? levelData.difficulty, elapsedMs);
+  // puzzleId dient als Idempotenz-Marker in statisticsService.recordSolve —
+  // derselbe Solve nach Undo darf nicht doppelt zählen (Audit 🚨 #1).
+  await recordSolve(difficulty ?? levelData.difficulty, elapsedMs, puzzleId);
   return elapsedMs;
 };
 

@@ -186,6 +186,7 @@ export const Board: React.FC<BoardProps> = ({
       /* Toast zeigt bereits den Fehler an; das Banner wird via gameState.gameOver gerendert */
     },
     onSolveRecorded: handleSolveRecorded,
+    puzzleId,
     showError,
     pencilMode
   });
@@ -217,6 +218,17 @@ export const Board: React.FC<BoardProps> = ({
   // muss explizit auf "aus" zurückspringen, da Board nicht neu gemountet wird.
   useEffect(() => {
     setPencilMode(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [puzzleId]);
+
+  // 🟠 Audit #20: Selection-State bei Level-Wechsel zurücksetzen. Ohne
+  // diesen Reset bleibt selectedCell aus dem vorigen Level stehen (z. B.
+  // auf Käfig-Zelle, die im neuen Level eine andere Bedeutung hat). Der
+  // useBoardKeyboard-Initial-Effect setzt zwar (0,0), aber nur wenn BEIDE
+  // Selection-Slots leer sind — bei vorhandener Selection läuft er ins
+  // Leere. Symmetrisch zum pencilMode-Reset oben.
+  useEffect(() => {
+    clearSelection();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleId]);
 
@@ -303,7 +315,7 @@ export const Board: React.FC<BoardProps> = ({
     const finishedAt = Date.now();
     const startTime = gameState.startTime || finishedAt;
 
-    recordBoardSolved(levelData, startTime, levelData.difficulty).then(elapsedMs => {
+    recordBoardSolved(levelData, startTime, levelData.difficulty, puzzleId).then(elapsedMs => {
       updateGameState({
         solved: true,
         endTime: finishedAt,

@@ -352,6 +352,18 @@ describe('Bleistiftmodus (#4)', () => {
     expect(screen.getByRole('button', { name: /Bleistiftmodus/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  // 🟠 Audit #20: Selection-State muss bei Level-Wechsel zurückgesetzt
+  // werden, sonst bleibt der Cursor aus dem vorigen Level stehen.
+  test('Selection wird bei puzzleId-Wechsel automatisch zurückgesetzt', () => {
+    mockGameState.levelId = 'level-a';
+    const { rerender } = render(<Board levelData={mockLevelData} puzzleId="level-a"  onOpenHelp={jest.fn()} />);
+    fireEvent.pointerDown(screen.getByTestId('cell-3-4'));
+    expect(screen.getByTestId('cell-3-4')).toHaveAttribute('aria-selected', 'true');
+    mockGameState.levelId = 'level-b';
+    rerender(<Board levelData={mockLevelData} puzzleId="level-b"  onOpenHelp={jest.fn()} />);
+    expect(screen.getByTestId('cell-3-4')).toHaveAttribute('aria-selected', 'false');
+  });
+
   test('P ohne Level/Board-Kontext togglet ebenfalls (Button-Klick-Symmetrie)', () => {
     // Reines Mode-Toggle-Verhalten ohne Renders von Brett.
     render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);

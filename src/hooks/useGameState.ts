@@ -30,14 +30,23 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
   // aktuellen Stand, nicht den Stack).
   const undo = useUndoRedo<GameState>();
 
+  // 🟠 Audit #21: cancelled-Flag im Effect-Return, damit der StrictMode-
+  // Doppeleffekt den zweiten Mount nicht in die loadState-Pipeline lässt.
+  // Z.81-Aufruf von enqueueGameStateSave liegt INNERHALB des if-Blocks
+  // mit currentPuzzleIdRef.current === puzzleId — der bildet die Race-
+  // Wache für die await-Grenze; jetzt zusätzlich cancelled-Wache für
+  // den StrictMode-ReMount während der await-Phase.
   useEffect(() => {
     currentPuzzleIdRef.current = puzzleId;
+    let cancelled = false;
 
     const loadState = async () => {
       try {
         setIsLoading(true);
 
         const savedState = await loadGameState(puzzleId);
+
+        if (cancelled) return;
 
         if (savedState) {
           if (currentPuzzleIdRef.current === puzzleId) {
@@ -61,6 +70,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
             if (levelMatch?.[1]) {
               try {
                 const levelData = await loadLevelByNumber(parseInt(levelMatch[1], 10));
+                if (cancelled) return;
                 const cellValues = sanitizePlayerBoard(
                   restored.cellValues,
                   levelData.initialValues,
@@ -78,6 +88,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
                 console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
               }
             }
+            if (cancelled) return;
             enqueueGameStateSave(puzzleId, restored);
             setGameState(restored);
           }
@@ -89,6 +100,7 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
               try {
                 const levelNumber = parseInt(levelMatch[1], 10);
                 const levelData = await loadLevelByNumber(levelNumber);
+                if (cancelled) return;
 
                 if (levelData && levelData.initialValues) {
                   const newGameState: GameState = {
@@ -118,11 +130,11 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         }
       } catch (error) {
         console.error('Fehler beim Laden des Spielstands:', error);
-        if (currentPuzzleIdRef.current === puzzleId) {
+        if (!cancelled && currentPuzzleIdRef.current === puzzleId) {
           createEmptyGameState();
         }
       } finally {
-        if (currentPuzzleIdRef.current === puzzleId) {
+        if (!cancelled && currentPuzzleIdRef.current === puzzleId) {
           setIsLoading(false);
         }
       }
@@ -146,18 +158,29 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
 
     loadState();
     undo.reset();
+
+    return () => {
+      cancelled = true;
+    };
   }, [puzzleId]);
 
   useEffect(() => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
+  // 🟠 Audit #19: Timer-Effect auf []-Dep umgestellt. Vorher [gameState]
+  // → Cleanup + Rebuild jede Sekunde (Timer ruft selbst setGameState).
+  // Jetzt: Interval einmal beim Mount, jeder Tick liest den aktuellen
+  // Stand aus gameStateRef (synchron, kein Stale-Closure). Stop-Bedingung
+  // (solved / gameOver / null) wird im tick selbst geprüft, damit der
+  // Interval bei Game-Ende sauber via clearInterval beendet wird.
   useEffect(() => {
-    if (!gameState || gameState.solved || gameState.gameOver) return;
-
-    const tick = () => {
+    const interval = window.setInterval(() => {
       const currentState = gameStateRef.current;
-      if (!currentState) return;
+      if (!currentState || currentState.solved || currentState.gameOver) {
+        window.clearInterval(interval);
+        return;
+      }
 
       const now = Date.now();
       const startTime = currentState.startTime || now;
@@ -181,11 +204,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         const targetPuzzleId = currentPuzzleIdRef.current;
         enqueueGameStateSave(targetPuzzleId, updatedState);
       }
-    };
+    }, 1000);
 
-    const interval = window.setInterval(tick, 1000);
     return () => window.clearInterval(interval);
-  }, [gameState]);
+  }, []);
 
   const updateGameState = async (newState: Partial<GameState>) => {
     if (!gameState) return;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent, act } from '@testing-library/react';
 import { render } from '../../test-utils';
 import RippleButton from './RippleButton';
 
@@ -14,6 +14,34 @@ describe('RippleButton', () => {
     render(<RippleButton onClick={onClick}>Click</RippleButton>);
     fireEvent.click(screen.getByRole('button', { name: 'Click' }));
     expect(onClick).toHaveBeenCalled();
+  });
+
+  // 🟠 Audit #25: Click-Bubbling ist beabsichtigt (kein preventDefault/
+  // stopPropagation). Doppel-Klick = 2× onClick. Vertrag dokumentiert
+  // in RippleButtonProps.onClick JSDoc.
+  test('🟠 #25 Doppel-Klick ruft onClick zweimal auf (Doku-Vertrag)', () => {
+    const onClick = jest.fn();
+    render(<RippleButton onClick={onClick}>Click</RippleButton>);
+    const button = screen.getByRole('button', { name: 'Click' });
+    fireEvent.click(button);
+    fireEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  // 🟠 Audit #25: kein preventDefault im Wrapper — der Event bubbelt
+  // normal nach oben, Parent-Handler sehen ihn. Falls ein Caller das
+  // nicht will, gehört der Stop in seinen onClick.
+  test('🟠 #25 RippleButton stoppt Event-Bubbling nicht', () => {
+    const parentClick = jest.fn();
+    const onClick = jest.fn();
+    render(
+      <div onClick={parentClick}>
+        <RippleButton onClick={onClick}>Click</RippleButton>
+      </div>
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Click' }));
+    expect(onClick).toHaveBeenCalledTimes(1);
+    expect(parentClick).toHaveBeenCalledTimes(1);
   });
 
   test('Klick rendert Ripple-Element (Anzahl der Ripple-Container steigt)', () => {
@@ -50,5 +78,34 @@ describe('RippleButton', () => {
     const button = screen.getByRole('button', { name: 'Click' });
     fireEvent.click(button, { clientX: 999, clientY: 999 });
     expect(container.querySelectorAll('button > div').length).toBeGreaterThan(0);
+  });
+
+  // Audit 🔴 #3: vorher entfernte der Effect bei jedem Fires nur die
+  // erste Ripple (`setRipples(ripples.slice(1))`). Bei 3 schnellen Klicks
+  // blieben Ripples 2 + 3 sichtbar. Repro: 3 Klicks, warten bis alle
+  // Timers gefeuert haben, dann müssen 0 Wrapper im DOM sein.
+  test('nach duration ms sind alle Ripples entfernt (Audit 🔴 #3 — mehrere Klicks)', () => {
+    jest.useFakeTimers();
+    try {
+      const { container } = render(<RippleButton duration={300}>Click</RippleButton>);
+      const button = screen.getByRole('button', { name: 'Click' });
+
+      fireEvent.click(button, { clientX: 10, clientY: 10 });
+      fireEvent.click(button, { clientX: 20, clientY: 20 });
+      fireEvent.click(button, { clientX: 30, clientY: 30 });
+
+      // Drei Ripple-Wrapper direkt nach den Klicks.
+      expect(container.querySelectorAll('button > div').length).toBe(3);
+
+      // Nach duration ms alle Timer-Queues leerlaufen lassen.
+      act(() => {
+        jest.advanceTimersByTime(400);
+      });
+
+      // Alle drei müssen weg sein — vor dem Fix blieb Ripple 2 + 3 sichtbar.
+      expect(container.querySelectorAll('button > div').length).toBe(0);
+    } finally {
+      jest.useRealTimers();
+    }
   });
 });

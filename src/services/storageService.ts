@@ -37,6 +37,10 @@ export const clearAllGameStates = async () => {
 // 15s zurück"-Effekten. Zentralisierung hier macht den Kontrakt
 // testbar am Service, ohne React.
 //
+// Audit-Fix (🔴 #1): tail muss nach einem rejected Save mit einem frischen
+// resolved Promise überschrieben werden, nicht mit dem rejected Promise
+// selbst. Sonst hängt jeder nachfolgende Save für immer.
+//
 // ponytail: global pro Schlüssel, nicht pro Hook-Instanz. Reicht für die
 // aktuelle Architektur (eine Hook-Instanz pro puzzleId, Hook wechselt
 // puzzleId beim Level-Wechsel). Wenn jemals mehrere unabhängige
@@ -54,6 +58,11 @@ export function enqueueGameStateSave<T>(key: string, state: T): Promise<void> {
       console.error('Speichern fehlgeschlagen:', error);
     }
   });
-  tail = next;
+  // Recovery: tail darf NICHT auf das Promise 'next' zeigen — sonst hängt
+  // jeder weitere Save. Fresh-resolved unabhängig vom Ausgang.
+  tail = next.then(
+    () => undefined,
+    () => undefined
+  );
   return next;
 }

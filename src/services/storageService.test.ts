@@ -101,4 +101,42 @@ describe('storageService', () => {
     expect(order).toEqual(['first-call', 'first-done', 'second-call', 'second-done']);
     expect(await loadGameState('level-race')).toEqual({ v: 2 });
   });
+
+  // Audit 🔴 #1: tail hing nach rejected Save → alle nachfolgenden Saves
+  // blockierten auf den nie-eintretenden Resolve. Repro: zwei Saves in
+  // Folge, erster rejected → zweiter muss trotzdem erfolgreich landen.
+  test('enqueueGameStateSave hängt nicht nach einem fehlgeschlagenen Save (Audit 🔴 #1)', async () => {
+    const localforage = require('localforage').default;
+    const original = localforage.setItem;
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    let calls = 0;
+    localforage.setItem = async (_key: string, _value: any) => {
+      calls += 1;
+      if (calls === 1) {
+        // Erster Save schlägt fehl — Simulieren IndexedDB-Quota-Fehler o. ä.
+        throw new Error('Simulierter Quota-Exceeded');
+      }
+      // Zweiter Save muss erfolgreich sein (Bug-Repro).
+      return undefined;
+    };
+
+    const first = enqueueGameStateSave('level-fail', { v: 1 });
+    const second = enqueueGameStateSave('level-fail', { v: 2 });
+
+    // Erster Aufruf resolved, ohne zu werfen — Aufrufer schlucken Errors,
+    // das ist Vertragsbestand seit dem ersten Bugfix-Kommentar.
+    await expect(first).resolves.toBeUndefined();
+    // Zweiter Aufruf MUSS ebenfalls resolven — der Bug war, dass 'second'
+    // für immer hängt, weil tail = firstPromise (rejected) war.
+    await expect(second).resolves.toBeUndefined();
+
+    expect(consoleError).toHaveBeenCalledWith(
+      'Speichern fehlgeschlagen:',
+      expect.any(Error)
+    );
+
+    localforage.setItem = original;
+    consoleError.mockRestore();
+  });
 });

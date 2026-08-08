@@ -68,6 +68,32 @@ describe('useTutorial', () => {
     expect(result.current.demoLevel.solution[0].length).toBe(9);
   });
 
+  // 🟠 Audit #22: Cage-Summe 17 über 3 distinkte Zellen 1-9 ist lösbar
+  // (z. B. 1+7+9, 2+6+9, 4+5+8). Der Audit-Trace behauptet "unmöglich",
+  // aber mathematisch gibt es 6 gültige Kombinationen. Die Demo-Solution
+  // (4,4)=7, (5,4)=1, (5,5)=9 = 17 ist eine davon. Kein Validator läuft
+  // auf Tutorial-Daten — Bug existiert nicht im User-Flow.
+  test('🟠 #22 Demo-Cage-Summe 17 (3 distinkte Zellen 1-9) ist mathematisch lösbar', () => {
+    const { result } = renderHook(() => useTutorial());
+    const demo = result.current.demoLevel;
+    // Cage mit Summe 17 und 3 Zellen finden.
+    const cage17 = demo.cages.find(c => c.sum === 17 && c.cells.length === 3);
+    expect(cage17).toBeDefined();
+    // Solution-Zellen für die Cage-Positionen addieren.
+    const cellSum = cage17!.cells.reduce(
+      (acc, { row, col }) => acc + demo.solution[row][col],
+      0
+    );
+    expect(cellSum).toBe(17);
+    // Alle 3 Werte distinkt und in 1..9.
+    const values = cage17!.cells.map(({ row, col }) => demo.solution[row][col]);
+    expect(new Set(values).size).toBe(3);
+    for (const v of values) {
+      expect(v).toBeGreaterThanOrEqual(1);
+      expect(v).toBeLessThanOrEqual(9);
+    }
+  });
+
   test('jeder Schritt hat eine Highlight-Liste, die nur gültige Zellen nennt', () => {
     for (const step of TUTORIAL_STEPS) {
       for (const cell of step.highlightedCells) {

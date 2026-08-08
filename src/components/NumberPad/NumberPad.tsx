@@ -1,5 +1,5 @@
 import React from 'react';
-import { Grid, useBreakpointValue, Box, Text } from '@chakra-ui/react';
+import { Grid, useBreakpointValue, Box, Text, Flex } from '@chakra-ui/react';
 import RippleButton from '../common/RippleButton';
 
 interface NumberPadProps {
@@ -7,6 +7,10 @@ interface NumberPadProps {
   onClear: () => void;
   disabledNumbers?: number[];
   remainingDigits?: { [key: number]: number };
+  /** Verbrauchte Fehlversuche. Wenn gesetzt, erscheint rechts
+   *  neben dem Löschen-Button eine kompakte 3-Punkte-Anzeige. */
+  mistakesUsed?: number;
+  maxMistakes?: number;
 }
 
 // Mindest-Touch-Target 44px (WCAG 2.5.5 / Apple HIG). NumberPad ist die
@@ -17,7 +21,9 @@ export const NumberPad: React.FC<NumberPadProps> = ({
   onNumberSelect,
   onClear,
   disabledNumbers = [],
-  remainingDigits = {}
+  remainingDigits = {},
+  mistakesUsed,
+  maxMistakes
 }) => {
   // Buttons wachsen mit dem Viewport, gehen aber nie unter das Touch-Minimum.
   const buttonSize = useBreakpointValue({
@@ -47,6 +53,20 @@ export const NumberPad: React.FC<NumberPadProps> = ({
     base: '2xs',
     md: 'xs'
   }) ?? '2xs';
+
+  // Löschen-Button: niedriger als die Ziffern-Buttons (User-Wunsch),
+  // aber ≥ 36 px damit der Touch-Tap nicht zu klein wird.
+  const clearButtonHeight = useBreakpointValue({
+    base: MIN_TOUCH,
+    md: '36px',
+    lg: '40px'
+  }) ?? '36px';
+  const clearButtonFontSize = useBreakpointValue({
+    base: 'md',
+    md: 'sm',
+    lg: 'md'
+  }) ?? 'sm';
+  const showMistakesInline = mistakesUsed !== undefined && maxMistakes !== undefined;
 
   return (
     <Grid templateColumns="repeat(3, 1fr)" gap={gap} width={padWidth}>
@@ -91,24 +111,65 @@ export const NumberPad: React.FC<NumberPadProps> = ({
           )}
         </Box>
       ))}
-      <RippleButton
+      <Flex
         gridColumn="1 / span 3"
-        onClick={onClear}
-        bg="status.error"
-        color="white"
-        size="lg"
-        height={useBreakpointValue({ base: MIN_TOUCH, md: '52px', lg: '56px' }) ?? MIN_TOUCH}
-        fontSize={useBreakpointValue({ base: 'md', md: 'lg' }) ?? 'md'}
-        fontWeight="bold"
-        _hover={{ bg: 'red.600' }}
-        _active={{ bg: 'red.600' }}
-        borderRadius="lg"
-        boxShadow="sm"
-        rippleColor="whiteAlpha.400"
-        aria-label="Auswahl löschen"
+        gap={2}
+        align="center"
+        width="100%"
+        flexWrap="wrap"
       >
-        Löschen
-      </RippleButton>
+        <RippleButton
+          onClick={onClear}
+          bg="status.error"
+          color="white"
+          size="md"
+          height={clearButtonHeight}
+          fontSize={clearButtonFontSize}
+          fontWeight="bold"
+          _hover={{ bg: 'red.600' }}
+          _active={{ bg: 'red.600' }}
+          borderRadius="lg"
+          boxShadow="sm"
+          rippleColor="whiteAlpha.400"
+          aria-label="Auswahl löschen"
+          flex={showMistakesInline ? '1 1 60%' : '1 1 100%'}
+          minW="120px"
+        >
+          Löschen
+        </RippleButton>
+        {showMistakesInline && (
+          <Flex
+            align="center"
+            gap={1}
+            aria-label={`${mistakesUsed} von ${maxMistakes} Fehlversuchen verbraucht`}
+            role="status"
+            flex="0 0 auto"
+          >
+            {Array.from({ length: maxMistakes ?? 0 }, (_, i) => {
+              const used = i < (mistakesUsed ?? 0);
+              return (
+                <Box
+                  key={i}
+                  as="svg"
+                  width="14px"
+                  height="14px"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="7"
+                    fill={used ? 'var(--chakra-colors-status-error)' : 'none'}
+                    stroke={used ? 'var(--chakra-colors-status-error)' : 'var(--chakra-colors-text-muted)'}
+                    strokeWidth="2"
+                  />
+                </Box>
+              );
+            })}
+          </Flex>
+        )}
+      </Flex>
     </Grid>
   );
 };
