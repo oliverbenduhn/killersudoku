@@ -152,12 +152,19 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
     gameStateRef.current = gameState;
   }, [gameState]);
 
+  // 🟠 Audit #19: Timer-Effect auf []-Dep umgestellt. Vorher [gameState]
+  // → Cleanup + Rebuild jede Sekunde (Timer ruft selbst setGameState).
+  // Jetzt: Interval einmal beim Mount, jeder Tick liest den aktuellen
+  // Stand aus gameStateRef (synchron, kein Stale-Closure). Stop-Bedingung
+  // (solved / gameOver / null) wird im tick selbst geprüft, damit der
+  // Interval bei Game-Ende sauber via clearInterval beendet wird.
   useEffect(() => {
-    if (!gameState || gameState.solved || gameState.gameOver) return;
-
-    const tick = () => {
+    const interval = window.setInterval(() => {
       const currentState = gameStateRef.current;
-      if (!currentState) return;
+      if (!currentState || currentState.solved || currentState.gameOver) {
+        window.clearInterval(interval);
+        return;
+      }
 
       const now = Date.now();
       const startTime = currentState.startTime || now;
@@ -181,11 +188,10 @@ export const useGameState = (puzzleId: string, size: number = 9) => {
         const targetPuzzleId = currentPuzzleIdRef.current;
         enqueueGameStateSave(targetPuzzleId, updatedState);
       }
-    };
+    }, 1000);
 
-    const interval = window.setInterval(tick, 1000);
     return () => window.clearInterval(interval);
-  }, [gameState]);
+  }, []);
 
   const updateGameState = async (newState: Partial<GameState>) => {
     if (!gameState) return;

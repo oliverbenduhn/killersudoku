@@ -133,4 +133,66 @@ describe('useGameState', () => {
     expect(result.current.canUndo).toBe(false);
     expect(result.current.gameState!.hintsUsed).toBe(5);
   });
+
+  // 🟠 Audit #19: Timer-UseEffect mit []-Dep, läuft weiter über
+  // gameState-Änderungen hinweg (User-Moves dürfen den Interval nicht
+  // resetten) und stoppt bei solved/gameOver.
+  test('🟠 #19 Timer läuft nach User-Move weiter (kein Rebuild-Reset)', async () => {
+    jest.useFakeTimers();
+    const level = makeLevel(6);
+    mockFetchForLevel(level);
+    const { result } = renderHook(() => useGameState('level-6'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Drei Timer-Ticks.
+    await act(async () => {
+      jest.advanceTimersByTime(3000);
+    });
+    await waitFor(() => {
+      expect(result.current.gameState!.elapsedTime).toBeGreaterThanOrEqual(3000);
+    });
+    const elapsedAfterTicks = result.current.gameState!.elapsedTime;
+
+    // User-Move (applyMove → setGameState). Vor dem Fix hätte der
+    // [gameState]-Dep den Interval hier cleanup+rebuild gemacht und der
+    // nächste Tick wäre erst danach geschlagen worden. Mit []-Dep läuft
+    // der Interval ungestört weiter, nächster Tick zählt sofort weiter.
+    await act(async () => {
+      await result.current.applyMove({ hintsUsed: 1 });
+    });
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+    await waitFor(() => {
+      expect(result.current.gameState!.elapsedTime).toBeGreaterThanOrEqual(
+        elapsedAfterTicks + 2000
+      );
+    });
+    jest.useRealTimers();
+  });
+
+  test('🟠 #19 Timer stoppt bei gameOver=true', async () => {
+    jest.useFakeTimers();
+    const level = makeLevel(7);
+    mockFetchForLevel(level);
+    const { result } = renderHook(() => useGameState('level-7'));
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Game over setzen.
+    await act(async () => {
+      await result.current.updateGameState({ gameOver: true });
+    });
+
+    const elapsedAtStop = result.current.gameState!.elapsedTime;
+
+    // 5s warten — Timer muss wegen gameOver-Check im tick gestoppt haben.
+    await act(async () => {
+      jest.advanceTimersByTime(5000);
+    });
+
+    // elapsedTime darf nicht weiter hochgezählt haben.
+    expect(result.current.gameState!.elapsedTime).toBe(elapsedAtStop);
+    jest.useRealTimers();
+  });
 });
