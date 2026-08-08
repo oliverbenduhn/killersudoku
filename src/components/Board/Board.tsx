@@ -255,6 +255,18 @@ export const Board: React.FC<BoardProps> = ({
       toast({ title: 'Hinweis nicht verfügbar', description: 'Level noch nicht geladen.', status: 'warning', duration: 2500, isClosable: true });
       return;
     }
+    // #38: Hint-Zähler prüfen (shared mit Reveal-Hint)
+    const hintsUsed = gameState.hintsUsed || 0;
+    if (hintsUsed >= MAX_HINTS) {
+      toast({
+        title: 'Hinweise aufgebraucht',
+        description: `Du hast bereits alle ${MAX_HINTS} Hinweise genutzt.`,
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
     const hint = strategicHint.requestHint(gameState.cellValues, cages);
     if (!hint) {
       toast({
@@ -279,17 +291,19 @@ export const Board: React.FC<BoardProps> = ({
       c.cells.some(cell => cell.row === hint.cell.row && cell.col === hint.cell.col)
     );
     setHintCage(hintCageObj ?? null);
+    // Hint zählen
+    updateGameState({ hintsUsed: hintsUsed + 1 });
     toast({
       title: `${techLabels[hint.technique]} → ${hint.value}`,
       description: hint.explanation,
       status: 'info',
-      duration: null, // #38: bleibt bis manuell geschlossen
+      duration: 10000, // #38: 10s, dann auto-close
       isClosable: true,
       position: 'bottom', // verdeckt das Spielfeld nicht
       onCloseComplete: () => setHintCage(null),
     });
     setSelectedCell(hint.cell);
-  }, [gameState, cages, strategicHint, toast, setSelectedCell]);
+  }, [gameState, cages, strategicHint, toast, setSelectedCell, updateGameState]);
 
   // F5 für Hints an/aus, P für Bleistiftmodus, H/R/Esc/?/Mod+Z/Mod+Y für
   // die neuen Shortcuts. Ein einziger Hook ersetzt die alten zwei
@@ -640,6 +654,47 @@ export const Board: React.FC<BoardProps> = ({
             })}
             <Text fontSize="xs" color="text.muted" fontFamily="mono" ml={1}>
               {gameState.mistakesUsed || 0} / {MAX_MISTAKES}
+            </Text>
+          </Box>
+        )}
+
+        {/* Hinweise-Anzeige (3 Tipps): analog zu Fehlversuchen, aber
+            farblich neutral — Hints sind kein Fehler, sondern Hilfe. */}
+        {gameState && !gameState.solved && (
+          <Box
+            mt={2}
+            width={actionGridWidth}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            gap={2}
+            role="status"
+            aria-label={`${gameState.hintsUsed || 0} von ${MAX_HINTS} Hinweisen verbraucht`}
+          >
+            {Array.from({ length: MAX_HINTS }, (_, i) => {
+              const used = i < (gameState.hintsUsed || 0);
+              return (
+                <Box
+                  key={i}
+                  as="svg"
+                  width="20px"
+                  height="20px"
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                >
+                  <circle
+                    cx="10"
+                    cy="10"
+                    r="7"
+                    fill={used ? 'var(--chakra-colors-status-info)' : 'none'}
+                    stroke={used ? 'var(--chakra-colors-status-info)' : 'var(--chakra-colors-text-muted)'}
+                    strokeWidth="1.6"
+                  />
+                </Box>
+              );
+            })}
+            <Text fontSize="xs" color="text.muted" fontFamily="mono" ml={1}>
+              {gameState.hintsUsed || 0} / {MAX_HINTS}
             </Text>
           </Box>
         )}
