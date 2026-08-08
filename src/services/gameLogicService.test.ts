@@ -216,46 +216,31 @@ describe('gameLogicService', () => {
       const board = emptyBoard();
       const c = cage('c1', [{ row: 0, col: 0 }], 5);
       const result = getPossibleValues(board, 0, 0, [c]);
-      const values = Array.isArray(result) ? result : result.values;
-      expect(values).toContain(5);
+      expect(result.values).toContain(5);
     });
 
     test('ohne Käfig: leere Liste', () => {
       const board = emptyBoard();
-      expect(getPossibleValues(board, 5, 5, [])).toEqual([]);
+      expect(getPossibleValues(board, 5, 5, []).values).toEqual([]);
     });
 
     test('Min-Schranke: 3er-Käfig Summe 6 erlaubt nur {1,2,3}', () => {
       const board = emptyBoard();
       const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }], 6);
-      const result = getPossibleValues(board, 0, 0, [c]);
-      const values = Array.isArray(result) ? result : result.values;
-      expect(values).toEqual([1, 2, 3]);
+      expect(getPossibleValues(board, 0, 0, [c]).values).toEqual([1, 2, 3]);
     });
 
     test('Max-Schranke: 2er-Käfig Summe 17 erlaubt nur {8,9}', () => {
       const board = emptyBoard();
       const c = cage('c1', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 17);
-      const result = getPossibleValues(board, 0, 0, [c]);
-      const values = Array.isArray(result) ? result : result.values;
-      expect(values).toEqual([8, 9]);
+      expect(getPossibleValues(board, 0, 0, [c]).values).toEqual([8, 9]);
     });
 
     test('schließt bereits im Käfig verwendete Restziffern exakt aus', () => {
       const board = emptyBoard();
       board[0][0] = 1;
       const c = cage('c1', [{ row: 0, col: 0 }, { row: 3, col: 1 }, { row: 6, col: 2 }], 6);
-      const result = getPossibleValues(board, 3, 1, [c]);
-      const values = Array.isArray(result) ? result : result.values;
-      expect(values).toEqual([2, 3]);
-    });
-
-    test('currentValueInvalid=true bei ungültigem aktuellem Wert', () => {
-      const board = emptyBoard();
-      board[0][0] = 9; // Käfig-Summe 5 → 9 ist ungültig
-      const c = cage('c1', [{ row: 0, col: 0 }], 5);
-      const result = getPossibleValues(board, 0, 0, [c]) as { values: number[]; currentValueInvalid: boolean };
-      expect(result.currentValueInvalid).toBe(true);
+      expect(getPossibleValues(board, 3, 1, [c]).values).toEqual([2, 3]);
     });
   });
 

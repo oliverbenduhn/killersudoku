@@ -158,28 +158,23 @@ export const isBoardComplete = (
 
 export interface PossibleValuesResult {
   values: number[];
-  /** true, wenn der aktuell eingetragene Wert bereits ungültig ist. */
-  currentValueInvalid: boolean;
 }
 
-// Gibt eine Liste potentieller Werte für eine Zelle zurück
+// Gibt eine Liste potentieller Werte für eine Zelle zurück.
+// Rückgabe ist immer ein Objekt (kein Union-Leck mehr, Audit #17).
+// Ohne Käfig: leeres Array. Mit Käfig: gefilterte Liste möglicher Werte.
 export const getPossibleValues = (
   cellValues: number[][],
   row: number,
   col: number,
   cages: Cage[],
   size: number = 9
-): number[] | PossibleValuesResult => {
+): PossibleValuesResult => {
   const cage = getCageForCell(cages, row, col);
-  if (!cage) return [];
-
-  const currentValue = cellValues[row][col];
-  const currentValueInvalid =
-    currentValue !== 0 && !isCellValid(cellValues, row, col, currentValue, cages, size);
+  if (!cage) return { values: [] };
 
   const possibleValues = getLegalValuesForCell(cellValues, { row, col }, cages);
-
-  return { values: possibleValues, currentValueInvalid };
+  return { values: possibleValues };
 };
 
 // Prüft, ob zwei Zellen zum gleichen Käfig gehören
