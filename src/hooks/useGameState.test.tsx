@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import React from 'react';
 import { useGameState } from './useGameState';
 import { enqueueGameStateSave, loadGameState } from '../services/storageService';
 
@@ -194,5 +195,57 @@ describe('useGameState', () => {
     // elapsedTime darf nicht weiter hochgezählt haben.
     expect(result.current.gameState!.elapsedTime).toBe(elapsedAtStop);
     jest.useRealTimers();
+  });
+
+  // 🟠 Audit #21: cancelled-Flag im Hydration-Effect, damit StrictMode-
+  // Doppeleffekt den zweiten Mount nicht in loadState weiterlaufen lässt
+  // → keine doppelten enqueueGameStateSave-Calls im Hydration-Branch.
+  test('🟠 #21 StrictMode-Doppeleffekt erzeugt nur einen Hydration-Save', async () => {
+    const level = makeLevel(8);
+    mockFetchForLevel(level);
+
+    // Vorab gespeicherten State hinterlegen, damit der Hydration-Save-
+    // Branch (Z.81 im Original, jetzt mit cancelled-Wache) garantiert
+    // getriggert wird.
+    const saved = {
+      id: 'game-restore-8',
+      cellValues: emptyBoard(),
+      notes: emptyNotes(),
+      mistakesUsed: 0,
+      hintsUsed: 0,
+      gameOver: false,
+      levelId: 'level-8',
+    };
+    await enqueueGameStateSave('level-8', saved);
+
+    // enqueueGameStateSave spyen, um Hydration-Save-Calls vom Test-
+    // Setup-Setup zu unterscheiden.
+    const saveSpy = jest.spyOn(
+      require('../services/storageService'),
+      'enqueueGameStateSave'
+    );
+    saveSpy.mockClear();
+
+    // StrictMode umschließt den Hook → useEffect mountet 2x (Mount,
+    // Cleanup, Mount). Ohne cancelled-Flag würde der erste Mount noch
+    // nach dem Cleanup den Save-Call ausführen.
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.StrictMode, null, children);
+
+    const { result } = renderHook(() => useGameState('level-8'), { wrapper });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Nur Calls mit unserem puzzleId zählen, dann prüfen dass exakt 1
+    // Save erfolgte. Ohne Fix wären es 2 (erster Mount + ReMount, weil
+    // currentPuzzleIdRef in beiden Fällen identisch ist).
+    const callsForOurPuzzle = saveSpy.mock.calls.filter(
+      (call: unknown[]) => call[0] === 'level-8'
+    );
+    expect(callsForOurPuzzle).toHaveLength(1);
+
+    // Sanity: gameState ist tatsächlich der restaurierte.
+    expect(result.current.gameState!.id).toBe('game-restore-8');
+
+    saveSpy.mockRestore();
   });
 });
