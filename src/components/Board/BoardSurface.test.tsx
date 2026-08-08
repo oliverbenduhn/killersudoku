@@ -44,6 +44,7 @@ function defaultProps(overrides: Partial<BoardSurfaceProps> = {}): BoardSurfaceP
     notes: emptyNotes(),
     initialValues: emptyBoard(),
     cages,
+    hintCage: null,
     levelData,
     cellSize: 48,
     cageInsetPx: 6,

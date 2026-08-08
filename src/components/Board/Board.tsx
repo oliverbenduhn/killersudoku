@@ -245,6 +245,8 @@ export const Board: React.FC<BoardProps> = ({
     }
   }, [pencilMode, selectedCell]);
 
+  const [hintCage, setHintCage] = useState<Cage | null>(null);
+
   // Strategischer Tipp: extrahiert als Callback, damit Button und
   // Tastatur-"H" denselben Code-Pfad nutzen. Vorher dupliziert.
   const requestStrategicHintToast = useCallback(() => {
@@ -272,13 +274,19 @@ export const Board: React.FC<BoardProps> = ({
       'innie': '45er-Regel (Innie)',
       'outie': '45er-Regel (Outie)',
     };
+    // Käfig für das Highlight finden
+    const hintCageObj = cages.find(c =>
+      c.cells.some(cell => cell.row === hint.cell.row && cell.col === hint.cell.col)
+    );
+    setHintCage(hintCageObj ?? null);
     toast({
       title: `${techLabels[hint.technique]} → ${hint.value}`,
       description: hint.explanation,
       status: 'info',
-      duration: 8000,
+      duration: null, // #38: bleibt bis manuell geschlossen
       isClosable: true,
-      position: 'top',
+      position: 'bottom', // verdeckt das Spielfeld nicht
+      onCloseComplete: () => setHintCage(null),
     });
     setSelectedCell(hint.cell);
   }, [gameState, cages, strategicHint, toast, setSelectedCell]);
@@ -456,6 +464,7 @@ export const Board: React.FC<BoardProps> = ({
             notes={gameState.notes}
             initialValues={levelData.initialValues}
             cages={cages}
+            hintCage={hintCage}
             levelData={levelData}
             cellSize={cellSize}
             cageInsetPx={cageInsetPx}

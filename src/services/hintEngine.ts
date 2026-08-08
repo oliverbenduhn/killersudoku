@@ -154,18 +154,23 @@ function findNakedSingleCage(
       technique: 'naked-single-cage',
       cell,
       value: candidates[0],
-      explanation: cageNakedExplanation(cage, candidates[0]),
+      explanation: cageNakedExplanation(cellValues, cage, candidates[0]),
     };
   }
   return null;
 }
 
-function cageNakedExplanation(cage: Cage, value: number): string {
+function cageNakedExplanation(cellValues: number[][], cage: Cage, value: number): string {
   // Zwei mögliche Quellen für Eindeutigkeit:
   //   a) Nur eine Zelle im Käfig leer → sie MUSS die Restsumme sein.
   //   b) Alle anderen Zahlen im Käfig verboten (z. B. Doublette) → Wert
   //      ist die einzige legale Möglichkeit.
-  return `Im Käfig mit Summe ${cage.sum} ist nur diese eine Zelle leer — die einzig mögliche Zahl ist ${value}.`;
+  const filled = cage.cells
+    .map((c) => cellValues[c.row][c.col])
+    .filter((v) => v !== 0);
+  const filledSum = filled.reduce((a, b) => a + b, 0);
+  const arithmetic = ` (${cage.sum} − ${filled.join(' − ')} = ${cage.sum - filledSum})`;
+  return `Im Käfig mit Summe ${cage.sum} ist nur diese eine Zelle leer — die einzig mögliche Zahl ist ${value}${arithmetic}.`;
 }
 
 // --- Hidden Single (Cage) -------------------------------------------------
