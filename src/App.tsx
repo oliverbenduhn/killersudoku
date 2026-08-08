@@ -178,7 +178,7 @@ function App() {
               >
                 Killer Sudoku
               </Heading>
-              <Text color={headerTextColor} opacity={0.45} fontSize="2xs" fontFamily="mono" fontWeight="400">
+              <Text color="text.muted" fontSize="2xs" fontFamily="mono" fontWeight="400">
                 v{APP_VERSION}
               </Text>
             </Flex>
