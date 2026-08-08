@@ -323,6 +323,91 @@ describe('gameLogicService', () => {
   });
 
   describe('applyPlayerEntry', () => {
+    // Audit 🔴 #4 hat behauptet: "Drag-Selection über mehrere Käfige +
+    // Zahleneingabe schreibt den Wert in alle markierten Zellen, auch wenn
+    // der Wert in manchen Käfig-Zellen laut analyzeCage illegal ist →
+    // unlösbare Zustände." Der Code lehnt über analyzeCage.isCellValid
+    // ungültige Cells ab (in rejectedCells). Die Verifikation lebt hier
+    // statt als Hook-Integration-Test, weil die Cage-Logik im Service ist
+    // und applyPlayerEntry die zentrale Eintrittspforte ist.
+    test('Audit 🔴 #4: Multi-Cage-Drag tippt Zahl; ungültige Cage-Cells landen in rejectedCells, nicht im Brett', () => {
+      const board = emptyBoard();
+      const initial = emptyBoard();
+      const notes = emptyNotes();
+      // Zwei Käfige nebeneinander:
+      // Cage A: (0,0)+(0,1) Summe 10 → [4,6] oder [5,5] ungültig
+      // Cage B: (0,2) allein, Summe 7 → {7} als einzelne Zelle, immer gültig
+      const cageA = cage('A', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 10);
+      const cageB = cage('B', [{ row: 0, col: 2 }], 7);
+
+      const result = applyPlayerEntry(
+        board,
+        notes,
+        initial,
+        // Drag-Select über alle drei Zellen in beiden Käfigen
+        [{ row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }],
+        5, // User tippt 5
+        [cageA, cageB]
+      );
+
+      // Akzeptiert: in Cage B ist 5 nicht erlaubt (Summe 7 muss 7 sein → reject);
+      // in Cage A ist 5 nur erlaubt, wenn die ANDERE Zelle des Käfigs 5 ist
+      // (No-Duplicate → 5+5 verletzt; oder feasibleCombinations: {4,6} hat 5 nicht).
+      // Caveat: analyzeCage hat Veto-Recht pro Zelle, daher WEDER (0,0) NOCH
+      // (0,1) akzeptiert; (0,2) auch nicht (Summe 7 verlangt 7).
+      // Audit-Behauptung "schreibt überall hin" wird durch dieses Verhalten
+      // widerlegt: nichts wird geschrieben, alles abgelehnt.
+      const writtenCells = [
+        ...result.acceptedCells,
+        ...result.rejectedCells
+      ].filter(({ row, col }) => result.cellValues[row][col] === 5);
+
+      expect(writtenCells).toEqual([]);
+      expect(result.cellValues[0][0]).toBe(0);
+      expect(result.cellValues[0][1]).toBe(0);
+      expect(result.cellValues[0][2]).toBe(0);
+    });
+
+    test('Audit 🔴 #4: gemischte Akzeptanz — gültige Cells werden geschrieben, ungültige NICHT', () => {
+      const board = emptyBoard();
+      const initial = emptyBoard();
+      const notes = emptyNotes();
+      // Cage A: (0,0)+(0,1) Summe 11 → [5,6] ist gültig
+      // Cage B: (0,2) allein, Summe 7 → 5 nicht erlaubt
+      const cageA = cage('A', [{ row: 0, col: 0 }, { row: 0, col: 1 }], 11);
+      const cageB = cage('B', [{ row: 0, col: 2 }], 7);
+
+      // Iteration order: A0, B0, A1. applyPlayerEntry akkumuliert in next;
+      // jede Iteration prüft candidate (Klon von next mit hypothetisch dem
+      // aktuellen Wert).
+      // - A0 (0,0) = 5 → candidate = [5,0,0], analyzeCage(Cage A): feasible [5,6] enthält 5 ✓
+      //   → accepted, next[0][0]=5.
+      // - B0 (0,2) = 5 → candidate = [5,0,5], analyzeCage(Cage B): Summe 7, einzelne Zelle = 5 != 7
+      //   → ungültig → rejected.
+      // - A1 (0,1) = 5 → candidate = [5,5,5], analyzeCage(Cage A): No-Duplicate 5 in
+      //   2er-Käfig → ungültig → rejected.
+      const result = applyPlayerEntry(
+        board,
+        notes,
+        initial,
+        [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 0, col: 1 }],
+        5,
+        [cageA, cageB]
+      );
+
+      // acceptedCells muss (0,0) enthalten.
+      expect(result.acceptedCells).toContainEqual({ row: 0, col: 0 });
+      // rejectedCells muss (0,2) und (0,1) enthalten.
+      expect(result.rejectedCells.map(c => `${c.row},${c.col}`).sort()).toEqual(
+        ['0,1', '0,2']
+      );
+      // Zellwert (0,0) wurde tatsächlich geschrieben.
+      expect(result.cellValues[0][0]).toBe(5);
+      // (0,1) und (0,2) wurden NICHT geschrieben.
+      expect(result.cellValues[0][1]).toBe(0);
+      expect(result.cellValues[0][2]).toBe(0);
+    });
+
     test('clears notes only for accepted cells without mutating the input grid', () => {
       const board = emptyBoard();
       const initial = emptyBoard();
