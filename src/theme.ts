@@ -21,29 +21,29 @@ const semanticTokens = {
     // kühlem Grau — Hum-Register. Chakra-Palette reicht nicht, daher Hex.
     'surface.canvas': {
       default: '#FAF6EF', _dark: '#1B1712',
-      '[data-scheme="ocean"] &': '#F3F7FA',
-      '[data-scheme="forest"] &': '#F5F7EF',
+      '&[data-scheme="ocean"]': '#F3F7FA',
+      '&[data-scheme="forest"]': '#F5F7EF',
     },
     'surface.raised': {
       default: '#FFFDF8', _dark: '#26201A',
-      '[data-scheme="ocean"] &': '#FFFFFF',
-      '[data-scheme="forest"] &': '#FFFFFF',
+      '&[data-scheme="ocean"]': '#FFFFFF',
+      '&[data-scheme="forest"]': '#FFFFFF',
     },
     'surface.sunken': {
       default: '#F0E9DC', _dark: '#332A22',
-      '[data-scheme="ocean"] &': '#E4EDF3',
-      '[data-scheme="forest"] &': '#E6EAD9',
+      '&[data-scheme="ocean"]': '#E4EDF3',
+      '&[data-scheme="forest"]': '#E6EAD9',
     },
     'surface.overlay':      { default: 'blackAlpha.500', _dark: 'blackAlpha.700' },
     'surface.header': {
       default: '#FFFDF8', _dark: '#26201A',
-      '[data-scheme="ocean"] &': '#FFFFFF',
-      '[data-scheme="forest"] &': '#FFFFFF',
+      '&[data-scheme="ocean"]': '#FFFFFF',
+      '&[data-scheme="forest"]': '#FFFFFF',
     },
     'surface.header.text': {
       default: '#221A12', _dark: '#F5EEE2',
-      '[data-scheme="ocean"] &': '#16232E',
-      '[data-scheme="forest"] &': '#1E2A18',
+      '&[data-scheme="ocean"]': '#16232E',
+      '&[data-scheme="forest"]': '#1E2A18',
     },
 
     // Käfig-Hintergründe — weicher. Light .100 (pastell), Dark .900
@@ -98,46 +98,46 @@ const semanticTokens = {
     // Text-Hierarchie — warme Tinte (hue ~35), kein reines Schwarz/Grau.
     'text.primary': {
       default: '#221A12', _dark: '#F5EEE2',
-      '[data-scheme="ocean"] &': '#16232E',
-      '[data-scheme="forest"] &': '#1E2A18',
+      '&[data-scheme="ocean"]': '#16232E',
+      '&[data-scheme="forest"]': '#1E2A18',
     },
     'text.secondary': {
       default: '#6B5D4D', _dark: '#B8A98F',
-      '[data-scheme="ocean"] &': '#4C6478',
-      '[data-scheme="forest"] &': '#55654A',
+      '&[data-scheme="ocean"]': '#4C6478',
+      '&[data-scheme="forest"]': '#55654A',
     },
     'text.muted': {
       default: '#94836E', _dark: '#8A7B66',
-      '[data-scheme="ocean"] &': '#8098AC',
-      '[data-scheme="forest"] &': '#8A9678',
+      '&[data-scheme="ocean"]': '#8098AC',
+      '&[data-scheme="forest"]': '#8A9678',
     },
     'text.inverse': {
       default: '#FFFDF8', _dark: '#221A12',
-      '[data-scheme="ocean"] &': '#FFFFFF',
-      '[data-scheme="forest"] &': '#FFFFFF',
+      '&[data-scheme="ocean"]': '#FFFFFF',
+      '&[data-scheme="forest"]': '#FFFFFF',
     },
 
     // Brand: warmes Coral als einzige Akzentfarbe (Hum-Register). Chakra
     // hat kein passendes Coral in der Standardpalette → Hex.
     'brand.primary': {
       default: '#E15A3C', _dark: '#F07B5E',
-      '[data-scheme="ocean"] &': '#0E7C86',
-      '[data-scheme="forest"] &': '#4C7A3A',
+      '&[data-scheme="ocean"]': '#0E7C86',
+      '&[data-scheme="forest"]': '#4C7A3A',
     },
     'brand.primary.hover': {
       default: '#C94A2F', _dark: '#E89A83',
-      '[data-scheme="ocean"] &': '#0B636C',
-      '[data-scheme="forest"] &': '#3C6230',
+      '&[data-scheme="ocean"]': '#0B636C',
+      '&[data-scheme="forest"]': '#3C6230',
     },
     'brand.primary.subtle': {
       default: '#FBE3DC', _dark: '#3E241C',
-      '[data-scheme="ocean"] &': '#DCEFF0',
-      '[data-scheme="forest"] &': '#DCEAD2',
+      '&[data-scheme="ocean"]': '#DCEFF0',
+      '&[data-scheme="forest"]': '#DCEAD2',
     },
     'brand.onPrimary': {
       default: '#FFFDF8', _dark: '#221A12',
-      '[data-scheme="ocean"] &': '#FFFFFF',
-      '[data-scheme="forest"] &': '#FFFFFF',
+      '&[data-scheme="ocean"]': '#FFFFFF',
+      '&[data-scheme="forest"]': '#FFFFFF',
     },
 
     // Status
@@ -148,18 +148,18 @@ const semanticTokens = {
     // Bottom-Nav-Pill für aktiven Tab (moderne Mobile-UX).
     'nav.active.bg': {
       default: '#FBE3DC', _dark: '#3E241C',
-      '[data-scheme="ocean"] &': '#DCEFF0',
-      '[data-scheme="forest"] &': '#DCEAD2',
+      '&[data-scheme="ocean"]': '#DCEFF0',
+      '&[data-scheme="forest"]': '#DCEAD2',
     },
     'nav.active.text': {
       default: '#C94A2F', _dark: '#F07B5E',
-      '[data-scheme="ocean"] &': '#0B636C',
-      '[data-scheme="forest"] &': '#3C6230',
+      '&[data-scheme="ocean"]': '#0B636C',
+      '&[data-scheme="forest"]': '#3C6230',
     },
     'nav.inactive.text': {
       default: '#94836E', _dark: '#8A7B66',
-      '[data-scheme="ocean"] &': '#7C93A5',
-      '[data-scheme="forest"] &': '#8A9678',
+      '&[data-scheme="ocean"]': '#7C93A5',
+      '&[data-scheme="forest"]': '#8A9678',
     },
   },
   radii: {

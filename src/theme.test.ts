@@ -1,4 +1,4 @@
-import { cageTokens } from './theme';
+import { cageTokens, theme } from './theme';
 
 describe('cageTokens', () => {
   test('mappt „blue.100" auf bg/border-Token des blauen Käfigs', () => {
@@ -18,5 +18,28 @@ describe('cageTokens', () => {
     // funktionieren — wir wollen den Vertrag dokumentieren, nicht den
     // Implementation-Detail testen.
     expect(cageTokens('blue.200' as any).bg).toBe('cage.blue.100');
+  });
+});
+
+// Regression: ColorSchemeSelectoren müssen auf dem Consumer liegen, nicht
+// auf einem Vorfahren. Chakra rendert alle CSS-Variablen auf
+// `:root, [data-theme]` (siehe CSSVars-Komponente in @chakra-ui/system),
+// sodass `&` zu `:root` expandiert. ColorSchemeContext setzt
+// `data-scheme` auf document.documentElement = `:root` — folglich muss
+// der Selektor `&[data-scheme="…"]` lauten. Die inverse Schreibweise
+// `[data-scheme="…"] &` würde zu `[data-scheme="…"] :root` kompilieren
+// und nie matchen, weil `:root` kein Nachfahre von :root sein kann.
+describe('ColorScheme-Selektoren in semanticTokens', () => {
+  const colors = theme.semanticTokens?.colors as Record<string, Record<string, unknown>>;
+  const offenders: string[] = [];
+  for (const [tokenName, value] of Object.entries(colors)) {
+    for (const selector of Object.keys(value)) {
+      if (selector.includes('[data-scheme=') && !selector.startsWith('&[')) {
+        offenders.push(`${tokenName}: ${selector}`);
+      }
+    }
+  }
+  test('kein Selektor setzt data-scheme auf einen Vorfahren', () => {
+    expect(offenders).toEqual([]);
   });
 });
