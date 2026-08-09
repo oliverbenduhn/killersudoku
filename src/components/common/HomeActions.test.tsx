@@ -47,7 +47,7 @@ describe('HomeActions', () => {
     expect(screen.getByRole('button', { name: 'Farbmodus aktivieren' })).toBeInTheDocument();
   });
 
-  test('rendert einen Dark-Mode-Toggle-Button', () => {
+  test('rendert einen Farbschema-Menü-Button', () => {
     render(
       <HomeActions
         onOpenLevels={jest.fn()}
@@ -57,8 +57,21 @@ describe('HomeActions', () => {
         onToggleBlackAndWhite={jest.fn()}
       />
     );
-    expect(
-      screen.getByRole('button', { name: /Hellmodus wechseln|Dunkelmodus wechseln/ })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Farbschema wählen' })).toBeInTheDocument();
+  });
+
+  test('wechselt das Farbschema beim Klick auf einen Menüeintrag', async () => {
+    render(
+      <HomeActions
+        onOpenLevels={jest.fn()}
+        blackAndWhiteMode={false}
+        isFullscreen={false}
+        onToggleFullscreen={jest.fn()}
+        onToggleBlackAndWhite={jest.fn()}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Farbschema wählen' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: /Ocean/ }));
+    expect(document.documentElement.getAttribute('data-scheme')).toBe('ocean');
   });
 });

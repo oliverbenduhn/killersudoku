@@ -1,5 +1,6 @@
-import { Button, IconButton, Tooltip, useColorMode } from '@chakra-ui/react';
-import { CopyIcon, MoonIcon, SunIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import { Box, Button, IconButton, Menu, MenuButton, MenuItem, MenuList, Tooltip } from '@chakra-ui/react';
+import { CheckIcon, CopyIcon, ViewIcon, ViewOffIcon } from '@chakra-ui/icons';
+import { COLOR_SCHEMES, useColorScheme } from '../../contexts/ColorSchemeContext';
 
 export interface HomeActionsProps {
   onOpenLevels: () => void;
@@ -22,7 +23,8 @@ export interface HomeActionsProps {
 // als auch in Board.tsx's Sidebar (Desktop) gerendert — der jeweilige
 // Aufrufer bestimmt die Anordnung (horizontal/vertikal).
 export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndWhite, currentLevel, isFullscreen, onToggleFullscreen, onOpenHelp }: HomeActionsProps) {
-  const { colorMode, toggleColorMode } = useColorMode();
+  const { scheme, setScheme } = useColorScheme();
+  const activeSwatch = COLOR_SCHEMES.find((s) => s.id === scheme)?.swatch ?? COLOR_SCHEMES[0].swatch;
 
   return (
     <>
@@ -35,13 +37,41 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
       >
         {currentLevel !== undefined ? `Level ${currentLevel}` : 'Level'}
       </Button>
-      <IconButton
-        size="sm"
-        variant="ghost"
-        aria-label={colorMode === 'dark' ? 'Zu Hellmodus wechseln' : 'Zu Dunkelmodus wechseln'}
-        icon={colorMode === 'dark' ? <SunIcon /> : <MoonIcon />}
-        onClick={toggleColorMode}
-      />
+      <Menu>
+        <MenuButton
+          as={IconButton}
+          size="sm"
+          variant="ghost"
+          aria-label="Farbschema wählen"
+          icon={
+            <Box
+              w="14px"
+              h="14px"
+              borderRadius="full"
+              bg={activeSwatch}
+              border="1px solid"
+              borderColor="blackAlpha.300"
+            />
+          }
+        />
+        <MenuList>
+          {COLOR_SCHEMES.map((s) => (
+            <MenuItem key={s.id} onClick={() => setScheme(s.id)}>
+              <Box
+                w="12px"
+                h="12px"
+                borderRadius="full"
+                bg={s.swatch}
+                border="1px solid"
+                borderColor="blackAlpha.300"
+                mr={2}
+              />
+              {s.label}
+              {scheme === s.id && <CheckIcon ml="auto" boxSize="10px" />}
+            </MenuItem>
+          ))}
+        </MenuList>
+      </Menu>
       <IconButton
         size="sm"
         variant="ghost"

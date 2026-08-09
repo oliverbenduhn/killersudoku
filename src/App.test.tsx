@@ -41,7 +41,7 @@ test('HomeActions-Buttons sind auch im Levels-Tab sichtbar (#24)', async () => {
   // Im Levels-Tab müssen die HomeActions-Toggles sichtbar bleiben.
   // queryBy* statt findBy*: schlägt sofort fehl, wenn das Element
   // fehlt — kein Timeout, klare Fehlermeldung.
-  expect(screen.getByRole('button', { name: /Hellmodus wechseln|Dunkelmodus wechseln/ })).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Farbschema wählen' })).toBeVisible();
   expect(screen.getByRole('button', { name: /Vollbild/ })).toBeVisible();
   expect(screen.getByRole('button', { name: /Schwarzweiß|Farbmodus/ })).toBeVisible();
   expect(screen.getByRole('button', { name: /Tastenkombinationen anzeigen/ })).toBeVisible();
