@@ -20,6 +20,7 @@ import { TutorialOverlay } from './components/common/TutorialOverlay';
 import HelpDialog from './components/common/HelpDialog';
 import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
+import { ColorSchemeProvider } from './contexts/ColorSchemeContext';
 import { loadLevelByNumber } from './services/levelService';
 import { GameLevel } from './types/gameTypes';
 
@@ -125,6 +126,7 @@ function App() {
 
   return (
     <ChakraProvider theme={theme}>
+    <ColorSchemeProvider>
       <InstallPrompt />
 
       <Box
@@ -247,6 +249,7 @@ function App() {
       />
 
       <HelpDialog isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
+    </ColorSchemeProvider>
     </ChakraProvider>
   );
 }

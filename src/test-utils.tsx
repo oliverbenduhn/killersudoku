@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { ChakraProvider, extendTheme } from '@chakra-ui/react';
+import { ColorSchemeProvider } from './contexts/ColorSchemeContext';
 
 const theme = extendTheme({
   // Extend theme here if needed
@@ -10,7 +11,9 @@ const theme = extendTheme({
 
 const AllProviders = ({ children }: { children: React.ReactNode }) => (
   <ChakraProvider theme={theme} resetCSS>
-    {children}
+    <ColorSchemeProvider>
+      {children}
+    </ColorSchemeProvider>
   </ChakraProvider>
 );
 
