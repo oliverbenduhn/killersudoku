@@ -27,6 +27,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .superpowers/
+.claude/worktrees/
 
 # Backups (Bugfix: 56MB Tarballs gehören nicht ins Repo)
 *.tar.gz
