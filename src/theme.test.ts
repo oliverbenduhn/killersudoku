@@ -1,4 +1,5 @@
 import { cageTokens, theme } from './theme';
+import { SCHEME_STYLES } from './schemeStyles';
 
 describe('cageTokens', () => {
   test('mappt „blue.100" auf bg/border-Token des blauen Käfigs', () => {
@@ -21,25 +22,54 @@ describe('cageTokens', () => {
   });
 });
 
-// Regression: ColorSchemeSelectoren müssen auf dem Consumer liegen, nicht
-// auf einem Vorfahren. Chakra rendert alle CSS-Variablen auf
-// `:root, [data-theme]` (siehe CSSVars-Komponente in @chakra-ui/system),
-// sodass `&` zu `:root` expandiert. ColorSchemeContext setzt
-// `data-scheme` auf document.documentElement = `:root` — folglich muss
-// der Selektor `&[data-scheme="…"]` lauten. Die inverse Schreibweise
-// `[data-scheme="…"] &` würde zu `[data-scheme="…"] :root` kompilieren
-// und nie matchen, weil `:root` kein Nachfahre von :root sein kann.
-describe('ColorScheme-Selektoren in semanticTokens', () => {
+// Regression: ColorScheme-Overrides gehoeren nach SCHEME_STYLES, NICHT
+// in semanticTokens. Grund: Chakras `toCSSVar` flacht semantische Tokens
+// mit Custom-Selektoren in Variablennamen ab, die `[`, `]`, `"`, `&`
+// enthalten — ungueltige Custom-Property-Namen, die der Browser
+// stillschweigend verwirft. Daher steht in semanticTokens nichts mit
+// `[data-scheme=...]`, und die Overrides leben in schemeStyles.ts, wo
+// sie als regulaere CSS-Regeln in `styles.global` emittiert werden.
+describe('ColorScheme-Trennung: semanticTokens vs. SCHEME_STYLES', () => {
   const colors = theme.semanticTokens?.colors as Record<string, Record<string, unknown>>;
   const offenders: string[] = [];
   for (const [tokenName, value] of Object.entries(colors)) {
     for (const selector of Object.keys(value)) {
-      if (selector.includes('[data-scheme=') && !selector.startsWith('&[')) {
+      if (selector.includes('[data-scheme=') || selector.includes('data-scheme=')) {
         offenders.push(`${tokenName}: ${selector}`);
       }
     }
   }
-  test('kein Selektor setzt data-scheme auf einen Vorfahren', () => {
+  test('kein semanticToken enthaelt einen data-scheme-Selektor', () => {
     expect(offenders).toEqual([]);
+  });
+
+  test('ocean + forest haben Overrides; warm + warmDark bleiben leer', () => {
+    expect(Object.keys(SCHEME_STYLES.ocean).length).toBeGreaterThan(0);
+    expect(Object.keys(SCHEME_STYLES.forest).length).toBeGreaterThan(0);
+    expect(SCHEME_STYLES.warm).toEqual({});
+    expect(SCHEME_STYLES.warmDark).toEqual({});
+  });
+
+  test('jeder Override-Key ist eine valide CSS-Variable (kein [, ], ", &, =, Leerzeichen)', () => {
+    const invalid = /[\[\]"&= ]/;
+    for (const [scheme, vars] of Object.entries(SCHEME_STYLES)) {
+      for (const key of Object.keys(vars)) {
+        expect({ scheme, key, invalid: invalid.test(key) }).not.toEqual({
+          scheme: expect.anything(),
+          key: expect.anything(),
+          invalid: true,
+        });
+      }
+    }
+  });
+
+  test('jeder Override-Wert ist ein Hex-Farbcode', () => {
+    for (const [scheme, vars] of Object.entries(SCHEME_STYLES)) {
+      for (const [key, value] of Object.entries(vars)) {
+        expect(value).toMatch(/^#[0-9A-Fa-f]{6}$/);
+        // Reference: key must mention scheme var (sanity)
+        expect(key.startsWith('--chakra-colors-')).toBe(true);
+      }
+    }
   });
 });
