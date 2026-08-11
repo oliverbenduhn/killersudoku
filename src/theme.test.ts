@@ -50,6 +50,11 @@ describe('ColorScheme-Trennung: semanticTokens vs. SCHEME_STYLES', () => {
     expect(SCHEME_STYLES.warmDark).toEqual({});
   });
 
+  test('Overrides ersetzen die von Chakra konsumierten Alias-Variablen', () => {
+    expect(SCHEME_STYLES.ocean['--chakra-colors-brand-primary']).toBe('#0E7C86');
+    expect(SCHEME_STYLES.forest['--chakra-colors-brand-primary']).toBe('#4C7A3A');
+  });
+
   test('jeder Override-Key ist eine valide CSS-Variable (kein [, ], ", &, =, Leerzeichen)', () => {
     const invalid = /[\[\]"&= ]/;
     for (const [scheme, vars] of Object.entries(SCHEME_STYLES)) {

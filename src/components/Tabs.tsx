@@ -9,6 +9,7 @@ import FadeInView from './common/FadeInView';
 import RippleButton from './common/RippleButton';
 import { TOTAL_LEVELS } from '../services/levelService';
 import { getSolvedLevels, getStartedLevels } from '../services/progressService';
+import { APP_VERSION } from '../version';
 
 interface TabPanelProps {
   transitionDirection: 'left' | 'right' | null;
@@ -252,6 +253,9 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
         <Link href="https://legal.benduhn.de/datenschutz/" target="_blank" rel="noopener" color="text.muted">
           Datenschutz
         </Link>
+        <Text as="span" ml={2} fontSize="2xs" fontFamily="mono" opacity={0.7}>
+          v{APP_VERSION}
+        </Text>
       </Box>
     </FadeInView>
   );

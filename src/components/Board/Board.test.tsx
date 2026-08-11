@@ -128,6 +128,7 @@ describe('Board Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGameState.mistakesUsed = 0;
+    mockGameState.hintsUsed = 0;
     mockGameState.gameOver = false;
     setHintsForTest(false, []);
     (GameLogic.isCellValid as jest.Mock).mockReturnValue(true);
@@ -262,6 +263,7 @@ describe('Bleistiftmodus (#4)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockGameState.mistakesUsed = 0;
+    mockGameState.hintsUsed = 0;
     mockGameState.gameOver = false;
     setHintsForTest(false, []);
     // Mock-useGameState gibt gameState.levelId='default' zurück; damit der
@@ -274,6 +276,16 @@ describe('Bleistiftmodus (#4)', () => {
     render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     const btn = screen.getByRole('button', { name: /Bleistiftmodus/ });
     expect(btn).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('fasst Hinweis- und Fehlversuchszähler kompakt in der Aktionsleiste zusammen', () => {
+    mockGameState.hintsUsed = 1;
+    mockGameState.mistakesUsed = 2;
+    render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
+
+    expect(screen.getByRole('status', {
+      name: '1 von 3 Hinweisen und 2 von 3 Fehlversuchen verbraucht',
+    })).toBeInTheDocument();
   });
 
   test('Klick auf den Button togglet sichtbaren Aktivzustand und aria-pressed', () => {

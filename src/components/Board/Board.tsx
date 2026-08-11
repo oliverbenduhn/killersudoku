@@ -14,7 +14,7 @@ import {
   AlertDescription,
   useToast
 } from '@chakra-ui/react';
-import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, EditIcon, RepeatClockIcon } from '@chakra-ui/icons';
+import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, EditIcon, InfoIcon, RepeatClockIcon, WarningIcon } from '@chakra-ui/icons';
 
 import { useGameState } from '../../hooks/useGameState';
 import { useStrategicHint } from '../../hooks/useStrategicHint';
@@ -615,90 +615,6 @@ export const Board: React.FC<BoardProps> = ({
           remainingDigits={remainingDigits}
         />
 
-        {/* Fehlversuche-Anzeige (3 Leben): sichtbar zwischen NumberPad und
-            Action-Grid, damit der Spieler ohne Game-Over-Tab weiß, wo er steht.
-            Verbrauchte Versuche = rote Füllung, offene = grauer Ring.
-            Versteckt nach Lösen — dann ist die Info irrelevant. */}
-        {gameState && !gameState.solved && (
-          <Box
-            mt={4}
-            width={actionGridWidth}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            gap={2}
-            role="status"
-            aria-label={`${gameState.mistakesUsed || 0} von ${MAX_MISTAKES} Fehlversuchen verbraucht`}
-          >
-            {Array.from({ length: MAX_MISTAKES }, (_, i) => {
-              const used = i < (gameState.mistakesUsed || 0);
-              return (
-                <Box
-                  key={i}
-                  as="svg"
-                  width="20px"
-                  height="20px"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="7"
-                    fill={used ? 'var(--chakra-colors-status-error)' : 'none'}
-                    stroke={used ? 'var(--chakra-colors-status-error)' : 'var(--chakra-colors-text-muted)'}
-                    strokeWidth="1.6"
-                  />
-                </Box>
-              );
-            })}
-            <Text fontSize="xs" color="text.muted" fontFamily="mono" ml={1}>
-              {gameState.mistakesUsed || 0} / {MAX_MISTAKES}
-            </Text>
-          </Box>
-        )}
-
-        {/* Hinweise-Anzeige (3 Tipps): analog zu Fehlversuchen, aber
-            farblich neutral — Hints sind kein Fehler, sondern Hilfe. */}
-        {gameState && !gameState.solved && (
-          <Box
-            mt={2}
-            width={actionGridWidth}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            gap={2}
-            role="status"
-            aria-label={`${gameState.hintsUsed || 0} von ${MAX_HINTS} Hinweisen verbraucht`}
-          >
-            {Array.from({ length: MAX_HINTS }, (_, i) => {
-              const used = i < (gameState.hintsUsed || 0);
-              return (
-                <Box
-                  key={i}
-                  as="svg"
-                  width="20px"
-                  height="20px"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="10"
-                    cy="10"
-                    r="7"
-                    fill={used ? 'var(--chakra-colors-status-info)' : 'none'}
-                    stroke={used ? 'var(--chakra-colors-status-info)' : 'var(--chakra-colors-text-muted)'}
-                    strokeWidth="1.6"
-                  />
-                </Box>
-              );
-            })}
-            <Text fontSize="xs" color="text.muted" fontFamily="mono" ml={1}>
-              {gameState.hintsUsed || 0} / {MAX_HINTS}
-            </Text>
-          </Box>
-        )}
-
         <Grid
           // 3×2-Gitter analog NumberPad: Buttons so breit wie eine
           // Pad-Zelle (halbe Pad-Breite) — schafft Platz fürs Brett.
@@ -709,6 +625,26 @@ export const Board: React.FC<BoardProps> = ({
           gap={2}
           width={actionGridWidth}
         >
+          {gameState && !gameState.solved && (
+            <Flex
+              gridColumn="1 / span 2"
+              h={6}
+              align="center"
+              justify="center"
+              gap={4}
+              role="status"
+              aria-label={`${gameState.hintsUsed || 0} von ${MAX_HINTS} Hinweisen und ${gameState.mistakesUsed || 0} von ${MAX_MISTAKES} Fehlversuchen verbraucht`}
+            >
+              <Flex align="center" gap={1} color="text.muted">
+                <InfoIcon boxSize="10px" color="status.success" aria-hidden="true" />
+                <Text fontSize="2xs" fontFamily="mono">{gameState.hintsUsed || 0}/{MAX_HINTS}</Text>
+              </Flex>
+              <Flex align="center" gap={1} color="text.muted">
+                <WarningIcon boxSize="10px" color="status.error" aria-hidden="true" />
+                <Text fontSize="2xs" fontFamily="mono">{gameState.mistakesUsed || 0}/{MAX_MISTAKES}</Text>
+              </Flex>
+            </Flex>
+          )}
           {/* Bleistiftmodus-Toggle (Issue #4): Mode-Switch, kein Verbraucher.
               Visual: solid + outline-Ring bei aktiv = nicht rein farblich.
               aria-pressed trägt den Modus-Zustand für Screenreader. */}

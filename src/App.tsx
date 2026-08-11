@@ -6,14 +6,13 @@ import {
   Container,
   Heading,
   Flex,
-  Text,
+  IconButton,
   useBreakpointValue,
   useColorModeValue,
 } from '@chakra-ui/react';
 
 import InstallPrompt from './components/common/InstallPrompt';
 import { HomeActions } from './components/common/HomeActions';
-import { APP_VERSION } from './version';
 
 import { HomeTab, LevelsTab } from './components/Tabs';
 import { TutorialOverlay } from './components/common/TutorialOverlay';
@@ -129,18 +128,19 @@ function App() {
     <ColorSchemeProvider>
       <InstallPrompt />
 
-      <Box
-        as="header"
-        bg={headerBg}
-        position="sticky"
-        top={0}
-        zIndex={999}
-        boxShadow="sm"
+      {!isFullscreen && (
+        <Box
+          as="header"
+          bg={headerBg}
+          position="sticky"
+          top={0}
+          zIndex={999}
+          boxShadow="sm"
         // Header auf beiden Tabs sichtbar: HomeActions (BW/Dark/Level/
         // Fullscreen/Help) brauchen einen UI-Weg in beiden Tabs — auf
         // Mobile gibt es keine Bottom-Nav, und der ?-Shortcut allein
         // deckt nur den Help-Dialog ab (#24).
-      >
+        >
         <Container
           maxW={containerMaxWidth}
           h={headerHeight}
@@ -180,9 +180,6 @@ function App() {
               >
                 Killer Sudoku
               </Heading>
-              <Text color="text.muted" fontSize="2xs" fontFamily="mono" fontWeight="400">
-                v{APP_VERSION}
-              </Text>
             </Flex>
             <Flex align="center" gap={1}>
               <HomeActions
@@ -201,7 +198,26 @@ function App() {
             </Flex>
           </Flex>
         </Container>
-      </Box>
+        </Box>
+      )}
+
+      {isFullscreen && (
+        <IconButton
+          position="fixed"
+          top="max(env(safe-area-inset-top), 12px)"
+          right="max(env(safe-area-inset-right), 12px)"
+          zIndex={1000}
+          size="sm"
+          variant="solid"
+          aria-label="Vollbild verlassen"
+          icon={
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M5 1v4H1M11 1v4h4M5 15v-4H1M11 15v-4h4" />
+            </svg>
+          }
+          onClick={handleToggleFullscreen}
+        />
+      )}
 
       <Box minH="calc(100vh - 56px)" bg="surface.canvas"
         // iOS-Pull-to-Refresh am Brett-Rand unterdrücken. Ohne das

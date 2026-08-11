@@ -1,6 +1,7 @@
 import React from 'react';
 import { fireEvent, render, screen } from './test-utils';
 import App from './App';
+import { APP_VERSION } from './version';
 
 beforeEach(() => {
   // useTutorial persistiert "gesehen" in localStorage; ohne Reset würde
@@ -25,6 +26,16 @@ test('Zurück-Button auf dem Level-Screen führt zurück zum Start', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Zurück' }));
 
   expect(await screen.findByRole('button', { name: 'Level' })).toBeInTheDocument();
+});
+
+test('Versionsnummer erscheint nur dezent in der Levelauswahl', async () => {
+  render(<App />);
+
+  expect(screen.queryByText(`v${APP_VERSION}`)).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: /^Überspringen$/ }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Level' }));
+
+  expect(screen.getByText(`v${APP_VERSION}`)).toBeInTheDocument();
 });
 
 test('HomeActions-Buttons sind auch im Levels-Tab sichtbar (#24)', async () => {
