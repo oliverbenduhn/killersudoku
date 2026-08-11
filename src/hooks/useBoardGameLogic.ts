@@ -15,8 +15,9 @@ export interface UseBoardGameLogicOptions {
   maxMistakes: number;
   isGameOver: boolean;
   /**
-   * Bleistiftmodus (Issue #4/#5): wenn aktiv, leiten handleNumberSelect und
-   * handleClear auf die Notiz-Pfade um statt auf die Werteingabe. Quelle:
+   * Bleistiftmodus (Issue #4/#5): wenn aktiv, leitet handleNumberSelect auf
+   * den Notiz-Pfad um. handleClear entfernt immer Notiz-Kandidaten; im
+   * inaktiven Modus zusätzlich Zellwerte. Quelle:
    * lokaler Board-State, nicht im GameState.
    */
   pencilMode?: boolean;
@@ -175,8 +176,8 @@ export const useBoardGameLogic = ({
       return;
     }
 
-    // Bleistiftmodus (Issue #5): Löschen leert alle Notizen der Auswahl,
-    // nicht den Zellwert. Werte-Pfad darunter bleibt für Werte aktiv.
+    // Bleistiftmodus (Issue #5): Löschen leert nur die Notiz-Kandidaten
+    // der Auswahl, nicht den Zellwert.
     if (pencilMode) {
       if (selectedCells.length === 0) return;
       const result = GameLogic.clearPlayerNotes(
@@ -198,7 +199,17 @@ export const useBoardGameLogic = ({
       }
     });
 
-    applyMove({ cellValues: newValues });
+    // Außerhalb des Bleistiftmodus entfernt „Löschen“ Zellwerte UND
+    // Notiz-Kandidaten. `newValues` ist maßgeblich, weil eben geleerte
+    // Zellen danach wieder Notizen tragen dürften.
+    const clearedNotes = GameLogic.clearPlayerNotes(
+      gameState.notes,
+      newValues,
+      levelData.initialValues,
+      selectedCells,
+      size
+    );
+    applyMove({ cellValues: newValues, notes: clearedNotes.notes });
   }, [gameState, levelData, selectedCells, isGameOver, pencilMode, applyMove, showError]);
 
   const handleReset = useCallback(() => {

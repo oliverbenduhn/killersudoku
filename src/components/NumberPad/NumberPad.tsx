@@ -120,14 +120,14 @@ export const NumberPad: React.FC<NumberPadProps> = ({
       >
         <RippleButton
           onClick={onClear}
-          bg="status.error"
-          color="white"
+          bg="brand.primary"
+          color="brand.onPrimary"
           size="md"
           height={clearButtonHeight}
           fontSize={clearButtonFontSize}
           fontWeight="bold"
-          _hover={{ bg: 'red.600' }}
-          _active={{ bg: 'red.600' }}
+          _hover={{ bg: 'brand.primary.hover' }}
+          _active={{ bg: 'brand.primary.hover' }}
           borderRadius="lg"
           boxShadow="sm"
           rippleColor="whiteAlpha.400"

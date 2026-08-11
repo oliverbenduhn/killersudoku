@@ -110,9 +110,9 @@ export const Board: React.FC<BoardProps> = ({
   // Brett-Höhe an der kürzeren Viewport-Seite, sodass Cell-Größe jetzt
   // quadratisch an die verfügbare Höhe des linken Bereichs gebunden ist.
   const flexDirection = useBreakpointValue({ base: "column", md: "row" }) as "column" | "row";
-  // Sidebar-Action-Grid teilt die NumberPad-Breite, damit die 2-Spalten
-  // nicht über das Pad hinausfließen (Sidebar ist via flex={1} breiter).
-  const actionGridWidth = useBreakpointValue({ base: '100%', sm: '220px', md: '240px', lg: '260px' }) ?? '100%';
+  // Auf Mobilgeräten steht das schmale Aktionsraster links neben dem
+  // NumberPad. Ab md ist es wieder die gleich breite Sidebar-Aktionsleiste.
+  const actionGridWidth = useBreakpointValue({ base: '96px', md: '240px', lg: '260px' }) ?? '96px';
 
   // Cell Selection
   const {
@@ -604,26 +604,28 @@ export const Board: React.FC<BoardProps> = ({
         width={flexDirection === "column" ? "100%" : "auto"}
         flex={flexDirection === "row" ? "0 0 auto" : undefined}
         display="flex"
-        flexDirection="column"
-        alignItems={flexDirection === "column" ? "center" : "start"}
+        flexDirection={flexDirection === "column" ? "row" : "column"}
+        alignItems={flexDirection === "column" ? "stretch" : "start"}
+        gap={2}
         overflowY="auto"
       >
-        <NumberPad
-          onNumberSelect={handleNumberSelect}
-          onClear={handleClear}
-          disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
-          remainingDigits={remainingDigits}
-        />
+        <Box order={flexDirection === "column" ? 2 : 1} flex={flexDirection === "column" ? 1 : undefined} minW={0}>
+          <NumberPad
+            onNumberSelect={handleNumberSelect}
+            onClear={handleClear}
+            disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
+            remainingDigits={remainingDigits}
+          />
+        </Box>
 
         <Grid
-          // 3×2-Gitter analog NumberPad: Buttons so breit wie eine
-          // Pad-Zelle (halbe Pad-Breite) — schafft Platz fürs Brett.
-          // Breite muss zum NumberPad passen, sonst fließen die 2
-          // Action-Spalten über die NumberPad-Breite hinaus (Sidebar
-          // ist via flex={1} breiter als padWidth).
+          // Mobil: kompaktes 2×3-Raster links neben dem NumberPad. Sidebar:
+          // zwei gleich breite Spalten analog zum NumberPad.
+          order={flexDirection === "column" ? 1 : 2}
           templateColumns="repeat(2, 1fr)"
           gap={2}
           width={actionGridWidth}
+          flexShrink={0}
         >
           {gameState && !gameState.solved && (
             <Flex

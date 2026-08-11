@@ -385,13 +385,15 @@ describe('useBoardGameLogic – Bleistiftmodus (Issues #5/#6)', () => {
     expect(call.notes).toBeDefined();
   });
 
-  test('handleClear inaktivem Modus löscht weiterhin Zellwerte (Regression)', () => {
+  test('handleClear außerhalb des Bleistiftmodus löscht Zellwerte und Notiz-Kandidaten gemeinsam', () => {
     const values = emptyBoard();
     values[0][0] = 4;
+    const notes = emptyNotes();
+    notes[0][1] = [2, 7];
     const applyMove = jest.fn().mockResolvedValue(undefined);
     const options = makeOptions({
-      gameState: makeState({ cellValues: values }),
-      selectedCells: [{ row: 0, col: 0 }],
+      gameState: makeState({ cellValues: values, notes }),
+      selectedCells: [{ row: 0, col: 0 }, { row: 0, col: 1 }],
       pencilMode: false,
       applyMove
     });
@@ -402,6 +404,6 @@ describe('useBoardGameLogic – Bleistiftmodus (Issues #5/#6)', () => {
     expect(applyMove).toHaveBeenCalledTimes(1);
     const call = applyMove.mock.calls[0][0];
     expect(call.cellValues[0][0]).toBe(0);
-    expect(call.notes).toBeUndefined();
+    expect(call.notes[0][1]).toEqual([]);
   });
 });

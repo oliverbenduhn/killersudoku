@@ -183,7 +183,7 @@ function App() {
             </Flex>
             <Flex align="center" gap={1}>
               <HomeActions
-                onOpenLevels={() => handleTabChange('levels')}
+                onOpenLevels={() => handleTabChange(activeTab === 'levels' ? 'home' : 'levels')}
                 blackAndWhiteMode={blackAndWhiteMode}
                 currentLevel={currentLevel}
                 isFullscreen={isFullscreen}

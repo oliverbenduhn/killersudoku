@@ -28,6 +28,17 @@ test('Zurück-Button auf dem Level-Screen führt zurück zum Start', async () =>
   expect(await screen.findByRole('button', { name: 'Level' })).toBeInTheDocument();
 });
 
+test('Level-Button wechselt aus der Levelauswahl zurück zum Spiel', async () => {
+  render(<App />);
+
+  fireEvent.click(screen.getByRole('button', { name: /^Überspringen$/ }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Level' }));
+  expect(screen.getByRole('button', { name: 'Zurück' })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Level' }));
+  expect(screen.queryByRole('button', { name: 'Zurück' })).not.toBeInTheDocument();
+});
+
 test('Versionsnummer erscheint nur dezent in der Levelauswahl', async () => {
   render(<App />);
 
