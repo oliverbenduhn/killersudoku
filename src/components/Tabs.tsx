@@ -98,14 +98,8 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
       direction={transitionDirection === 'left' ? 'left' : 'right'}
       duration={300}
       key="levels-tab"
-      // Body hat overflow:hidden (index.css) — die Levels-Liste muss daher
-      // selbst scrollen. 100 Level × Grid sind auf Phone länger als der
-      // Viewport. Header sticky, damit "Zurück" immer erreichbar bleibt.
-      // ponytail: ein scrollbarer Container pro Tab, kein globaler Body-Scroll
-      // (Body-Scroll würde die Drag-Mehrfachauswahl auf dem Brett zerstören).
+      // The document owns scrolling, including wheel events over the level grid.
       minH="calc(100dvh - 100px)"
-      overflowY="auto"
-      overscrollBehaviorY="contain"
       pb="env(safe-area-inset-bottom, 0px)"
       px={1}
     >

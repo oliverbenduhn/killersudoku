@@ -60,6 +60,30 @@ await withPreview(async baseURL => {
       try {
         await page.goto(baseURL);
         await ready();
+
+        // Wheel scrolling must work both in the page margin and directly over level buttons.
+        await page.getByRole('button', { name: 'Level', exact: true }).click();
+        await page.getByRole('button', { name: 'Level 1', exact: true }).waitFor({ state: 'visible' });
+        await page.waitForTimeout(350); // Finish the tab entrance transition before native hit-testing.
+        await page.mouse.move(2, viewport.height / 2);
+        await page.mouse.wheel(0, 400);
+        await page.waitForFunction(() => window.scrollY > 100, null, { timeout: 2000 });
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await page.getByRole('button', { name: 'Level 1', exact: true }).hover();
+        await page.mouse.wheel(0, 400);
+        await page.waitForFunction(() => window.scrollY > 100, null, { timeout: 2000 });
+        await page.mouse.wheel(0, 5000);
+        await page.waitForFunction(() => {
+          const last = document.querySelector('button[aria-label="Level 100"]')?.getBoundingClientRect();
+          return last && last.top >= 0 && last.bottom <= innerHeight;
+        }, null, { timeout: 2000 });
+        await page.getByRole('button', { name: 'Level 100', exact: true }).hover();
+        await page.mouse.wheel(0, -5000);
+        await page.waitForFunction(() => window.scrollY === 0, null, { timeout: 2000 });
+        await page.getByRole('button', { name: 'Zurück', exact: true }).click();
+        await ready();
+        console.log(`PASS ${name}: wheel scrolling over level buttons and page margins in both directions`);
+
         await page.waitForFunction(() => document.querySelector('[data-testid="cell-8-8"]')?.getBoundingClientRect().right <= innerWidth);
         await page.getByRole('button', { name: 'Hinweis (3)', exact: true }).click();
         await page.getByRole('button', { name: 'Hinweis (2)', exact: true }).waitFor({ state: 'visible' });
