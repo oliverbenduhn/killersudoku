@@ -5,9 +5,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { validateLevel, validateAllLevels } from './levelValidator';
+import { validateLevel } from './levelValidator';
 
 const LEVELS_DIR = path.join(__dirname, '..', '..', 'public', 'assets', 'levels');
+
+// File-system orchestration belongs to the test harness, not the pure validator.
+function validateAllLevels(directory: string) {
+  const files = fs.readdirSync(directory).filter(file => /^level_\d+\.json$/.test(file));
+  const results = files.map(file => validateLevel(JSON.parse(fs.readFileSync(path.join(directory, file), 'utf8'))));
+  return { timestamp: new Date().toISOString(), totalLevels: files.length, totalErrors: results.reduce((sum, result) => sum + result.errors.length, 0), results };
+}
 
 // Baut ein deterministisches gültiges 9x9-Sudoku. Wird für Test-Fixtures
 // genutzt, damit die synthetischen Tests nicht von einer handgemalten

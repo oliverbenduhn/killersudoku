@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Box, BoxProps } from '@chakra-ui/react';
+import { Box, BoxProps, usePrefersReducedMotion } from '@chakra-ui/react';
 
 interface FadeInViewProps extends BoxProps {
   children: React.ReactNode;
@@ -17,11 +17,18 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
   distance = 20,
   ...props
 }) => {
+  const reducedMotion = usePrefersReducedMotion();
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const element = boxRef.current;
     if (!element) return;
+    if (reducedMotion) {
+      element.style.opacity = '1';
+      element.style.transform = 'none';
+      element.style.transition = 'none';
+      return;
+    }
 
     // Initial-Zustand setzen
     let transform = '';
@@ -54,7 +61,7 @@ export const FadeInView: React.FC<FadeInViewProps> = ({
     }, delay);
     
     return () => clearTimeout(timer);
-  }, [direction, duration, delay, distance]);
+  }, [direction, duration, delay, distance, reducedMotion]);
 
   return (
     <Box ref={boxRef} willChange="opacity, transform" {...props}>

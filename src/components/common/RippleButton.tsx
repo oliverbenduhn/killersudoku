@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Button, Box, ButtonProps, keyframes } from '@chakra-ui/react';
+import { Button, Box, ButtonProps, keyframes, usePrefersReducedMotion } from '@chakra-ui/react';
 
 // Ripple Animation definieren
 const rippleAnimation = keyframes`
@@ -38,6 +38,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
   duration = 600,
   ...props
 }) => {
+  const reducedMotion = usePrefersReducedMotion();
   const [ripples, setRipples] = useState<Ripple[]>([]);
   const [nextRippleId, setNextRippleId] = useState(0);
   // Audit 🔴 #3-Fix: jeder Ripple hat seinen eigenen Timer, der genau diesen
@@ -48,6 +49,7 @@ export const RippleButton: React.FC<RippleButtonProps> = ({
 
   // Ripple-Animation auslösen
   const createRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (reducedMotion) return;
     const buttonRect = e.currentTarget.getBoundingClientRect();
 
     // Position des Klicks relativ zum Button

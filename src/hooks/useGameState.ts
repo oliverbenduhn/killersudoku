@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { loadGameState, enqueueGameStateSave } from '../services/storageService';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { loadGameState, enqueueGameStateSave, acquireGameSession } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
 import { createEmptyBoard } from '../services/puzzleGeneratorService';
-import { sanitizePlayerBoard, createEmptyNotes, normalizeNotes } from '../services/gameLogicService';
+import { sanitizePlayerBoard, createEmptyNotes, normalizeNotes, isBoardComplete } from '../services/gameLogicService';
 import { useUndoRedo } from './useUndoRedo';
 
-// Lokale Erweiterung des GameState-Interfaces mit zusätzlichen Eigenschaften für den Hook
 interface GameState extends GlobalGameState {
   startTime: number;
   elapsedTime: number;
@@ -15,269 +14,172 @@ interface GameState extends GlobalGameState {
   gameOver: boolean;
 }
 
-export const useGameState = (puzzleId: string, size: number = 9) => {
+type BoardSnapshot = Pick<GameState, 'cellValues' | 'notes'>;
+
+export const useGameState = (puzzleId: string, size: number = 9, providedLevel?: GameLevel | null) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  // Ref, damit der Hydration-Effect den aktuellen puzzleId mit dem
-  // asynchronen Lade-Pfad abgleichen kann (Race-Bedingung beim schnellen
-  // Levelwechsel).
-  const currentPuzzleIdRef = useRef<string>(puzzleId);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [storageError, setStorageError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const gameStateRef = useRef<GameState | null>(null);
-  const lastAutoSaveRef = useRef<number>(0);
+  const currentPuzzleIdRef = useRef(puzzleId);
+  const lastAutoSaveRef = useRef(0);
+  const sessionActiveRef = useRef(false);
+  const sessionLeaseRef = useRef<Promise<(() => Promise<void>) | null>>(Promise.resolve(null));
+  const undo = useUndoRedo<BoardSnapshot>();
+  const resetHistory = undo.reset;
 
-  // Undo/Redo über getrennten Mini-Hook. Stacks leben nur im RAM — bei
-  // Reload ist die History leer (acceptable: Auto-Save speichert den
-  // aktuellen Stand, nicht den Stack).
-  const undo = useUndoRedo<GameState>();
+  const persist = useCallback(async (state: GameState) => {
+    if (!sessionActiveRef.current || state.levelId !== currentPuzzleIdRef.current) return;
+    const targetId = currentPuzzleIdRef.current;
+    lastAutoSaveRef.current = Date.now();
+    try {
+      await enqueueGameStateSave(targetId, state);
+      if (sessionActiveRef.current && gameStateRef.current === state) setStorageError(null);
+    } catch (error) {
+      console.error('Spielstand konnte nicht gespeichert werden:', error);
+      if (sessionActiveRef.current && currentPuzzleIdRef.current === targetId) {
+        setStorageError('Dein Spielstand konnte nicht gespeichert werden. Lass dieses Fenster geöffnet und versuche es erneut.');
+      }
+    }
+  }, []);
 
-  // 🟠 Audit #21: cancelled-Flag im Effect-Return, damit der StrictMode-
-  // Doppeleffekt den zweiten Mount nicht in die loadState-Pipeline lässt.
-  // Z.81-Aufruf von enqueueGameStateSave liegt INNERHALB des if-Blocks
-  // mit currentPuzzleIdRef.current === puzzleId — der bildet die Race-
-  // Wache für die await-Grenze; jetzt zusätzlich cancelled-Wache für
-  // den StrictMode-ReMount während der await-Phase.
   useEffect(() => {
-    currentPuzzleIdRef.current = puzzleId;
     let cancelled = false;
+    // Wait for this hook's previous lease to fully release, including StrictMode cleanup.
+    // A previous load already surfaced acquisition failures; retries need a fresh lease.
+    const lease = sessionLeaseRef.current.catch(() => null).then(async previous => {
+      await previous?.();
+      return cancelled || providedLevel === null ? null : acquireGameSession(puzzleId);
+    });
+    sessionLeaseRef.current = lease;
+    currentPuzzleIdRef.current = puzzleId;
+    sessionActiveRef.current = false;
+    gameStateRef.current = null;
+    setGameState(null);
+    setIsLoading(true);
+    setLoadError(null);
+    setStorageError(null);
+    resetHistory();
 
     const loadState = async () => {
       try {
-        setIsLoading(true);
-
+        const release = await lease;
+        if (cancelled) { await release?.(); return; }
+        if (!release) {
+          setLoadError('Dieses Rätsel ist bereits in einem anderen Fenster geöffnet. Schließe es dort und versuche es erneut.');
+          return;
+        }
         const savedState = await loadGameState(puzzleId);
-
+        const levelMatch = /^level-(\d+)$/.exec(puzzleId);
+        const level = providedLevel ?? (levelMatch ? await loadLevelByNumber(Number(levelMatch[1])) : null);
         if (cancelled) return;
-
-        if (savedState) {
-          if (currentPuzzleIdRef.current === puzzleId) {
-            const saved = savedState as Partial<GameState>;
-            const savedCellValues = Array.isArray(saved.cellValues)
-              ? saved.cellValues
-              : createEmptyBoard(size);
-            let restored = {
-              ...saved,
-              id: typeof saved.id === 'string' ? saved.id : `game_${puzzleId}_${Date.now()}`,
-              cellValues: savedCellValues,
-              notes: normalizeNotes(saved.notes, savedCellValues, createEmptyBoard(size), size),
-              startTime: typeof saved.startTime === 'number' ? saved.startTime : Date.now(),
-              elapsedTime: typeof saved.elapsedTime === 'number' ? saved.elapsedTime : 0,
-              hintsUsed: typeof saved.hintsUsed === 'number' ? saved.hintsUsed : 0,
-              mistakesUsed: typeof saved.mistakesUsed === 'number' ? saved.mistakesUsed : 0,
-              gameOver: saved.gameOver === true,
-              levelId: puzzleId
-            };
-            const levelMatch = puzzleId.match(/level-(\d+)/);
-            if (levelMatch?.[1]) {
-              try {
-                const levelData = await loadLevelByNumber(parseInt(levelMatch[1], 10));
-                if (cancelled) return;
-                const cellValues = sanitizePlayerBoard(
-                  restored.cellValues,
-                  levelData.initialValues,
-                  levelData.cages,
-                  size
-                );
-                const notes = normalizeNotes(
-                  restored.notes,
-                  cellValues,
-                  levelData.initialValues,
-                  size
-                );
-                restored = { ...restored, cellValues, notes };
-              } catch (error) {
-                console.error('Gespeicherter Spielstand konnte nicht validiert werden:', error);
-              }
-            }
-            if (cancelled) return;
-            enqueueGameStateSave(puzzleId, restored);
-            setGameState(restored);
-          }
-        } else {
-          if (currentPuzzleIdRef.current === puzzleId) {
-            const levelMatch = puzzleId.match(/level-(\d+)/);
-
-            if (levelMatch && levelMatch[1]) {
-              try {
-                const levelNumber = parseInt(levelMatch[1], 10);
-                const levelData = await loadLevelByNumber(levelNumber);
-                if (cancelled) return;
-
-                if (levelData && levelData.initialValues) {
-                  const newGameState: GameState = {
-                    id: `game_${puzzleId}_${Date.now()}`,
-                    cellValues: JSON.parse(JSON.stringify(levelData.initialValues)),
-                    notes: createEmptyNotes(size),
-                    startTime: Date.now(),
-                    elapsedTime: 0,
-                    difficulty: levelData.difficulty,
-                    hintsUsed: 0,
-                    mistakesUsed: 0,
-                    gameOver: false,
-                    levelId: puzzleId
-                  };
-                  setGameState(newGameState);
-                } else {
-                  createEmptyGameState();
-                }
-              } catch (error) {
-                console.error('Fehler beim Laden der Level-Daten:', error);
-                createEmptyGameState();
-              }
-            } else {
-              createEmptyGameState();
-            }
-          }
-        }
+        const saved: Record<string, unknown> = savedState && typeof savedState === 'object'
+          ? savedState as Record<string, unknown> : {};
+        const initialValues = level?.initialValues ?? createEmptyBoard(size);
+        const rawValues = Array.from({ length: size }, (_, row) => Array.from({ length: size }, (_, col) => {
+          const value: unknown = Array.isArray(saved.cellValues) && Array.isArray(saved.cellValues[row])
+            ? saved.cellValues[row][col] : 0;
+          return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 9 ? value : 0;
+        }));
+        const cellValues = level ? sanitizePlayerBoard(rawValues, initialValues, level.cages, size) : rawValues;
+        const boundedNumber = (value: unknown, fallback: number, max = Number.MAX_SAFE_INTEGER) =>
+          typeof value === 'number' && Number.isFinite(value) && value >= 0 ? Math.min(max, Math.floor(value)) : fallback;
+        const hintsUsed = boundedNumber(saved.hintsUsed, 0, 3);
+        const mistakesUsed = boundedNumber(saved.mistakesUsed, 0, 3);
+        const solved = level ? isBoardComplete(cellValues, level.cages, size) : false;
+        const restored: GameState = {
+          id: typeof saved.id === 'string' && saved.id ? saved.id : `game_${puzzleId}_${Date.now()}`,
+          cellValues,
+          notes: normalizeNotes(saved.notes, cellValues, initialValues, size),
+          startTime: boundedNumber(saved.startTime, Date.now(), Date.now()),
+          elapsedTime: boundedNumber(saved.elapsedTime, 0),
+          hintsUsed,
+          mistakesUsed,
+          gameOver: !solved && mistakesUsed >= 3,
+          solved,
+          statisticsRecorded: solved && saved.statisticsRecorded === true,
+          difficulty: level?.difficulty,
+          levelId: puzzleId,
+          ...(solved ? { endTime: boundedNumber(saved.endTime, Date.now(), Date.now()) } : {})
+        };
+        gameStateRef.current = restored;
+        sessionActiveRef.current = true;
+        setGameState(restored);
+        if (savedState) await persist(restored);
       } catch (error) {
-        console.error('Fehler beim Laden des Spielstands:', error);
-        if (!cancelled && currentPuzzleIdRef.current === puzzleId) {
-          createEmptyGameState();
-        }
+        console.error('Spielstand konnte nicht geladen werden:', error);
+        if (!cancelled) setLoadError(!navigator.locks
+          ? 'Dieser Browser kann den Spielstand nicht sicher speichern. Öffne die App über HTTPS in einem aktuellen Browser.'
+          : 'Dein Spielstand konnte nicht geladen werden. Bitte versuche es erneut. Es wurde nichts überschrieben.');
       } finally {
-        if (!cancelled && currentPuzzleIdRef.current === puzzleId) {
-          setIsLoading(false);
-        }
+        if (!cancelled) setIsLoading(false);
       }
     };
-
-    const createEmptyGameState = () => {
-      const emptyState: GameState = {
-        id: `game_${puzzleId}_${Date.now()}`,
-        cellValues: createEmptyBoard(size),
-        notes: createEmptyNotes(size),
-        startTime: Date.now(),
-        elapsedTime: 0,
-        difficulty: undefined,
-        hintsUsed: 0,
-        mistakesUsed: 0,
-        gameOver: false,
-        levelId: puzzleId
-      };
-      setGameState(emptyState);
-    };
-
-    loadState();
-    undo.reset();
-
+    if (providedLevel !== null) void loadState();
     return () => {
       cancelled = true;
+      sessionActiveRef.current = false;
+      // Acquisition failures are reported by loadState; cleanup has no user action.
+      void lease.then(release => release?.(), () => undefined);
     };
-  }, [puzzleId]);
+  }, [puzzleId, size, providedLevel, loadAttempt, persist, resetHistory]);
 
-  useEffect(() => {
-    gameStateRef.current = gameState;
-  }, [gameState]);
-
-  // 🟠 Audit #19: Timer-Effect auf []-Dep umgestellt. Vorher [gameState]
-  // → Cleanup + Rebuild jede Sekunde (Timer ruft selbst setGameState).
-  // Jetzt: Interval einmal beim Mount, jeder Tick liest den aktuellen
-  // Stand aus gameStateRef (synchron, kein Stale-Closure). Stop-Bedingung
-  // (solved / gameOver / null) wird im tick selbst geprüft, damit der
-  // Interval bei Game-Ende sauber via clearInterval beendet wird.
   useEffect(() => {
     const interval = window.setInterval(() => {
-      const currentState = gameStateRef.current;
-      if (!currentState || currentState.solved || currentState.gameOver) {
-        window.clearInterval(interval);
-        return;
-      }
-
-      const now = Date.now();
-      const startTime = currentState.startTime || now;
-      const elapsedTime = Math.max(0, now - startTime);
-
-      if (elapsedTime === currentState.elapsedTime) return;
-
-      // Bugfix: Timer-Updates nur im lokalen State, kein direkter Save hier.
-      // updateGameState() (für echte Eingaben) speichert ohnehin sofort.
-      // Auto-Save für elapsedTime nur, wenn lange keine Eingabe erfolgte
-      // (max. 1 Save/15s, um IndexedDB nicht zu fluten).
-      const updatedState = {
-        ...currentState,
-        elapsedTime
-      };
-      gameStateRef.current = updatedState;
-      setGameState(updatedState);
-
-      if (now - lastAutoSaveRef.current >= 15000) {
-        lastAutoSaveRef.current = now;
-        const targetPuzzleId = currentPuzzleIdRef.current;
-        enqueueGameStateSave(targetPuzzleId, updatedState);
-      }
+      const current = gameStateRef.current;
+      if (!sessionActiveRef.current || !current || current.solved || current.gameOver) return;
+      const elapsedTime = Math.max(0, Date.now() - current.startTime);
+      if (elapsedTime === current.elapsedTime) return;
+      const updated = { ...current, elapsedTime };
+      gameStateRef.current = updated;
+      setGameState(updated);
+      if (Date.now() - lastAutoSaveRef.current >= 15000) void persist(updated);
     }, 1000);
-
     return () => window.clearInterval(interval);
-  }, []);
+  }, [persist]);
 
-  const updateGameState = async (newState: Partial<GameState>) => {
-    if (!gameState) return;
+  const updateGameState = useCallback(async (patch: Partial<GameState>, expectedGameId?: string) => {
+    const current = gameStateRef.current;
+    if (!sessionActiveRef.current || !current || current.levelId !== puzzleId || (expectedGameId && current.id !== expectedGameId)) return;
+    const updated = { ...current, ...patch };
+    gameStateRef.current = updated;
+    setGameState(updated);
+    await persist(updated);
+  }, [persist, puzzleId]);
 
-    const updatedState = {
-      ...gameState,
-      ...newState
-    };
+  const applyMove = useCallback(async (patch: Partial<GameState>) => {
+    const current = gameStateRef.current;
+    if (!current || current.solved || current.gameOver || current.levelId !== puzzleId) return;
+    const after = { ...current, ...patch };
+    undo.commit({ before: { cellValues: current.cellValues, notes: current.notes }, after: { cellValues: after.cellValues, notes: after.notes } });
+    await updateGameState(patch);
+  }, [puzzleId, undo.commit, updateGameState]);
 
-    setGameState(updatedState);
-
-    // Bugfix: Sofort persistieren statt auf den 15s-Timer zu warten.
-    // Vorher konnten bis zu 15 Sekunden Spielverlust beim Tab-Close entstehen.
-    lastAutoSaveRef.current = Date.now();
-    return enqueueGameStateSave(currentPuzzleIdRef.current, updatedState);
-  };
-
-  /**
-   * Wendet einen User-Move an UND macht vorher einen Snapshot in die
-   * Undo-History. Aufrufer, die echte Brett-Mutationen sind
-   * (Zahleneingabe, Hinweis-Reveal), MÜSSEN dies statt updateGameState
-   * nutzen. Aufrufer, die nur Metadaten ändern (Timer-Tick), bleiben bei
-   * updateGameState.
-   *
-   * ADR-0003: commit speichert (before, after) als Paar, damit redo den
-   * ursprünglichen Nachher-Zustand exakt reproduziert.
-   */
-  const applyMove = async (newState: Partial<GameState>) => {
-    if (!gameState) return;
-    // Snapshot vor der Mutation. Wenn gameStateRef.current veraltet ist
-    // (React-StrictMode-Doppeleffekt), nutzen wir den State-Snapshot aus
-    // gameStateRef als Fallback.
-    const snapshotSource = gameStateRef.current ?? gameState;
-    // Nachher-Zustand synchron materialisieren, damit der Redo-Stack
-    // nach dem await den korrekten Wert hat (unabhängig von React-Batching).
-    const afterState = { ...snapshotSource, ...newState };
-    undo.commit({ before: snapshotSource, after: afterState });
-    await updateGameState(newState);
-  };
-
-  /**
-   * Macht den letzten Move rückgängig. Setzt den GameState auf den
-   * vorherigen Snapshot zurück, persistiert, leert Redo-Logik intern.
-   */
-  const performUndo = async () => {
+  const performUndo = useCallback(async () => {
+    const current = gameStateRef.current;
+    if (!current || current.solved || current.gameOver || current.levelId !== puzzleId) return;
     const previous = undo.undo();
-    if (!previous) return;
-    setGameState(previous);
-    lastAutoSaveRef.current = Date.now();
-    enqueueGameStateSave(currentPuzzleIdRef.current, previous);
-  };
+    if (previous) await updateGameState(previous);
+  }, [puzzleId, undo.undo, updateGameState]);
 
-  const performRedo = async () => {
+  const performRedo = useCallback(async () => {
+    const current = gameStateRef.current;
+    if (!current || current.solved || current.gameOver || current.levelId !== puzzleId) return;
     const next = undo.redo();
-    if (!next) return;
-    setGameState(next);
-    lastAutoSaveRef.current = Date.now();
-    enqueueGameStateSave(currentPuzzleIdRef.current, next);
-  };
+    if (next) await updateGameState(next);
+  }, [puzzleId, undo.redo, updateGameState]);
 
   return {
-    gameState,
-    isLoading,
-    updateGameState,
-    applyMove,
-    undo: performUndo,
-    redo: performRedo,
-    canUndo: undo.canUndo,
-    canRedo: undo.canRedo,
-    clearHistory: undo.reset,
+    gameState, isLoading, loadError, storageError,
+    retryLoad: () => setLoadAttempt(attempt => attempt + 1),
+    retrySave: () => { if (gameStateRef.current) void persist(gameStateRef.current); },
+    updateGameState, applyMove,
+    undo: performUndo, redo: performRedo,
+    canUndo: undo.canUndo && !gameState?.solved && !gameState?.gameOver,
+    canRedo: undo.canRedo && !gameState?.solved && !gameState?.gameOver,
+    clearHistory: resetHistory,
   };
 };
 

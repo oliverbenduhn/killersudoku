@@ -12,7 +12,7 @@ const readSet = (key: string): Set<number> => {
     const raw = localStorage.getItem(key);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
-    return new Set(Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number') : []);
+    return new Set(Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 100) : []);
   } catch {
     return new Set();
   }

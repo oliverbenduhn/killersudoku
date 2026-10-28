@@ -1,3 +1,4 @@
+import fixture from '../../public/assets/levels/level_1.json';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { useGameState } from './useGameState';
@@ -13,11 +14,11 @@ describe('useGameState', () => {
   const emptyNotes = (): number[][][] =>
     Array.from({ length: 9 }, () => Array.from({ length: 9 }, (): number[] => []));
   const makeLevel = (number: number) => ({
+    ...fixture,
     id: `level-${number}`,
     levelNumber: number,
     initialValues: emptyBoard(),
-    solution: emptyBoard(),
-    cages: [{ id: 'c1', cells: [{ row: 0, col: 0 }], sum: 1, color: 'blue.100' }],
+
   });
   const mockFetchForLevel = (level: object) => {
     global.fetch = jest.fn().mockResolvedValue({
@@ -103,21 +104,23 @@ describe('useGameState', () => {
     const { result } = renderHook(() => useGameState('level-4'));
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const before = result.current.gameState!.hintsUsed;
+    const before = result.current.gameState!.cellValues;
+    const changed = before.map(row => [...row]);
+    changed[0][0] = 1;
     expect(result.current.canUndo).toBe(false);
 
     await act(async () => {
-      await result.current.applyMove({ hintsUsed: before + 1 });
+      await result.current.applyMove({ cellValues: changed });
     });
 
     expect(result.current.canUndo).toBe(true);
-    expect(result.current.gameState!.hintsUsed).toBe(before + 1);
+    expect(result.current.gameState!.cellValues).toEqual(changed);
 
     await act(async () => {
       await result.current.undo();
     });
 
-    expect(result.current.gameState!.hintsUsed).toBe(before);
+    expect(result.current.gameState!.cellValues).toEqual(before);
   });
 
   test('updateGameState ohne applyMove flusht nicht in den Undo-Stack', async () => {
@@ -248,4 +251,69 @@ describe('useGameState', () => {
 
     saveSpy.mockRestore();
   });
+});
+
+test('timer resumes after a terminal game is reset', async () => {
+  jest.useFakeTimers();
+  const { result } = renderHook(() => useGameState('timer-regression'));
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  await act(async () => { await result.current.updateGameState({ gameOver: true }); });
+  act(() => { jest.advanceTimersByTime(2000); });
+  await act(async () => {
+    await result.current.updateGameState({ gameOver: false, startTime: Date.now(), elapsedTime: 0 });
+  });
+  act(() => { jest.advanceTimersByTime(3000); });
+  expect(result.current.gameState?.elapsedTime).toBeGreaterThanOrEqual(2000);
+  jest.useRealTimers();
+});
+
+
+test('undo preserves a hint consumed after a move and restores the board on redo', async () => {
+  const { result } = renderHook(() => useGameState('history-regression'));
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  const values = result.current.gameState!.cellValues.map(row => [...row]);
+  values[0][0] = 4;
+  await act(async () => { await result.current.applyMove({ cellValues: values }); });
+  await act(async () => { await result.current.updateGameState({ hintsUsed: 1 }); });
+  await act(async () => { await result.current.undo(); });
+  expect(result.current.gameState!.cellValues[0][0]).toBe(0);
+  expect(result.current.gameState!.hintsUsed).toBe(1);
+  await act(async () => { await result.current.redo(); });
+  expect(result.current.gameState!.cellValues[0][0]).toBe(4);
+  expect(result.current.gameState!.hintsUsed).toBe(1);
+});
+
+test('a failed load stays non-playable instead of overwriting the unknown save', async () => {
+  const localforage = require('localforage').default;
+  localforage.getItem.mockRejectedValueOnce(new Error('Storage unavailable'));
+  const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  const { result } = renderHook(() => useGameState('load-failure'));
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  expect(result.current.loadError).toBeTruthy();
+  expect(result.current.gameState).toBeNull();
+  errorSpy.mockRestore();
+});
+
+test('save failures are visible and retryable', async () => {
+  const localforage = require('localforage').default;
+  const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+  const { result } = renderHook(() => useGameState('save-failure'));
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  localforage.setItem.mockRejectedValueOnce(new Error('Quota'));
+  await act(async () => { await result.current.updateGameState({ hintsUsed: 1 }); });
+  expect(result.current.storageError).toMatch(/nicht gespeichert/);
+  await act(async () => { result.current.retrySave(); });
+  await waitFor(() => expect(result.current.storageError).toBeNull());
+  errorSpy.mockRestore();
+});
+
+test('stale callbacks use the latest state and cannot restore an old board', async () => {
+  const { result } = renderHook(() => useGameState('stale-handler'));
+  await waitFor(() => expect(result.current.isLoading).toBe(false));
+  const update = result.current.updateGameState;
+  const values = result.current.gameState!.cellValues.map(row => [...row]);
+  values[0][0] = 5;
+  await act(async () => { await result.current.applyMove({ cellValues: values }); });
+  await act(async () => { await update({ hintsUsed: 1 }); });
+  expect(result.current.gameState!.cellValues[0][0]).toBe(5);
 });

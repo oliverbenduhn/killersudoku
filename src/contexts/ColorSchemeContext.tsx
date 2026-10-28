@@ -37,17 +37,10 @@ export function ColorSchemeProvider({ children }: { children: ReactNode }) {
   const [scheme, setSchemeState] = useState<ColorScheme>(readStoredScheme);
   const { setColorMode } = useColorMode();
 
-  const applyScheme = (next: ColorScheme) => {
-    document.documentElement.dataset.scheme = next;
-    setColorMode(next === 'warmDark' ? 'dark' : 'light');
-  };
-
-  // Beim Mount den initial gelesenen Wert anwenden (Attribut + colorMode),
-  // damit ein Reload den gespeicherten Zustand korrekt herstellt.
   useEffect(() => {
-    applyScheme(scheme);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    document.documentElement.dataset.scheme = scheme;
+    setColorMode(scheme === 'warmDark' ? 'dark' : 'light');
+  }, [scheme, setColorMode]);
 
   const setScheme = (next: ColorScheme) => {
     setSchemeState(next);
@@ -57,7 +50,7 @@ export function ColorSchemeProvider({ children }: { children: ReactNode }) {
       // localStorage nicht verfügbar (z. B. Private Mode) — State bleibt
       // In-Memory für die Session, kein weiterer Fallback nötig.
     }
-    applyScheme(next);
+
   };
 
   return (

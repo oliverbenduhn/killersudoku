@@ -4,8 +4,6 @@
 
 import { Cage, CageColor, CAGE_COLORS, GameLevel, BOARD_SIZE } from '../types/gameTypes';
 import { countSolutions } from './killerSolver';
-import * as fs from 'fs';
-import * as path from 'path';
 
 export type ValidationErrorType =
   | 'SCHEMA_TOP_LEVEL'
@@ -305,56 +303,3 @@ export function validateLevel(level: unknown): ValidationResult {
 
   return { levelId, valid: errors.length === 0, errors };
 }
-
-// ---------- Batch + CLI ----------
-
-export interface ValidationReport {
-  timestamp: string;
-  totalLevels: number;
-  totalErrors: number;
-  results: ValidationResult[];
-}
-
-/**
- * Liest alle Level_X.json aus einem Verzeichnis und validiert sie.
- * Wenn der Default-`levelsDir` weggelassen wird, wird `${cwd}/public/assets/levels`
- * angenommen (so klappt's sowohl aus dist/utils/ (CRA-Bootstrap) als auch
- * aus dem Projekt-Root (Vite-Build)).
- */
-export function validateAllLevels(levelsDir?: string): ValidationReport {
-  const dir = levelsDir ?? path.join(process.cwd(), 'public', 'assets', 'levels');
-  const files = fs.readdirSync(dir)
-    .filter((f) => /^level_\d+\.json$/.test(f))
-    .sort((a, b) => parseInt(a.match(/\d+/)![0], 10) - parseInt(b.match(/\d+/)![0], 10));
-
-  const results: ValidationResult[] = [];
-  let totalErrors = 0;
-  for (const file of files) {
-    const raw = fs.readFileSync(path.join(dir, file), 'utf-8');
-    let level: unknown;
-    try {
-      level = JSON.parse(raw);
-    } catch (e) {
-      results.push({ levelId: file, valid: false, errors: [{ levelId: file, errorType: 'SCHEMA_TOP_LEVEL', message: `JSON-Parse-Fehler: ${(e as Error).message}` }] });
-      totalErrors += 1;
-      continue;
-    }
-    const result = validateLevel(level);
-    results.push(result);
-    totalErrors += result.errors.length;
-  }
-
-  return { timestamp: new Date().toISOString(), totalLevels: files.length, totalErrors, results };
-}
-
-export function writeValidationReport(report: ValidationReport, logsDir?: string): string {
-  const dir = logsDir ?? path.join(process.cwd(), 'logs');
-  fs.mkdirSync(dir, { recursive: true });
-  const reportPath = path.join(dir, 'validation-report.json');
-  fs.writeFileSync(reportPath, JSON.stringify(report, null, 2));
-  return reportPath;
-}
-
-// CLI-Pfad bewusst nicht implementiert: Validierung läuft über die
-// Jest-Suite (levelValidator.test.ts). Wer ein CLI-Tool braucht, kann
-// `validateAllLevels()` aus dieser Datei direkt importieren.

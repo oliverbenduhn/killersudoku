@@ -7,7 +7,7 @@ Test zuerst (RED), dann Implementierung (GREEN), dann Refactor.
 
 | Tool | Zweck |
 |---|---|
-| Jest 29 | Test-Runner |
+| Jest 30 | Test-Runner |
 | ts-jest | TypeScript-Transform |
 | jest-environment-jsdom | DOM-API in Node |
 | `@testing-library/react` 16 | Komponenten-Rendering + Queries |
@@ -33,7 +33,7 @@ Test zuerst (RED), dann Implementierung (GREEN), dann Refactor.
 ```bash
 npm test               # alles
 npm run lint:levels    # nur Level-Validator-Suite
-npm run validate       # typecheck + lint:levels
+npm run validate       # typecheck + lint + lint:levels
 npm run test:smoke     # Probe gegen Production-Bundle
 ```
 
@@ -127,3 +127,22 @@ konsistent". Tiefe gehört in die Jest-Suite.
   per `storageService` mit Test-Harness.
 - Time-Mocking für den Auto-Save-Timer (besser: Hydration direkt testen,
   Timer-Logik separat).
+## Produktionsabläufe nach dem Master-Audit
+
+Nach `npm run build` starten `npm run test:smoke` und `npm run test:flows` einen
+eigenen Preview-Server auf einem freien Port. Optional kann `TEST_BASE_URL` einen
+expliziten Testserver vorgeben. Fehler führen zu einem Exitcode ungleich null.
+Screenshots liegen standardmäßig in `/tmp/killersudoku-flows`; mit
+`TEST_SCREENSHOTS_DIR` lässt sich ein Artefaktverzeichnis vorgeben.
+
+Die Abläufe umfassen Speichern/Reload, Tipp/Zahl/Undo/Redo, Reset/Abbruch,
+Dialogisolation, Tastaturausstieg und erreichbare 44-px-Bedienelemente auf sechs
+Bildschirmgrößen. Desktop prüft zusätzlich konkurrierende Fenster, Timer nach
+Game Over/Reset, unveränderliche gelöste Rätsel und Offline-Reload/Levelwechsel.
+IndexedDB-Fixtures verwenden isolierte Browserprofile. Die Tests ersetzen keine
+Realgeräteprüfung oder Screenreader-Sitzung.
+
+`npm run lint` verwendet den vorhandenen TypeScript-Parser für gezielte Regeln
+im Produktionscode. Es ist kein Ersatz für eine vollständige ESLint-/Hook-
+Abhängigkeitsanalyse; es prüft explizites `any`, DOM-Queries, Unterdrückungen und
+unzulässige Utility-Imports ohne zusätzliche Abhängigkeit.

@@ -65,3 +65,13 @@ _Avoid_: Notizmodus, Kandidatenmodus
 **Notiz-Kandidat** (Player pencil mark):
 Eine vom Spieler im Bleistiftmodus gesetzte Ziffer (1–9) als vorläufiger Kandidat einer leeren, nicht vorgegebenen Zelle — Teil des persistierten Spielstands, unabhängig vom internen Solver-`candidates`-Konzept (Hint-Engine). Wird automatisch entfernt, sobald die Zelle einen finalen Wert erhält (normale Eingabe, Reveal-Hint) oder bei Reset.
 _Avoid_: Notiz, Kandidat (ohne Kontext), Pencil Mark
+
+### Abschluss und Wiederholung
+
+**Spielversuch**: Die aktuelle Spielinstanz eines Puzzles. Reset erzeugt eine neue
+Instanz. Gelöst und Game Over beenden deren normale Bearbeitung; nur Reset beginnt
+neu. Die Statistik zählt erstmalig gelöste Puzzle, nicht die Anzahl der Versuche.
+
+**Verbrauchszähler**: Anzahl bereits genutzter Hinweise bzw. Fehlversuche im
+Spielversuch. Undo/Redo stellt Brett und Notiz-Kandidaten wieder her, erstattet
+aber keine Verbräuche. Siehe ADR 0004.

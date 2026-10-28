@@ -9,11 +9,12 @@
 // (NumberPad + Action-Buttons), Modals (Game-Over-Banner, Solved-Banner),
 // Solve-Detection. Das alles hängt am Game-Lifecycle; das Surface nicht.
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Grid, Text, keyframes } from '@chakra-ui/react';
 
 import { Cage, CellPosition, GameLevel } from '../../types/gameTypes';
 import * as GameLogic from '../../services/gameLogicService';
+import { buildCageIndex, cageOfCellIn } from '../../services/board';
 import { cageOutlinePath } from './cageOutline';
 import { UseCellAnimationResult } from '../../hooks/useCellAnimation';
 
@@ -151,12 +152,13 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   blackAndWhiteMode,
   pencilMode = false,
 }) => {
+  const cageIndex = useMemo(() => buildCageIndex(cages), [cages]);
   // ── Flächen-Schicht (unten): Zell-Hintergrund + Interaktion ──────────────
   const renderBgCell = (row: number, col: number) => {
     const isSelected = selectedCells.some(c => c.row === row && c.col === col);
     const isSameRow = selectedCell?.row === row;
     const isSameCol = selectedCell?.col === col;
-    const cage = GameLogic.getCageForCell(cages, row, col);
+    const cage = cageOfCellIn(cageIndex, row, col);
     const value = cellValues[row][col];
     const valid = GameLogic.isCellValid(cellValues, row, col, value, cages, size);
     const isInitialValue = initialValues[row][col] !== 0;
@@ -263,7 +265,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   const renderNumCell = (row: number, col: number) => {
     const isSelected = selectedCells.some(c => c.row === row && c.col === col);
     const isHintCell = selectedCell?.row === row && selectedCell?.col === col;
-    const cage = GameLogic.getCageForCell(cages, row, col);
+    const cage = cageOfCellIn(cageIndex, row, col);
     const topLeftCell = cage ? findTopLeftCellInCage(cage) : null;
     const isCageStart = topLeftCell && topLeftCell.row === row && topLeftCell.col === col;
 
@@ -295,6 +297,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
         h={`${cellSize}px`}
         pointerEvents="none"
         style={{ animation: cellAnimation }}
+        sx={{ '@media (prefers-reduced-motion: reduce)': { animation: 'none !important' } }}
       >
         {isCageStart && cage && (
           <Text
@@ -376,6 +379,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
             alignItems="center"
             gap="1px"
             animation={`${fadeInAnimation} 0.3s ease-out`}
+            sx={{ '@media (prefers-reduced-motion: reduce)': { animation: 'none' } }}
           >
             {possibleValues.map(v => (
               <Text key={v} fontSize={sumFontSize} color="text.muted" lineHeight="1">{v}</Text>
@@ -400,7 +404,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
 
   // ── Linien-Schicht (Mitte): ein SVG mit Gitter, Blocklinien, Rahmen und
   //    einer gestrichelten Inset-Kontur pro Käfig. pointerEvents:none.
-  const renderLineSvg = () => {
+  const lineSvg = useMemo(() => {
     const boardPx = size * cellSize;
     const thin: React.ReactNode[] = [];
     const block: React.ReactNode[] = [];
@@ -451,7 +455,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
         </g>
       </svg>
     );
-  };
+  }, [size, cellSize, cageInsetPx, themeTokens.cageBorder, themeTokens.blockBorder, cages, blackAndWhiteMode]);
 
   const boardPx = size * cellSize;
   return (
@@ -468,7 +472,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       {/* Flächen + Interaktion */}
       <Box position="absolute" top={0} left={0}>{renderCellGrid(renderBgCell)}</Box>
       {/* Linien */}
-      {renderLineSvg()}
+      {lineSvg}
       {/* Zahlen */}
       <Box position="absolute" top={0} left={0} pointerEvents="none">
         {renderCellGrid(renderNumCell)}

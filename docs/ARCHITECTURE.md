@@ -14,7 +14,7 @@ lesen.
 │  │  Precache: js, css, html, json, png, ico, svg             │  │
 │  └───────────────────────────────────────────────────────────┘  │
 │  ┌───────────────────────────────────────────────────────────┐  │
-│  │  React 18 (Chakra UI v2, framer-motion, Emotion 11)       │  │
+│  │  React 19 (Chakra UI v2, framer-motion, Emotion 11)       │  │
 │  │  ┌──────────────────────────────────────────────────────┐  │  │
 │  │  │  App.tsx  (Layout, Tab-Routing, PWA-Install-Prompt)  │  │  │
 │  │  │  ├─ Tabs.tsx (HomeTab, LevelsTab)                    │  │  │
@@ -195,3 +195,9 @@ im Bundle-Split-Abschnitt).
 | Neue Puzzle-Variante | Generator-Service erweitern, neue Level-JSONs, kein UI-Umbau |
 | Neuer Hint-Typ | `hintEngine.ts` + Toast-Branch in `Board.tsx` |
 | Neuer Modus (z. B. „Daily Challenge") | Tab in `Tabs.tsx`, neuer Hook, ADR |
+## Gehärtete Zustandsübergänge
+
+ADR 0004 beschreibt den aktuellen Vertrag für terminale Zustände, Board-History,
+idempotente Statistikbuchung, sichtbare Speicherfehler und Web-Lock-Schreibbesitz.
+Die konkreten Paketversionen stehen in `package.json`; das Manifest wird aus
+`vite.config.ts` erzeugt.

@@ -12,6 +12,7 @@ export interface HomeActionsProps {
   /** Fullscreen-Status + Toggle. Wird vom Parent verwaltet, damit
    *  der Button-State mit document.fullscreenElement synchron bleibt. */
   isFullscreen: boolean;
+  supportsFullscreen?: boolean;
   onToggleFullscreen: () => void;
   /** Optional: öffnet den Tastenkombinationen-Hilfe-Dialog. Wird nicht
    *  übergeben, wenn der Parent den Dialog-State nicht verwaltet. */
@@ -22,7 +23,7 @@ export interface HomeActionsProps {
 // und Schwarzweiß-Toggle. Wird sowohl in der mobilen Kopfzeile (App.tsx)
 // als auch in Board.tsx's Sidebar (Desktop) gerendert — der jeweilige
 // Aufrufer bestimmt die Anordnung (horizontal/vertikal).
-export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndWhite, currentLevel, isFullscreen, onToggleFullscreen, onOpenHelp }: HomeActionsProps) {
+export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndWhite, currentLevel, isFullscreen, supportsFullscreen = true, onToggleFullscreen, onOpenHelp }: HomeActionsProps) {
   const { scheme, setScheme } = useColorScheme();
   const activeSwatch = COLOR_SCHEMES.find((s) => s.id === scheme)?.swatch ?? COLOR_SCHEMES[0].swatch;
 
@@ -30,6 +31,8 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
     <>
       <Button
         size="sm"
+        minW="44px"
+        minH="44px"
         variant="ghost"
         leftIcon={<CopyIcon />}
         onClick={onOpenLevels}
@@ -41,6 +44,8 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
         <MenuButton
           as={IconButton}
           size="sm"
+        minW="44px"
+        minH="44px"
           variant="ghost"
           aria-label="Farbschema wählen"
           icon={
@@ -74,6 +79,8 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
       </Menu>
       <IconButton
         size="sm"
+        minW="44px"
+        minH="44px"
         variant="ghost"
         aria-label={isFullscreen ? 'Vollbild verlassen' : 'Vollbild aktivieren'}
         icon={
@@ -91,9 +98,12 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
           </svg>
         }
         onClick={onToggleFullscreen}
+        isDisabled={!supportsFullscreen}
       />
       <IconButton
         size="sm"
+        minW="44px"
+        minH="44px"
         variant="ghost"
         aria-label={blackAndWhiteMode ? 'Farbmodus aktivieren' : 'Schwarzweiß-Modus aktivieren'}
         icon={blackAndWhiteMode ? <ViewIcon /> : <ViewOffIcon />}
@@ -103,6 +113,8 @@ export function HomeActions({ onOpenLevels, blackAndWhiteMode, onToggleBlackAndW
         <Tooltip label="Tastenkombinationen (Drücke ?)" openDelay={200}>
           <IconButton
             size="sm"
+        minW="44px"
+        minH="44px"
             variant="ghost"
             aria-label="Tastenkombinationen anzeigen"
             // Inline-SVG: stilisiertes "?" — konsistent mit dem Fullscreen-Toggle,

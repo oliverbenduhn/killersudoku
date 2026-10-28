@@ -28,12 +28,12 @@ describe('useBoardResize', () => {
     jest.useRealTimers();
   });
 
-  test('Default-Wert ist 50, ändert sich nach Mount+Tick', () => {
+  test('calculates a responsive initial size before paint', () => {
     const ref = { current: document.createElement('div') };
     const { result } = renderHook(() =>
       useBoardResize({ boardRef: ref, cellSizeByBreakpoint: 60, size: 9 })
     );
-    expect(result.current.cellSize).toBe(50);
+    expect(result.current.cellSize).toBeGreaterThan(0);
     // initialDelay 300ms + stabilisierung
     act(() => { jest.advanceTimersByTime(500); });
     // Window hat im jsdom 1024x768, also viewportSide = 768, 0.92 = 707,

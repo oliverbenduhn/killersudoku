@@ -72,7 +72,7 @@ describe('storageService', () => {
     let resolveFirst: ((value: void) => void) | null = null;
     const firstBarrier = new Promise<void>((r) => { resolveFirst = r; });
 
-    localforage.setItem = (key: string, value: any) => {
+    localforage.setItem = (key: string, value: unknown) => {
       if (order.length === 0) {
         // Erster Write: wartet auf das Barrier, damit wir prüfen können,
         // ob der zweite Write ebenfalls auf das Barrier wartet (Queue) oder
@@ -111,7 +111,7 @@ describe('storageService', () => {
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
 
     let calls = 0;
-    localforage.setItem = async (_key: string, _value: any) => {
+    localforage.setItem = async (_key: string, _value: unknown) => {
       calls += 1;
       if (calls === 1) {
         // Erster Save schlägt fehl — Simulieren IndexedDB-Quota-Fehler o. ä.
@@ -126,15 +126,12 @@ describe('storageService', () => {
 
     // Erster Aufruf resolved, ohne zu werfen — Aufrufer schlucken Errors,
     // das ist Vertragsbestand seit dem ersten Bugfix-Kommentar.
-    await expect(first).resolves.toBeUndefined();
+    await expect(first).rejects.toThrow('Simulierter Quota-Exceeded');
     // Zweiter Aufruf MUSS ebenfalls resolven — der Bug war, dass 'second'
     // für immer hängt, weil tail = firstPromise (rejected) war.
     await expect(second).resolves.toBeUndefined();
 
-    expect(consoleError).toHaveBeenCalledWith(
-      'Speichern fehlgeschlagen:',
-      expect.any(Error)
-    );
+    expect(consoleError).not.toHaveBeenCalled();
 
     localforage.setItem = original;
     consoleError.mockRestore();

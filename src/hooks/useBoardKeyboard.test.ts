@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { CellPosition } from '../types/gameTypes';
 import { renderHook, act } from '@testing-library/react';
 import { useBoardKeyboard } from './useBoardKeyboard';
 
@@ -89,55 +91,13 @@ describe('useBoardKeyboard', () => {
     expect(setSelectedCell).not.toHaveBeenCalled();
   });
 
-  test('Tab ohne Shift: nächste Zelle horizontal', () => {
-    const { current, setSelectedCell } = makeParams();
-    act(() => { current.handleKeyDown(keyEvent('Tab')); });
-    expect(setSelectedCell).toHaveBeenCalledWith({ row: 4, col: 5 });
-  });
-
-  test('Tab wrappt Zeile am Ende (col 8 → row+1, col 0)', () => {
-    const setSelectedCell = jest.fn();
-    const setSelectedCells = jest.fn();
-    const setDragStart = jest.fn();
-    const { result } = renderHook(() =>
-      useBoardKeyboard({
-        selectedCell: { row: 4, col: 8 },
-        selectedCells: [{ row: 4, col: 8 }],
-        setSelectedCell,
-        setSelectedCells,
-        setDragStart,
-        onNumber: jest.fn(),
-        onClear: jest.fn(),
-        size: 9,
-      })
-    );
-    act(() => { result.current.handleKeyDown(keyEvent('Tab')); });
-    expect(setSelectedCell).toHaveBeenCalledWith({ row: 5, col: 0 });
-  });
-
-  test('Shift+Tab wrappt rückwärts (col 0 → row-1, col 8), expandiert Selection', () => {
-    // Anker {row:4, col:0}, Shift+Tab → Endpunkt {row:3, col:8}.
-    // Rechteck: [3,0]..[3,8] plus [4,0]..[4,8] = 2×9 = 18 Cells.
-    // selectedCell (Cursor) bewegt sich auf den Endpunkt.
-    const setSelectedCell = jest.fn();
-    const setSelectedCells = jest.fn();
-    const setDragStart = jest.fn();
-    const { result } = renderHook(() =>
-      useBoardKeyboard({
-        selectedCell: { row: 4, col: 0 },
-        selectedCells: [{ row: 4, col: 0 }],
-        setSelectedCell,
-        setSelectedCells,
-        setDragStart,
-        onNumber: jest.fn(),
-        onClear: jest.fn(),
-        size: 9,
-      })
-    );
-    act(() => { result.current.handleKeyDown(keyEvent('Tab', true)); });
-    expect(setSelectedCell).toHaveBeenCalledWith({ row: 3, col: 8 });
-    expect(setSelectedCells.mock.calls[0][0]).toHaveLength(18);
-    expect(setDragStart).toHaveBeenCalledWith({ row: 4, col: 0 });
+  test.each([false, true])('Tab leaves the board (shift=%s)', shift => {
+    const { current, setSelectedCell, setSelectedCells } = makeParams();
+    const event = keyEvent('Tab', shift);
+    act(() => { current.handleKeyDown(event); });
+    expect(event.preventDefault).not.toHaveBeenCalled();
+    expect(setSelectedCell).not.toHaveBeenCalled();
+    expect(setSelectedCells).not.toHaveBeenCalled();
   });
 
   test('Zahl 1-9 ruft onNumber auf, kein setSelectedCell', () => {
@@ -164,13 +124,6 @@ describe('useBoardKeyboard', () => {
     const { current, onClear } = makeParams();
     act(() => { current.handleKeyDown(keyEvent('0')); });
     expect(onClear).toHaveBeenCalled();
-  });
-
-  test('Tab ruft preventDefault', () => {
-    const { current } = makeParams();
-    const evt = keyEvent('Tab');
-    act(() => { current.handleKeyDown(evt); });
-    expect(evt.preventDefault).toHaveBeenCalled();
   });
 
   test('Shift+Pfeil: Anker bleibt, Cursor bewegt sich, Rechteck wächst', () => {
@@ -235,14 +188,14 @@ describe('useBoardKeyboard', () => {
     expect(setSelectedCells).toHaveBeenCalledWith([{ row: 0, col: 0 }]);
   });
 
-  test('setzt board-Fokus, wenn selectedCell gesetzt', () => {
+  test('does not query or focus unrelated DOM boards', () => {
     const div = document.createElement('div');
     div.setAttribute('data-board-root', 'true');
     div.tabIndex = 0;
     document.body.appendChild(div);
     const focusSpy = jest.spyOn(div, 'focus');
     makeParams(); // Mounted mit selectedCell={row:4, col:4}
-    expect(focusSpy).toHaveBeenCalled();
+    expect(focusSpy).not.toHaveBeenCalled();
     document.body.removeChild(div);
   });
 
@@ -268,7 +221,7 @@ describe('useBoardKeyboard', () => {
     document.body.removeChild(div);
   });
 
-  test('setzt board-Fokus auch ohne selectedCell, wenn selectedCells gefüllt (Drag)', () => {
+  test('leaves focus ownership to the caller during drag', () => {
     const div = document.createElement('div');
     div.setAttribute('data-board-root', 'true');
     div.tabIndex = 0;
@@ -286,7 +239,23 @@ describe('useBoardKeyboard', () => {
         size: 9,
       })
     );
-    expect(focusSpy).toHaveBeenCalled();
+    expect(focusSpy).not.toHaveBeenCalled();
     document.body.removeChild(div);
   });
+});
+
+
+test('pointer or hint selection discards the previous shift-selection anchor', () => {
+  const { result } = renderHook(() => {
+    const [cell, setCell] = useState<CellPosition | null>({ row: 4, col: 4 });
+    const [cells, setCells] = useState<CellPosition[]>([{ row: 4, col: 4 }]);
+    const keyboard = useBoardKeyboard({ selectedCell: cell, selectedCells: cells,
+      setSelectedCell: setCell, setSelectedCells: setCells, setDragStart: () => undefined,
+      onNumber: () => undefined, onClear: () => undefined, size: 9 });
+    return { ...keyboard, cells, select: (next: CellPosition) => { setCell(next); setCells([next]); } };
+  });
+  act(() => result.current.handleKeyDown(keyEvent('ArrowRight', true)));
+  act(() => result.current.select({ row: 0, col: 0 }));
+  act(() => result.current.handleKeyDown(keyEvent('ArrowRight', true)));
+  expect(result.current.cells).toEqual([{ row: 0, col: 0 }, { row: 0, col: 1 }]);
 });

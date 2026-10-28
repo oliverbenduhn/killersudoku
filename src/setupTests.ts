@@ -23,16 +23,7 @@ window.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
-// Set up localStorage mock
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  clear: jest.fn(),
-  removeItem: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.localStorage = localStorageMock;
+// Use jsdom storage so preference tests exercise real read/write semantics.
 
 // Mock animation functions
 window.requestAnimationFrame = (callback) => setTimeout(callback, 0);
@@ -80,4 +71,15 @@ jest.mock('localforage', () => {
       keys: jest.fn(async () => Array.from(store.keys()))
     }
   };
+});
+
+// jsdom has no Web Locks; emulate acquisition while keeping the real service path.
+Object.defineProperty(navigator, 'locks', {
+  configurable: true,
+  value: {
+    request: jest.fn((_name: string, optionsOrCallback: unknown, callback?: (lock: object) => unknown) => {
+      const handler = callback ?? optionsOrCallback as (lock: object) => unknown;
+      return Promise.resolve().then(() => handler({ name: _name, mode: 'exclusive' }));
+    })
+  }
 });

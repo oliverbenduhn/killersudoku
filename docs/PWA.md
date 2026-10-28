@@ -5,7 +5,7 @@ Installierbarkeit.
 
 ## Manifest
 
-`public/manifest.webmanifest`, eingebunden via `index.html`. Inhalt:
+`vite.config.ts` erzeugt beim Build `build/manifest.webmanifest`; das PWA-Plugin bindet es in `build/index.html` ein. Inhalt:
 
 | Feld | Wert |
 |---|---|
@@ -24,9 +24,8 @@ Installierbarkeit.
 
 ## Service Worker
 
-Konfiguriert in `vite.config.ts` über `vite-plugin-pwa` 0.21 (Workbox).
-Modus `registerType: 'autoUpdate'` — neue Bundles werden beim nächsten
-Reload aktiv, keine manuelle Update-Aufforderung.
+Konfiguriert in `vite.config.ts` über `vite-plugin-pwa` 1.3 (Workbox).
+Modus `registerType: 'autoUpdate'` — neue Worker werden automatisch aktiviert; bei einem Update kann Workbox die Seite neu laden. Eingaben werden sofort gespeichert. Die Registrierung erfolgt über `virtual:pwa-register` ohne Browserzugriff auf ein Node-`process`-Objekt.
 
 ### Precache
 
@@ -101,3 +100,9 @@ PWAs-typische Caching-Probleme zeigen sich erst nach `npm run build` +
 `npm run serve` + Production-Reload.
 
 `chrome://serviceworker-internals/` zeigt die registrierten SWs.
+## Verifikation
+
+Nach `npm run build` prüft `npm run test:flows` einen frischen Browserkontext:
+Worker aktivieren, offline schalten, neu laden und ein anderes vorgecachetes
+Level öffnen. Der Test betreibt seinen eigenen Preview-Server auf einem freien
+Port; vorhandene Entwicklungsserver können das Ergebnis nicht verdecken.

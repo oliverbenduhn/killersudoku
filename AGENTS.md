@@ -39,8 +39,8 @@ src/
   utils/                     # Pure functions (no React, no DOM, no I/O). The cell→cage index lives in services/board.ts.
   types/                     # Domain types — single source of truth for level JSONs and runtime data.
 public/
-  manifest.webmanifest       # PWA manifest
   assets/levels/             # level_<n>.json — 100 hand-curated puzzles
+vite.config.ts               # PWA manifest + precache configuration
 docs/
   adr/                       # Architecture Decision Records (add, don't rewrite)
   agents/                    # Skill-level contracts (this repo's sub-agent rules)
@@ -141,7 +141,7 @@ Three storage channels, each with one job:
 
 | Channel | Library | Keys | Lifetime | Owner |
 |---|---|---|---|---|
-| Browser localStorage | native | `killersudoku_current_level`, `killersudoku_bw`, `killersudoku_solved_levels`, `killersudoku_started_levels`, `killersudoku_tutorial_seen` | Persistent | `App.tsx`, `progressService.ts` |
+| Browser localStorage | native | `killersudoku_current_level`, `killersudoku_bw`, `killersudoku_solved_levels`, `killersudoku_started_levels`, `killersudoku_tutorial_seen`, `colorScheme`, `installPromptDismissed` | Persistent | `App.tsx`, `progressService.ts`, `useTutorial`, `ColorSchemeProvider`, `InstallPrompt` |
 | IndexedDB via localforage | localforage 1.10 | `${STORAGE_PREFIX}${puzzleId}` (game state blobs) | Persistent, cleared by user action | `storageService.ts` |
 | In-memory React state | React | cellValues, notes, selection, history | Session | `useGameState` |
 
@@ -149,7 +149,10 @@ Three storage channels, each with one job:
 
 - Never read or write localStorage without `try { ... } catch {}` — Safari
   private mode and quota errors throw on access.
-- Game-state writes are **serialized per key** through `enqueueGameStateSave`.
+- Game-state writes are **serialized** through `enqueueGameStateSave`.
+  `useGameState` holds a Web Lock lease per puzzle; a competing window is read-only
+  until its explicit retry acquires the lease. Statistics use `runStorageOperation`
+  for cross-window read-modify-write. Save errors must reach a visible retry UI.
   Direct `localforage.setItem` calls race with the auto-save timer and
   produce "15-second rewinds" — that's the bug this function exists to fix.
   Use it; don't add a second writer.
@@ -162,7 +165,10 @@ Three storage channels, each with one job:
 Pencil mode is **always off** on load, reload, and level/puzzle change. It is
 not persisted. Don't add persistence — that's the spec. The relevant GitHub
 issue is #1 (spec); the undo/redo interaction with pencil marks is documented
-in `docs/adr/0003-undo-redo-post-change-snapshot.md`.
+in `docs/adr/0003-undo-redo-post-change-snapshot.md`, refined by
+`docs/adr/0004-terminal-state-history-and-storage.md`. History restores board values
+and notes; hint/mistake counters are not refunded. Solved and Game Over are terminal
+until reset, which requires confirmation when player entries would be lost.
 
 Pencil-mark candidates and solver-`candidates` are **two different concepts**:
 
@@ -177,9 +183,10 @@ binding. Pick the right word in user-visible strings.
 - **No DOM-poking libs.** Chakra UI covers everything this app needs. No
   jQuery, no direct `document.querySelector` for app logic. (Tests use
   Testing Library, which queries through React — that's allowed.)
-- **No global state outside React.** No `window.*` mutable globals. The only
-  module-level mutable state is the save queue tail in `storageService.ts`,
-  and that one is a serialization primitive, not state.
+- **No global state outside React.** No `window.*` mutable globals. Runtime game state stays in React. The queue tail in
+  `storageService.ts` is a serialization primitive. Deterministic combination
+  lookup tables and memo caches in `killerCombinations.ts` are pure computation
+  caches, never player state.
 - **No `useEffect` for derived data.** If the value is `a + b`, compute it
   inline; don't copy it through state.
 - **No prop-drilling shortcuts via Context for things that change every
@@ -190,7 +197,7 @@ binding. Pick the right word in user-visible strings.
   caller, inline it.
 - **No silent failures in user paths.** Error states are user-visible:
   `App.tsx` keeps a `error` string for level-load failures; `storageService`
-  logs but doesn't surface. **Adding a new silent catch requires a comment
+  surfaces save failures through `useGameState`. **Adding a new silent catch requires a comment
   explaining why the user can't act on it.**
 - **No emoji as icons.** Use Chakra Icons. (Marketing copy can use emoji.)
 - **No "while true" / busy loops.** The auto-save timer is the only scheduled
@@ -206,9 +213,14 @@ binding. Pick the right word in user-visible strings.
 - **`npm run lint:levels`** runs the level-validator suite specifically —
   run after any change to `utils/levelValidator.ts` or to `public/assets/levels/`.
 - **`npm run typecheck`** — TypeScript strict. Must pass before commit.
-- **`npm run validate`** = typecheck + lint:levels. The pre-commit smoke test.
+- **`npm run lint`** checks explicit `any`, DOM queries, suppressed hook checks,
+  and impure utility imports in production TypeScript, using the installed compiler.
+  It is a focused standards check, not an exhaustive dependency analyzer.
+- **`npm run validate`** = typecheck + lint + lint:levels. The pre-commit smoke test.
 - **`npm run test:smoke`** = `node scripts/probe.mjs`. Headless smoke check
-  that the production bundle still loads (after a build).
+  that asserts the production bundle loads (after a build), using its own preview port.
+- **`npm run test:flows`** exercises production user journeys on desktop and mobile,
+  including offline reload, terminal/reset states, persistence and competing windows.
 
 Every new utility gets a co-located `*.test.ts`. Every new hook gets a
 `*.test.tsx` with a real driver component, not a mock. The cage-outline

@@ -3,66 +3,65 @@ import { STORAGE_PREFIX, GAME_STATE_PREFIX } from '../config';
 
 export { GAME_STATE_PREFIX };
 
-export const saveGameState = async <T>(key: string, state: T) => {
-  await localforage.setItem(STORAGE_PREFIX + key, state);
-};
+// One serialization primitive for writes and read-modify-write operations.
+let tail: Promise<unknown> = Promise.resolve();
 
-export const loadGameState = async <T = unknown>(key: string): Promise<T | null> => {
-  return await localforage.getItem<T>(STORAGE_PREFIX + key);
-};
-
-export const removeGameState = async (key: string) => {
-  await localforage.removeItem(STORAGE_PREFIX + key);
-};
-
-// Löscht ausschließlich Spielstände, NICHT die Statistik
-export const clearAllGameStates = async () => {
-  const keys = await localforage.keys();
-  const gameKeys = keys.filter(k => k.startsWith(GAME_STATE_PREFIX));
-  await Promise.all(gameKeys.map(k => localforage.removeItem(k)));
-};
-
-// Save-Queue serialisiert konkurrierende Schreiboperationen pro Schlüssel.
-//
-// Hintergrund: vorher rief jeder Aufrufer (updateGameState, performUndo,
-// performRedo, Timer-Auto-Save) die localforage-Schreibung direkt auf. Zwei
-// schnelle Saves konnten parallel laufen, die Reihenfolge der Disk-Writes
-// war nicht garantiert. Insbesondere konnte ein späterer Save einen
-// früheren überschreiben, wenn der ältere Promise noch nicht resolve'd
-// war. Die Queue stellt sicher, dass Saves in Aufruf-Reihenfolge auf
-// der Disk landen.
-//
-// Bugfix-Kontext: Use-GameState hatte einen 15s-Timer-Auto-Save und
-// manuelle Saves gleichzeitig — Save-Order-Bug führte zu "Spielstand
-// 15s zurück"-Effekten. Zentralisierung hier macht den Kontrakt
-// testbar am Service, ohne React.
-//
-// Audit-Fix (🔴 #1): tail muss nach einem rejected Save mit einem frischen
-// resolved Promise überschrieben werden, nicht mit dem rejected Promise
-// selbst. Sonst hängt jeder nachfolgende Save für immer.
-//
-// ponytail: global pro Schlüssel, nicht pro Hook-Instanz. Reicht für die
-// aktuelle Architektur (eine Hook-Instanz pro puzzleId, Hook wechselt
-// puzzleId beim Level-Wechsel). Wenn jemals mehrere unabhängige
-// Spielstände parallel schreiben, braucht es eine per-key-Queue.
-
-let tail: Promise<void> = Promise.resolve();
+export function runStorageOperation<T>(key: string, operation: () => Promise<T>): Promise<T> {
+  const next = tail.then(() => {
+    if (navigator.locks) {
+      return navigator.locks.request(`${STORAGE_PREFIX}write:${key}`, operation);
+    }
+    return operation();
+  });
+  // The caller receives the rejection; only the queue tail recovers for subsequent writes.
+  tail = next.catch(() => undefined);
+  return next;
+}
 
 export function enqueueGameStateSave<T>(key: string, state: T): Promise<void> {
-  const next = tail.then(async () => {
-    try {
-      await localforage.setItem(STORAGE_PREFIX + key, state);
-    } catch (error) {
-      // Fehler hier werfen wäre ein breaking change für die bestehenden
-      // Aufrufer, die Errors schlucken — Logging stattdessen.
-      console.error('Speichern fehlgeschlagen:', error);
-    }
+  return runStorageOperation(key, async () => {
+    await localforage.setItem(STORAGE_PREFIX + key, state);
   });
-  // Recovery: tail darf NICHT auf das Promise 'next' zeigen — sonst hängt
-  // jeder weitere Save. Fresh-resolved unabhängig vom Ausgang.
-  tail = next.then(
-    () => undefined,
-    () => undefined
-  );
-  return next;
+}
+
+// Compatibility entrypoint: all game-state writers share the queue.
+export const saveGameState = enqueueGameStateSave;
+
+export const loadGameState = async <T = unknown>(key: string): Promise<T | null> => {
+  return localforage.getItem<T>(STORAGE_PREFIX + key);
+};
+
+export const removeGameState = (key: string): Promise<void> =>
+  runStorageOperation(key, async () => { await localforage.removeItem(STORAGE_PREFIX + key); });
+
+export const clearAllGameStates = async () => {
+  const keys = await localforage.keys();
+  await Promise.all(keys.filter(key => key.startsWith(GAME_STATE_PREFIX)).map(key =>
+    runStorageOperation(key.slice(STORAGE_PREFIX.length), async () => { await localforage.removeItem(key); })
+  ));
+};
+
+/** Holds the single-writer lease until unmount, including pending saves. */
+export function acquireGameSession(key: string): Promise<(() => Promise<void>) | null> {
+  if (!navigator.locks) {
+    return Promise.reject(new Error('Sicheres Speichern benötigt einen aktuellen Browser und HTTPS (oder localhost).'));
+  }
+  return new Promise((resolve, reject) => {
+    const request = navigator.locks.request(`${STORAGE_PREFIX}session:${key}`, { ifAvailable: true }, lock => {
+      if (!lock) {
+        resolve(null);
+        return;
+      }
+      return new Promise<void>(release => {
+        let releasing: Promise<void> | null = null;
+        resolve(() => {
+          releasing ??= tail.then(async () => {
+            release();
+            await request;
+          });
+          return releasing;
+        });
+      });
+    }).catch(reject);
+  });
 }

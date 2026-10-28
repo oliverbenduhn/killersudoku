@@ -4,12 +4,17 @@ import { screen, fireEvent, act } from '@testing-library/react';
 import { render } from '../../test-utils';
 import InstallPrompt from './InstallPrompt';
 
+const installEvent = () => Object.assign(new Event('beforeinstallprompt'), {
+  prompt: jest.fn().mockResolvedValue(undefined),
+  userChoice: Promise.resolve({ outcome: 'accepted' })
+});
+
 describe('InstallPrompt', () => {
   beforeEach(() => {
     window.localStorage.clear();
     jest.useFakeTimers();
     // Default: kein standalone-MatchMedia-Override leakt zwischen Tests.
-    (window as any).matchMedia = jest.fn().mockImplementation(query => ({
+    window.matchMedia = jest.fn().mockImplementation(query => ({
       matches: false,
       media: query,
       onchange: null,
@@ -34,7 +39,7 @@ describe('InstallPrompt', () => {
   test('rendert Slide nach beforeinstallprompt-Event', () => {
     render(<InstallPrompt />);
     act(() => {
-      window.dispatchEvent(new Event('beforeinstallprompt'));
+      window.dispatchEvent(installEvent());
     });
     expect(screen.getByText('Zum Startbildschirm hinzufügen')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Installieren' })).toBeInTheDocument();
@@ -43,7 +48,7 @@ describe('InstallPrompt', () => {
   test('Klick auf Installieren ruft deferredPrompt.prompt', async () => {
     const promptMock = jest.fn().mockResolvedValue({ outcome: 'accepted' });
     const userChoiceMock = Promise.resolve({ outcome: 'accepted' });
-    const evt = new Event('beforeinstallprompt') as any;
+    const evt = installEvent();
     evt.prompt = promptMock;
     evt.userChoice = userChoiceMock;
     render(<InstallPrompt />);
@@ -59,7 +64,7 @@ describe('InstallPrompt', () => {
   test('Klick auf Schließen-Icon speichert 1-Wochen-Ablauf in localStorage', () => {
     render(<InstallPrompt />);
     act(() => {
-      window.dispatchEvent(new Event('beforeinstallprompt'));
+      window.dispatchEvent(installEvent());
     });
     const installBtn = screen.getByRole('button', { name: 'Installieren' });
     const allButtons = screen.getAllByRole('button');
@@ -77,7 +82,7 @@ describe('InstallPrompt', () => {
     window.localStorage.setItem('installPromptDismissed', future.toString());
     render(<InstallPrompt />);
     act(() => {
-      window.dispatchEvent(new Event('beforeinstallprompt'));
+      window.dispatchEvent(installEvent());
     });
     expect(screen.queryByText('Zum Startbildschirm hinzufügen')).not.toBeInTheDocument();
   });
@@ -97,11 +102,11 @@ describe('InstallPrompt', () => {
       removeEventListener: jest.fn(),
       dispatchEvent: jest.fn(),
     }));
-    (window as any).matchMedia = matchMediaMock;
+    window.matchMedia = matchMediaMock;
 
     render(<InstallPrompt />);
     act(() => {
-      window.dispatchEvent(new Event('beforeinstallprompt'));
+      window.dispatchEvent(installEvent());
     });
     expect(screen.queryByText('Zum Startbildschirm hinzufügen')).not.toBeInTheDocument();
   });
@@ -110,7 +115,7 @@ describe('InstallPrompt', () => {
     const onDismiss = jest.fn();
     render(<InstallPrompt onDismiss={onDismiss} />);
     act(() => {
-      window.dispatchEvent(new Event('beforeinstallprompt'));
+      window.dispatchEvent(installEvent());
     });
     const installBtn = screen.getByRole('button', { name: 'Installieren' });
     const allButtons = screen.getAllByRole('button');
@@ -126,4 +131,16 @@ describe('InstallPrompt', () => {
     unmount();
     expect(removeSpy).toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function));
   });
+});
+
+test('blocked dismissal storage does not suppress the available install action', () => {
+  const read = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('Blocked'); });
+  const write = jest.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('Blocked'); });
+  render(<InstallPrompt />);
+  act(() => { window.dispatchEvent(installEvent()); });
+  expect(screen.getByRole('button', { name: 'Installieren' })).toBeVisible();
+  const buttons = screen.getAllByRole('button');
+  expect(() => fireEvent.click(buttons[0])).not.toThrow();
+  read.mockRestore();
+  write.mockRestore();
 });

@@ -9,6 +9,7 @@ import FadeInView from './common/FadeInView';
 import RippleButton from './common/RippleButton';
 import { TOTAL_LEVELS } from '../services/levelService';
 import { getSolvedLevels, getStartedLevels } from '../services/progressService';
+import { GameLevel } from '../types/gameTypes';
 import { APP_VERSION } from '../version';
 
 interface TabPanelProps {
@@ -19,7 +20,7 @@ interface TabPanelProps {
 
 interface HomeTabProps {
   currentLevel: number;
-  levelData: any;
+  levelData: GameLevel | null;
   isLoading: boolean;
   error: string | null;
   blackAndWhiteMode: boolean;
@@ -29,6 +30,7 @@ interface HomeTabProps {
   /** Öffnet den Tastenkombinationen-Hilfe-Dialog. Reicht vom App-State
    *  durch bis in Board, wo der ?-Shortcut ebenfalls triggert. */
   onOpenHelp: () => void;
+  shortcutsEnabled?: boolean;
 }
 
 export function HomeTab({
@@ -40,6 +42,7 @@ export function HomeTab({
   transitionDirection,
   puzzleId,
   onOpenHelp,
+  shortcutsEnabled = true,
 }: HomeTabProps) {
   return (
     <FadeInView
@@ -56,11 +59,12 @@ export function HomeTab({
       >
         <Board
           puzzleId={puzzleId ?? `level-${currentLevel}`}
-          levelData={levelData}
+          levelData={levelData?.levelNumber === currentLevel || puzzleId ? levelData : null}
           isLoading={isLoading}
           error={error}
           blackAndWhiteMode={blackAndWhiteMode}
           onOpenHelp={onOpenHelp}
+          shortcutsEnabled={shortcutsEnabled}
         />
       </Box>
     </FadeInView>
@@ -99,7 +103,7 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
       // Viewport. Header sticky, damit "Zurück" immer erreichbar bleibt.
       // ponytail: ein scrollbarer Container pro Tab, kein globaler Body-Scroll
       // (Body-Scroll würde die Drag-Mehrfachauswahl auf dem Brett zerstören).
-      h="calc(100dvh - 56px)"
+      minH="calc(100dvh - 100px)"
       overflowY="auto"
       overscrollBehaviorY="contain"
       pb="env(safe-area-inset-bottom, 0px)"
@@ -148,7 +152,7 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
             {solvedCount} / {TOTAL_LEVELS}
           </Text>
         </Flex>
-        <Box h="6px" bg="surface.sunken" borderRadius="full" overflow="hidden">
+        <Box role="progressbar" aria-label="Gelöste Level" aria-valuenow={solvedCount} aria-valuemin={0} aria-valuemax={TOTAL_LEVELS} h="6px" bg="surface.sunken" borderRadius="full" overflow="hidden">
           <Box
             h="100%"
             w={`${progress}%`}
@@ -190,6 +194,8 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
                 <RippleButton
                   key={level}
                   onClick={() => onLevelChange(level)}
+                  aria-label={`Level ${level}${solvedLevels.has(level) ? ', gelöst' : startedLevels.has(level) ? ', angefangen' : ''}`}
+                  aria-current={level === currentLevel ? 'page' : undefined}
                   bg={level === currentLevel ? 'brand.primary' : 'surface.raised'}
                   color={level === currentLevel ? 'brand.onPrimary' : 'text.primary'}
                   size="md"
@@ -213,7 +219,7 @@ export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirec
                       fontSize="md"
                       fontFamily={solvedLevels.has(level) ? 'mono' : 'body'}
                     >
-                      {solvedLevels.has(level) ? '✓' : level}
+                      {level}{solvedLevels.has(level) ? ' ✓' : ''}
                     </Text>
                     {!solvedLevels.has(level) && startedLevels.has(level) && (
                       <Box

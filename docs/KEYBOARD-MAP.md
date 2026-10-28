@@ -21,15 +21,17 @@ Bei einer neuen Taste: **erst** Eintrag in `KEYBOARD_SHORTCUTS`,
 
 | Tasten | Wirkung | Gruppe | ignoreInInputs |
 |---|---|---|---|
-| `1`–`9` | Zahl setzen — im Notizmodus (P) als Notiz-Kandidat | Spielzug | ja |
-| `0` · `Backspace` · `Delete` | Auswahl löschen — im Notizmodus werden Notizen gelöscht | Spielzug | ja |
+| `1`–`9` | Zahl setzen — im Bleistiftmodus (P) als Notiz-Kandidat | Spielzug | ja |
+| `0` · `Backspace` · `Delete` | Auswahl löschen — im Bleistiftmodus werden Notizen gelöscht | Spielzug | ja |
 | Pfeile · `WASD` | Zellnavigation (Cursor = selectedCell) | Spielzug | ja |
-| `Tab` · `Shift+Tab` | Nächste / vorige Zelle mit Wrap-around | Spielzug | ja |
+| `Tab` · `Shift+Tab` | Brett verlassen / vorheriges Bedienelement | Spielzug | ja |
 | `Shift`+Pfeil | Rechteck vom Anker bis Cursor (Excel-Style) | Spielzug | ja |
 
-`Shift+Tab` am linken Rand springt zur letzten Zelle der vorigen Zeile;
-`Tab` am rechten Rand springt zur ersten Zelle der nächsten Zeile; in der
-letzten Zelle wrapt `Tab` zu `{0,0}`.
+`Tab` und `Shift+Tab` verlassen das Brett in der normalen Fokusreihenfolge.
+Interne Zellnavigation erfolgt mit Pfeilen/WASD. Browserkombinationen wie
+Strg/Cmd+R bleiben erhalten. Spielaktionen sind während Hilfe, Tutorial,
+Reset-Bestätigung und Menüinteraktionen ausgesetzt. Im Terminalzustand sind
+Eingaben, Hinweise und Undo/Redo gesperrt.
 
 ## Brett-Shortcuts (immer aktiv)
 
@@ -48,11 +50,11 @@ letzten Zelle wrapt `Tab` zu `{0,0}`.
 
 | Tasten | Wirkung | Gruppe | ignoreInInputs |
 |---|---|---|---|
-| `P` | Notizmodus umschalten (Reset beim Levelwechsel) | Modus | ja |
+| `P` | Bleistiftmodus umschalten (Reset beim Levelwechsel) | Modus | ja |
 | `F5` | Hint-Overlay (mögliche Werte) an/aus — Browser-Reload wird unterdrückt | Modus | nein |
-| `H` | Strategischer Tipp (Toast mit Technik + Wert) | Hilfe | nein |
+| `H` | Strategischer Tipp (Erklärung im Seiteninhalt; verdeckt keine Eingaben) | Hilfe | nein |
 | `R` | Reveal-Hinweis (verbraucht 1 von 3 — gibt es nicht, wenn Limit erreicht) | Hilfe | nein |
-| `?` | Help-Dialog öffnen / schließen | Hilfe | nein |
+| `?` | Help-Dialog öffnen (Escape schließt) | Hilfe | nein |
 
 ## Pointer / Maus / Touch
 
@@ -67,8 +69,7 @@ wenn der Finger/die Maus die Cell-Grenze überschreitet.
 | Double-Tap / Doppelklick | Selektiert alle Zellen des Käfigs der Cell |
 
 Die Touch-Behandlung setzt `touch-action: none` auf jeder Cell, damit iOS
-nicht scrollt oder Pull-to-Refresh triggert. iOS-Scroll auf der Tab-Liste
-läuft separat über den Tab-Container (`overflow-y: auto`).
+nicht scrollt oder Pull-to-Refresh triggert. Auf kleinen Bildschirmen bleibt der Dokumentinhalt scrollbar; dadurch sind auch unterhalb des Bretts liegende Eingaben erreichbar.
 
 ## E2E-Selektoren (für Playwright / Probe-Skripte)
 
@@ -89,4 +90,4 @@ Stabil pro Layer:
 - Eigene Maus-Buttons (Rechtsklick, Mittelklick) — werden nicht abgefangen,
   Default-Verhalten des Browsers bleibt.
 - Touch-Gesten über zwei Finger (Pinch-Zoom etc.) — bewusst ignoriert, um
-  Drag-Selection nicht zu stören. App ist nicht zoombar.
+  Drag-Selection nicht zu stören. Browserzoom außerhalb der Zellen bleibt verfügbar.

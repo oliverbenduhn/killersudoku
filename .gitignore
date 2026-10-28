@@ -42,3 +42,11 @@ yarn-error.log*
 /.validate-build/
 # Diagnostic scripts (nicht Teil der App)
 scripts/
+
+# Maintained verification commands are part of the repository.
+!scripts/
+scripts/*
+!scripts/check-standards.mjs
+!scripts/preview.mjs
+!scripts/probe.mjs
+!scripts/flows.mjs

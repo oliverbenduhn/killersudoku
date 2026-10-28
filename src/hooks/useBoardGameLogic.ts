@@ -70,9 +70,9 @@ export const useBoardGameLogic = ({
 }: UseBoardGameLogicOptions): UseBoardGameLogicResult => {
   const handleNumberSelect = useCallback(
     (number: number) => {
-      if (!gameState || !levelData) return;
+      if (!gameState || !levelData || gameState.solved) return;
 
-      if (isGameOver) {
+      if (isGameOver || gameState.gameOver) {
         showError({
           title: 'Game Over',
           description: 'Du hast das Fehlerlimit erreicht. Bitte starte neu.',
@@ -164,9 +164,9 @@ export const useBoardGameLogic = ({
   );
 
   const handleClear = useCallback(() => {
-    if (!gameState || !levelData) return;
+    if (!gameState || !levelData || gameState.solved) return;
 
-    if (isGameOver) {
+    if (isGameOver || gameState.gameOver) {
       showError({
         title: 'Game Over',
         description: 'Du kannst keine Änderungen mehr machen.',
@@ -218,11 +218,13 @@ export const useBoardGameLogic = ({
     // Direkt mit den initialValues neu starten (vermeidet useEffect-Loop)
     const initialValuesCopy = JSON.parse(JSON.stringify(levelData.initialValues));
     updateGameState({
+      id: `game_${gameState.levelId ?? levelData.id}_${Date.now()}`,
       cellValues: initialValuesCopy,
       notes: GameLogic.createEmptyNotes(size),
       mistakesUsed: 0,
       hintsUsed: 0,
       solved: false,
+      statisticsRecorded: false,
       gameOver: false,
       endTime: undefined,
       startTime: Date.now(),
@@ -239,9 +241,9 @@ export const useBoardGameLogic = ({
   }, [gameState, levelData, size, updateGameState, resetSelection, animation, onSolveRecorded, clearHistory, showError]);
 
   const handleRevealHint = useCallback(() => {
-    if (!gameState || !levelData) return;
+    if (!gameState || !levelData || gameState.solved) return;
 
-    if (isGameOver) {
+    if (isGameOver || gameState.gameOver) {
       showError({
         title: 'Game Over',
         description: 'Hinweise sind nach Game Over nicht verfügbar.',
@@ -370,9 +372,9 @@ export const recordBoardSolved = async (
   levelData: GameLevel,
   startTime: number,
   difficulty: string | undefined,
-  puzzleId?: string
+  puzzleId?: string,
+  finishedAt: number = Date.now()
 ): Promise<number> => {
-  const finishedAt = Date.now();
   const elapsedMs = Math.max(0, finishedAt - startTime);
   // puzzleId dient als Idempotenz-Marker in statisticsService.recordSolve —
   // derselbe Solve nach Undo darf nicht doppelt zählen (Audit 🚨 #1).

@@ -1,3 +1,4 @@
+import fixture from '../../public/assets/levels/level_1.json';
 import { TOTAL_LEVELS, loadLevelByNumber, loadNextLevel, loadPreviousLevel } from './levelService';
 
 describe('levelService', () => {
@@ -15,6 +16,10 @@ describe('levelService', () => {
   });
 
   describe('loadLevelByNumber', () => {
+    test.each([NaN, Infinity, 1.5])('rejects invalid numeric level %s', async number => {
+      await expect(loadLevelByNumber(number)).rejects.toThrow(/Ungültige Levelnummer/);
+    });
+
     test('wirft für 0 (out of range)', async () => {
       await expect(loadLevelByNumber(0)).rejects.toThrow(/Ungültige Levelnummer/);
     });
@@ -28,13 +33,7 @@ describe('levelService', () => {
     });
 
     test('lädt level_N.json und setzt levelNumber explizit', async () => {
-      const fetchedLevel = {
-        id: 'level-7',
-        cages: [],
-        initialValues: [],
-        solution: [],
-        levelNumber: 99, // wird überschrieben
-      };
+      const fetchedLevel = { ...fixture, levelNumber: 99 };
       const fetchMock = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -44,7 +43,8 @@ describe('levelService', () => {
 
       const level = await loadLevelByNumber(7);
       expect(fetchMock).toHaveBeenCalledWith('/assets/levels/level_7.json');
-      expect(level).toBe(fetchedLevel);
+      expect(level).not.toBe(fetchedLevel);
+      expect(fetchedLevel.levelNumber).toBe(99);
       expect(level.levelNumber).toBe(7);
     });
 
@@ -68,7 +68,7 @@ describe('levelService', () => {
     test('gibt aktuelles+1 zurück', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ cages: [], initialValues: [], solution: [] }),
+        json: () => Promise.resolve(fixture),
       }) as unknown as typeof fetch;
 
       const lvl = await loadNextLevel(5);
@@ -78,7 +78,7 @@ describe('levelService', () => {
     test('am oberen Ende wrappt zu 1', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ cages: [], initialValues: [], solution: [] }),
+        json: () => Promise.resolve(fixture),
       }) as unknown as typeof fetch;
 
       const lvl = await loadNextLevel(100);
@@ -90,7 +90,7 @@ describe('levelService', () => {
     test('gibt aktuelles-1 zurück', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ cages: [], initialValues: [], solution: [] }),
+        json: () => Promise.resolve(fixture),
       }) as unknown as typeof fetch;
 
       const lvl = await loadPreviousLevel(5);
@@ -100,7 +100,7 @@ describe('levelService', () => {
     test('am unteren Ende wrappt zu TOTAL_LEVELS', async () => {
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ cages: [], initialValues: [], solution: [] }),
+        json: () => Promise.resolve(fixture),
       }) as unknown as typeof fetch;
 
       const lvl = await loadPreviousLevel(1);

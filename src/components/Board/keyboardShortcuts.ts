@@ -24,16 +24,16 @@ export interface Shortcut {
 }
 
 export const KEYBOARD_SHORTCUTS: ReadonlyArray<Shortcut> = [
-  { keys: '1–9', label: 'Zahl setzen — im Notizmodus als Notiz', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
+  { keys: '1–9', label: 'Zahl setzen — im Bleistiftmodus als Notiz-Kandidat', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
   { keys: '0 · Backspace · Delete', label: 'Auswahl löschen', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
   { keys: 'Pfeile / WASD', label: 'Zellnavigation', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
-  { keys: 'Tab · Shift+Tab', label: 'Nächste / vorige Zelle', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
+  { keys: 'Tab · Shift+Tab', label: 'Brett verlassen / vorheriges Bedienelement', group: 'Spielzug', ignoreInInputs: true, needsSelection: true },
   { keys: 'Esc', label: 'Auswahl aufheben', group: 'Spielzug', ignoreInInputs: false },
   { keys: 'Mod+Z', label: 'Rückgängig', group: 'Spielzug', ignoreInInputs: false },
   { keys: 'Mod+Shift+Z · Mod+Y', label: 'Wiederherstellen', group: 'Spielzug', ignoreInInputs: false },
-  { keys: 'P', label: 'Notizmodus an/aus', group: 'Modus', ignoreInInputs: true },
+  { keys: 'P', label: 'Bleistiftmodus an/aus', group: 'Modus', ignoreInInputs: true },
   { keys: 'F5', label: 'Mögliche-Werte-Hinweise an/aus', group: 'Modus', ignoreInInputs: false },
-  { keys: 'H', label: 'Strategischer Tipp (zeigt Toast)', group: 'Hilfe', ignoreInInputs: false },
+  { keys: 'H', label: 'Strategischer Tipp (zeigt Erklärung)', group: 'Hilfe', ignoreInInputs: false },
   { keys: 'R', label: 'Hinweis aufdecken (verbraucht 1 von 3)', group: 'Hilfe', ignoreInInputs: false },
   { keys: '?', label: 'Diese Hilfe anzeigen', group: 'Hilfe', ignoreInInputs: false },
 ];

@@ -2,6 +2,7 @@
 // Lädt und verwaltet die vordefinierten Level aus public/assets/levels/.
 
 import { GameLevel } from '../types/gameTypes';
+import { parseLevel } from '../utils/parseLevel';
 
 // Gesamtzahl der Level
 export const TOTAL_LEVELS = 100;
@@ -20,7 +21,7 @@ const getLevelFilePath = (levelNumber: number): string => {
 export const loadLevelByNumber = async (levelNumber: number): Promise<GameLevel> => {
   try {
     // Stelle sicher, dass die Levelnummer im gültigen Bereich liegt
-    if (levelNumber < 1 || levelNumber > TOTAL_LEVELS) {
+    if (!Number.isInteger(levelNumber) || levelNumber < 1 || levelNumber > TOTAL_LEVELS) {
       throw new Error(`Ungültige Levelnummer: ${levelNumber}. Muss zwischen 1 und ${TOTAL_LEVELS} sein.`);
     }
 
@@ -31,12 +32,8 @@ export const loadLevelByNumber = async (levelNumber: number): Promise<GameLevel>
       throw new Error(`Level konnte nicht geladen werden: ${filePath}`);
     }
 
-    const levelData = await response.json();
-    
-    // Stellen Sie sicher, dass die Level-Nummer im levelData gesetzt ist
-    levelData.levelNumber = levelNumber;
-    
-    return levelData;
+    const levelData: unknown = await response.json();
+    return parseLevel(levelData, levelNumber);
   } catch (error) {
     console.error(`Fehler beim Laden des Levels ${levelNumber}:`, error);
     throw error;

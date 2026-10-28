@@ -51,7 +51,11 @@ npm run serve        # vite preview auf Port 8084
 npm run typecheck          # TypeScript strict, keine Fehler
 npm run lint:levels        # Level-Validator-Suite (Puzzle-Integrität)
 npm test                   # Jest-Suite
-npm run validate           # typecheck + lint:levels
+npm run lint               # gezielte Produktionscode-Standards
+npm run validate           # typecheck + lint + lint:levels
+npm run build
+npm run test:smoke         # echter Produktionsstart, eigener freier Port
+npm run test:flows         # Desktop-/Mobilabläufe inklusive Offline und Speicherbesitz
 ```
 
 ## Deployment
@@ -111,3 +115,21 @@ Offene Hausaufgaben: [`TODO.md`](./TODO.md). ADR-Konventionen siehe
 
 Privates Projekt. Keine Lizenzdatei im Repo. Externe Nutzung derzeit nicht
 vorgesehen.
+## Spielstände und Grenzen
+
+Gelöste Rätsel und Game Over sind bis zum Neustart schreibgeschützt. Undo/Redo
+stellt Zellwerte und Notiz-Kandidaten wieder her; bereits verbrauchte Hinweise
+und Fehlversuche bleiben verbraucht. Reset fragt bei vorhandenen Eingaben nach
+und ist anschließend nicht rückgängig machbar.
+
+Jedes Rätsel kann nur in einem Fenster gleichzeitig bearbeitet werden. Weitere
+Fenster zeigen eine Sperrmeldung mit Wiederholungsaktion. Ein aktueller Browser
+mit Web Locks und HTTPS (lokal: localhost) ist erforderlich. Lade-/Speicherfehler
+werden angezeigt; unbekannte Spielstände werden nicht automatisch überschrieben.
+
+Die Statistik zählt erstmalig gelöste Puzzle; Bestzeiten beziehen sich auf deren
+erste Abschlüsse. Der Zufallsgenerator und die Detailstatistik sind interne
+Funktionen und haben derzeit keinen eigenen Einstieg in der Oberfläche.
+
+Die Audit-Befunde und ihr Bearbeitungsstand stehen in
+[`master-audit-2026-10-28.md`](./master-audit-2026-10-28.md).

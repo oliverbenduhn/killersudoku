@@ -50,6 +50,7 @@ export interface GameState {
   endTime?: number;
   difficulty?: Difficulty;
   solved?: boolean;
+  statisticsRecorded?: boolean;
   gameOver?: boolean;
   history?: GameState[];
   currentHistoryIndex?: number;

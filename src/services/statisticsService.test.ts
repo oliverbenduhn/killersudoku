@@ -90,3 +90,12 @@ describe('statisticsService', () => {
     expect(second.totalSolved).toBe(2);
   });
 });
+
+test('concurrent completions retain both counters and idempotency markers', async () => {
+  await resetStore();
+  await Promise.all([recordSolve('easy', 2000, 'concurrent-1'), recordSolve('hard', 3000, 'concurrent-2')]);
+  const stats = await loadStatistics();
+  expect(stats.totalSolved).toBe(2);
+  expect(stats.totalTimeMs).toBe(5000);
+  expect(stats.solvedPuzzles).toEqual(['concurrent-1', 'concurrent-2']);
+});

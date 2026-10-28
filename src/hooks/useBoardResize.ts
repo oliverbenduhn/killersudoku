@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 
 export interface UseBoardResizeOptions {
   /** Container-Ref, dessen Größe gemessen wird. */
@@ -7,6 +7,7 @@ export interface UseBoardResizeOptions {
   cellSizeByBreakpoint: number;
   /** Anzahl Zellen pro Zeile/Spalte. */
   size: number;
+  isReady?: boolean;
 }
 
 export interface UseBoardResizeResult {
@@ -17,15 +18,16 @@ export interface UseBoardResizeResult {
  * Berechnet die responsive Zellgröße eines NxN-Boards.
  *
  * Logik:
- * - Misst die verfügbare Breite/Höhe im Container.
- * - Wählt das Minimum aus (Breite/size, Höhe/size) für quadratische Zellen.
+ * - Uses content width and viewport height minus header space.
+ * - Short screens can scroll to the controls without shrinking the grid excessively.
  * - Cap durch `cellSizeByBreakpoint` (per Breakpoint konfiguriert).
  * - Stabilisierungs-Logik gegen Resize-Flacker.
  */
 export const useBoardResize = ({
   boardRef,
   cellSizeByBreakpoint,
-  size
+  size,
+  isReady = true
 }: UseBoardResizeOptions): UseBoardResizeResult => {
   const [cellSize, setCellSize] = useState<number>(50);
   const cellSizeRef = useRef(cellSize);
@@ -34,7 +36,7 @@ export const useBoardResize = ({
     cellSizeRef.current = cellSize;
   }, [cellSize]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     let resizeAttempts = 0;
     const maxResizeAttempts = 3;
     let lastCellSize = cellSizeRef.current;
@@ -45,31 +47,16 @@ export const useBoardResize = ({
       const node = boardRef.current;
       if (!node) return;
 
-      // Primäre Bremse: nutzbarer Inhalt des Containers (Breite UND Höhe).
-      // Im Sidebar-Layout (md+) ist die verfügbare Breite ~70 % des
-      // Viewports; Viewport-Höhe als Cap allein ließ die Cells über den
-      // Container hinausragen (Bug: links/rechts abgeschnitten).
-      //
-      // ponytail: clientWidth enthält das Padding (box-sizing: border-box
-      // reserviert Padding innerhalb der Box), also muss paddingLeft/Right
-      // abgezogen werden — sonst läuft die letzte Zelle rechts über den
-      // Container hinaus. Dasselbe für die Höhe. Bug-Vermeidung.
+      // clientWidth includes padding, which is not available to the cell grid.
       const cs = window.getComputedStyle(node);
       const padX = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-      const padY = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
       const contentW = node.clientWidth - padX;
-      const contentH = node.clientHeight - padY;
-      const containerMaxCell = contentW > 0 && contentH > 0
-        ? Math.floor(Math.min(contentW, contentH) / size)
-        : Infinity;
-      // Sekundärer Cap: Viewport, falls der Container noch nicht gemessen
-      // ist (initial Render) — verhindert Riesen-Cells vor dem ersten
-      // Resize-Tick.
-      const viewportSide = Math.min(window.innerWidth, window.innerHeight);
-      const viewportMaxCell = Math.floor((viewportSide * 0.92) / size);
+      // Width is constrained by layout; height must reserve room for controls.
+      const containerMaxCell = contentW > 0 ? Math.floor(contentW / size) : Infinity;
+      const reservedHeightPx = 120;
+      const viewportMaxCell = Math.floor(Math.max(216, window.innerHeight - reservedHeightPx) / size);
       const maxCell = Math.min(viewportMaxCell, containerMaxCell, cellSizeByBreakpoint);
-      const minSize = window.innerWidth < 768 ? 24 : 28;
-      const newCellSize = Math.max(minSize, maxCell);
+      const newCellSize = Math.max(window.innerWidth < 768 ? 24 : 28, maxCell);
 
       if (Math.abs(newCellSize - lastCellSize) < 2 || resizeAttempts >= maxResizeAttempts) {
         if (Math.abs(newCellSize - cellSizeRef.current) >= 2) {
@@ -88,23 +75,19 @@ export const useBoardResize = ({
       stabilizationTimer = setTimeout(handleResize, 50);
     };
 
-    const initialDelayTimer = setTimeout(() => {
+    handleResize();
+    onResize = () => {
+      resizeAttempts = 0;
+      if (stabilizationTimer) clearTimeout(stabilizationTimer);
       handleResize();
-
-      onResize = () => {
-        resizeAttempts = 0;
-        if (stabilizationTimer) clearTimeout(stabilizationTimer);
-        handleResize();
-      };
-      window.addEventListener('resize', onResize);
-    }, 300);
+    };
+    window.addEventListener('resize', onResize);
 
     return () => {
-      clearTimeout(initialDelayTimer);
       if (stabilizationTimer) clearTimeout(stabilizationTimer);
       if (onResize) window.removeEventListener('resize', onResize);
     };
-  }, [boardRef, cellSizeByBreakpoint, size]);
+  }, [boardRef, cellSizeByBreakpoint, size, isReady]);
 
   return { cellSize };
 };

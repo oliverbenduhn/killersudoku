@@ -12,7 +12,9 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  useToast
+  useToast,
+  AlertDialog, AlertDialogOverlay, AlertDialogContent, AlertDialogHeader,
+  AlertDialogBody, AlertDialogFooter, Button, CloseButton
 } from '@chakra-ui/react';
 import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, EditIcon, InfoIcon, RepeatClockIcon, WarningIcon } from '@chakra-ui/icons';
 
@@ -32,7 +34,7 @@ import NumberPad from '../NumberPad/NumberPad';
 import { Cage, GameLevel } from '../../types/gameTypes';
 import RippleButton from '../common/RippleButton';
 import FadeInView from '../common/FadeInView';
-import HelpDialog from '../common/HelpDialog';
+import { cageOfCell } from '../../services/board';
 import BoardSurface from './BoardSurface';
 
 interface BoardProps {
@@ -47,6 +49,7 @@ interface BoardProps {
   sidebarFooter?: React.ReactNode;
   /** Öffnet den Tastenkombinationen-Hilfe-Dialog (Modal lebt in App). */
   onOpenHelp: () => void;
+  shortcutsEnabled?: boolean;
 }
 
 const MAX_HINTS = 3;
@@ -61,9 +64,14 @@ export const Board: React.FC<BoardProps> = ({
   blackAndWhiteMode = false,
   sidebarFooter = null,
   onOpenHelp,
+  shortcutsEnabled = true,
 }) => {
   const toast = useToast();
-  const { gameState, isLoading: stateLoading, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size);
+  const { gameState, isLoading: stateLoading, loadError, storageError, retryLoad, retrySave, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size, levelData);
+  const [resetOpen, setResetOpen] = useState(false);
+  const cancelResetRef = useRef<HTMLButtonElement>(null!);
+  const [statisticsError, setStatisticsError] = useState(false);
+  const statisticsTaskRef = useRef<(() => Promise<unknown>) | null>(null);
   const strategicHint = useStrategicHint();
   // Käfige sind derived state — kommen direkt aus levelData. Vorher als
   // useState+useEffect gehalten, was im ersten Render-Tick ein leeres
@@ -71,7 +79,7 @@ export const Board: React.FC<BoardProps> = ({
   // Constraint und fluteten die Auswahl (User-Report: "zwei Felder
   // markiert, plötzlich drei oder das ganze Brett dabei").
   const cages: Cage[] = levelData?.cages ?? [];
-  const [hasError, setHasError] = useState<boolean>(false);
+  const hasError = !levelData && !externalLoading;
   // Bleistiftmodus: rein clientseitiger UI-State (Issue #4). Kein Teil von
   // GameState, nicht persistiert. Reset auf "aus" erfolgt explizit beim
   // Mount (Initialwert false) und bei jedem puzzleId-Wechsel — Board wird
@@ -96,7 +104,7 @@ export const Board: React.FC<BoardProps> = ({
     xl: 96,
     '2xl': 116
   }) || 48;
-  const { cellSize } = useBoardResize({ boardRef, cellSizeByBreakpoint, size });
+  const { cellSize } = useBoardResize({ boardRef, cellSizeByBreakpoint, size, isReady: !stateLoading && !externalLoading });
   // Käfig-Inset (siehe renderLineSvg): die gestrichelte Kontur läuft bei
   // diesem Abstand von der Zellkante. Die Käfigsumme muss dahinter beginnen,
   // sonst kollidiert die Ziffer mit dem gestrichelten Rahmen in der Ecke.
@@ -203,49 +211,33 @@ export const Board: React.FC<BoardProps> = ({
     size
   });
 
-  // Level-Initialisierung: nur beim Wechsel einmalig
-  useEffect(() => {
-    if (!levelData && !externalLoading) {
-      setHasError(true);
-    } else {
-      setHasError(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [levelData, puzzleId, externalLoading]);
-
   // Bleistiftmodus zurücksetzen bei jedem puzzleId-Wechsel (Issue #4).
   // Initial-Mount = useState(false) oben; Levelwechsel innerhalb der Sitzung
   // muss explizit auf "aus" zurückspringen, da Board nicht neu gemountet wird.
   useEffect(() => {
     setPencilMode(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleId]);
 
-  // 🟠 Audit #20: Selection-State bei Level-Wechsel zurücksetzen. Ohne
-  // diesen Reset bleibt selectedCell aus dem vorigen Level stehen (z. B.
-  // auf Käfig-Zelle, die im neuen Level eine andere Bedeutung hat). Der
-  // useBoardKeyboard-Initial-Effect setzt zwar (0,0), aber nur wenn BEIDE
-  // Selection-Slots leer sind — bei vorhandener Selection läuft er ins
-  // Leere. Symmetrisch zum pencilMode-Reset oben.
+  // A new puzzle starts without a selection from the previous board.
   useEffect(() => {
     clearSelection();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [puzzleId]);
+  }, [puzzleId, clearSelection]);
 
   // Restore keyboard input after either direction of the pencil toggle.
   // Keep focus on the control when there is no selected cell.
   useEffect(() => {
-    if (selectedCell) {
+    if (selectedCell && shortcutsEnabled && !resetOpen && !externalLoading && !stateLoading) {
       boardFocusRef.current?.focus();
     }
-  }, [pencilMode, selectedCell]);
+  }, [pencilMode, selectedCell, selectedCells, shortcutsEnabled, resetOpen, externalLoading, stateLoading]);
 
   const [hintCage, setHintCage] = useState<Cage | null>(null);
+  const [hintNotice, setHintNotice] = useState<{ title: string; description: string } | null>(null);
 
   // Strategischer Tipp: extrahiert als Callback, damit Button und
   // Tastatur-"H" denselben Code-Pfad nutzen. Vorher dupliziert.
-  const requestStrategicHintToast = useCallback(() => {
-    if (!gameState) return;
+  const requestStrategicHint = useCallback(() => {
+    if (!gameState || gameState.solved || gameState.gameOver || (gameState.mistakesUsed || 0) >= MAX_MISTAKES || stateLoading || externalLoading) return;
     if (cages.length === 0) {
       toast({ title: 'Hinweis nicht verfügbar', description: 'Level noch nicht geladen.', status: 'warning', duration: 2500, isClosable: true });
       return;
@@ -282,66 +274,80 @@ export const Board: React.FC<BoardProps> = ({
       'outie': '45er-Regel (Outie)',
     };
     // Käfig für das Highlight finden
-    const hintCageObj = cages.find(c =>
-      c.cells.some(cell => cell.row === hint.cell.row && cell.col === hint.cell.col)
-    );
+    const hintCageObj = cageOfCell(cages, hint.cell);
     setHintCage(hintCageObj ?? null);
     // Hint zählen
     updateGameState({ hintsUsed: hintsUsed + 1 });
-    toast({
-      title: `${techLabels[hint.technique]} → ${hint.value}`,
-      description: hint.explanation,
-      status: 'info',
-      duration: 10000, // #38: 10s, dann auto-close
-      isClosable: true,
-      position: 'bottom', // verdeckt das Spielfeld nicht
-      onCloseComplete: () => setHintCage(null),
-    });
+    setHintNotice({ title: `${techLabels[hint.technique]} → ${hint.value}`, description: hint.explanation });
+    clearSelection();
     setSelectedCell(hint.cell);
-  }, [gameState, cages, strategicHint, toast, setSelectedCell, updateGameState]);
+    setSelectedCells([hint.cell]);
+  }, [gameState, cages, strategicHint, toast, setSelectedCell, setSelectedCells, clearSelection, updateGameState, stateLoading, externalLoading]);
 
   // F5 für Hints an/aus, P für Bleistiftmodus, H/R/Esc/?/Mod+Z/Mod+Y für
   // die neuen Shortcuts. Ein einziger Hook ersetzt die alten zwei
   // useEffect-Listener — Modifier-/Input-Feld-Prüfung an einer Stelle.
   useKeyboardShortcuts({
-    onTogglePencil: () => setPencilMode((v) => !v),
+    onTogglePencil: () => { if (!gameState?.gameOver && !gameState?.solved) setPencilMode((v) => !v); },
     onToggleHints: toggleHints,
-    onHint: requestStrategicHintToast,
+    onHint: requestStrategicHint,
     onRevealHint: () => { void handleRevealHint(); },
-    onUndo: () => { void undo(); },
-    onRedo: () => { void redo(); },
+    onUndo: () => { if (canUndo && !gameState?.gameOver && !gameState?.solved) void undo(); },
+    onRedo: () => { if (canRedo && !gameState?.gameOver && !gameState?.solved) void redo(); },
     onClearSelection: clearSelection,
     onOpenHelp,
-  });
+  }, shortcutsEnabled && !resetOpen && !stateLoading && !externalLoading && !loadError);
 
-  // Solve-Detection
+  // Commit completion before statistics; retry an interrupted booking after reload.
   useEffect(() => {
-    if (!gameState) return;
-
+    if (!gameState || !levelData || gameState.levelId !== puzzleId) return;
     const levelNumber = parseLevelNumber(puzzleId);
-
-    if (gameState.solved) {
-      solveRecordedRef.current = puzzleId;
+    if (gameState.solved && levelNumber !== null) markLevelSolved(levelNumber);
+    if (gameState.statisticsRecorded || (!gameState.solved && !isBoardComplete())
+      || solveRecordedRef.current === gameState.id) return;
+    solveRecordedRef.current = gameState.id;
+    const finishedAt = gameState.endTime ?? Date.now();
+    if (!gameState.solved) {
+      void updateGameState({ solved: true, gameOver: false, endTime: finishedAt,
+        elapsedTime: Math.max(0, finishedAt - (gameState.startTime || finishedAt)) });
       if (levelNumber !== null) markLevelSolved(levelNumber);
-      return;
     }
-    if (!levelData || !isBoardComplete()) return;
-    if (solveRecordedRef.current === puzzleId) return;
-
-    solveRecordedRef.current = puzzleId;
-    const finishedAt = Date.now();
-    const startTime = gameState.startTime || finishedAt;
-
-    recordBoardSolved(levelData, startTime, levelData.difficulty, puzzleId).then(elapsedMs => {
-      updateGameState({
-        solved: true,
-        endTime: finishedAt,
-        elapsedTime: elapsedMs
-      });
-      if (levelNumber !== null) markLevelSolved(levelNumber);
+    const task = async () => {
+      await recordBoardSolved(levelData, gameState.startTime || finishedAt, levelData.difficulty, puzzleId, finishedAt);
+      await updateGameState({ statisticsRecorded: true }, gameState.id);
+    };
+    statisticsTaskRef.current = task;
+    setStatisticsError(false);
+    void task().catch(() => {
+      if (statisticsTaskRef.current === task) setStatisticsError(true);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameState, levelData, puzzleId]);
+  }, [gameState, levelData, puzzleId, isBoardComplete, updateGameState]);
+
+  useEffect(() => {
+    statisticsTaskRef.current = null;
+    setStatisticsError(false);
+    setHintCage(null);
+    setHintNotice(null);
+    return () => { statisticsTaskRef.current = null; };
+  }, [puzzleId]);
+
+  const resetGame = () => {
+    statisticsTaskRef.current = null;
+    setStatisticsError(false);
+    setResetOpen(false);
+    setHintCage(null);
+    setHintNotice(null);
+    handleReset();
+  };
+
+  const requestReset = () => {
+    const changed = gameState && levelData && (
+      gameState.cellValues.some((row, r) => row.some((value, col) => value !== levelData.initialValues[r][col]))
+      || gameState.notes.some(row => row.some(notes => notes.length > 0))
+    );
+    if (changed) { setResetOpen(true); return; }
+    resetGame();
+  };
 
   // Angefangen-Markierung: sobald der Spieler mindestens ein Feld selbst
   // befüllt (nicht Teil der levelData.initialValues-Vorgaben), gilt das
@@ -381,6 +387,13 @@ export const Board: React.FC<BoardProps> = ({
 
   const isLoadingCombined = stateLoading || externalLoading || (gameState && gameState.levelId !== puzzleId);
 
+  if (loadError) {
+    return <Alert status="error" flexDirection="column" gap={3}>
+      <AlertDescription>{loadError}</AlertDescription>
+      <Button onClick={retryLoad}>Erneut versuchen</Button>
+    </Alert>;
+  }
+
   if (externalError || hasError) {
     return (
       <Alert status="error" borderRadius="md">
@@ -415,7 +428,8 @@ export const Board: React.FC<BoardProps> = ({
     );
   }
 
-  const isGameOver = (gameState?.mistakesUsed || 0) >= MAX_MISTAKES;
+  const isGameOver = !gameState?.solved && Boolean(gameState?.gameOver || (gameState?.mistakesUsed || 0) >= MAX_MISTAKES);
+  const isTerminal = isGameOver || Boolean(gameState?.solved);
 
   return (
     <Flex
@@ -425,8 +439,26 @@ export const Board: React.FC<BoardProps> = ({
       align={flexDirection === "column" ? "center" : "start"}
       flexWrap="wrap"
       w="100%"
-      minH="70vh"
+      minW={0}
     >
+      {hintNotice && <Alert status="info" width="100%" alignItems="start" gap={2} role="status">
+        <Box flex={1} minW={0}><AlertTitle>{hintNotice.title}</AlertTitle><AlertDescription>{hintNotice.description}</AlertDescription></Box>
+        <CloseButton minW="44px" minH="44px" aria-label="Tipp schließen" onClick={() => { setHintNotice(null); setHintCage(null); }} />
+      </Alert>}
+      {gameState?.solved && <Alert status="success" width="100%" role="status">
+        <AlertIcon /><AlertDescription>Gratulation! Das Rätsel ist gelöst!</AlertDescription>
+      </Alert>}
+      {storageError && <Alert status="error" flexWrap="wrap" gap={2} width="100%">
+        <AlertDescription>{storageError}</AlertDescription><Button onClick={retrySave}>Speichern wiederholen</Button>
+      </Alert>}
+      {statisticsError && <Alert status="warning" flexWrap="wrap" gap={2} width="100%">
+        <AlertDescription>Das Rätsel ist gelöst. Die Statistik konnte nicht gespeichert werden.</AlertDescription>
+        <Button onClick={() => {
+          const task = statisticsTaskRef.current;
+          if (task) void task().then(() => { if (statisticsTaskRef.current === task) setStatisticsError(false); })
+            .catch(() => { if (statisticsTaskRef.current === task) setStatisticsError(true); });
+        }}>Statistik wiederholen</Button>
+      </Alert>}
       <Box
         ref={(el: HTMLDivElement | null) => {
           boardRef.current = el;
@@ -434,13 +466,11 @@ export const Board: React.FC<BoardProps> = ({
         }}
         data-board-root="true"
         role="grid"
+        aria-label="Sudoku-Brett – mit Pfeiltasten navigieren, mit Tab verlassen"
+        aria-readonly={isTerminal}
         p={flexDirection === "column" ? 2 : [1, 2, 4]}
         display="flex"
         justifyContent="center"
-        // Im Sidebar-Modus (row) soll das Brett oben in seiner 80vh-Box
-        // starten statt vertikal zentriert zu sein, sonst steht die
-        // NumberPad-Sidebar (top-aligned) höher als das Brett (Tablet-
-        // Hochformat-Bug: Sidebar und Brett-Oberkante klafften auseinander).
         alignItems={flexDirection === "row" ? "flex-start" : "center"}
         boxShadow="md"
         borderRadius="lg"
@@ -450,19 +480,21 @@ export const Board: React.FC<BoardProps> = ({
         flexShrink={1}
         flexBasis={flexDirection === "row" ? "0" : "auto"}
         maxW={flexDirection === "column" ? "100%" : "80%"}
-        // Im Sidebar-Modus (md+) nutzt das Brett 80vh der Höhe — das
-        // lässt in der Sidebar Platz für NumberPad+Löschen+Aktionen
-        // ohne dass sie hinter der Bottom-Nav verschwinden.
-        // ponytail: 90vh überlappte mit Bottom-Nav (57 px), 80vh ist
-        // der empirisch ermittelte Wert, bei dem alles in den sichtbaren
-        // Bereich passt.
-        h={flexDirection === "row" ? "80vh" : ["auto", "auto", "65vh"]}
+        h="auto"
+        minW={0}
         overflowX="hidden"
         overflowY="hidden"
         tabIndex={0}
         onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (!selectedCell && !stateLoading && !externalLoading) {
+            const first = { row: 0, col: 0 };
+            setSelectedCell(first);
+            setSelectedCells([first]);
+          }
+        }}
         _focus={{ outline: "none" }}
-        _focusVisible={{ outline: "none" }}
+        _focusVisible={{ outline: "2px solid", outlineColor: "cell.selected.border" }}
       >
         {gameState && levelData && gameState.levelId === puzzleId && (
           <BoardSurface
@@ -493,29 +525,6 @@ export const Board: React.FC<BoardProps> = ({
           />
         )}
 
-        {gameState && isBoardComplete() && (
-          <FadeInView
-            direction="scale"
-            duration={800}
-            position="absolute"
-            top="50%"
-            left="50%"
-            transform="translate(-50%, -50%)"
-            bg="status.success"
-            border="2px solid"
-            borderColor="status.success"
-            borderRadius="md"
-            p={4}
-            textAlign="center"
-            boxShadow="xl"
-            zIndex={10}
-          >
-            <Text fontSize="xl" fontWeight="bold" color="white">
-              Gratulation! Das Rätsel ist gelöst!
-            </Text>
-          </FadeInView>
-        )}
-
         {gameState && isGameOver && (
           <FadeInView
             direction="scale"
@@ -528,8 +537,7 @@ export const Board: React.FC<BoardProps> = ({
             bg="blackAlpha.600"
             p={4}
             zIndex={10}
-            role="alertdialog"
-            aria-modal="true"
+            role="alert"
             aria-labelledby="game-over-title"
             aria-describedby="game-over-description"
           >
@@ -571,7 +579,7 @@ export const Board: React.FC<BoardProps> = ({
                 </Text>
               </Box>
               <RippleButton
-                onClick={handleReset}
+                onClick={requestReset}
                 colorScheme="red"
                 w="100%"
                 aria-label="Neu starten"
@@ -591,9 +599,7 @@ export const Board: React.FC<BoardProps> = ({
         // Sidebar-Modus: kein Extra-Top-Padding — NumberPad soll bündig mit
         // der Brett-Oberkante starten (Tablet-Hochformat), sonst wirkt die
         // Sidebar künstlich nach unten verschoben.
-        // Im Landscape keine Bottom-Nav-Overlap-Risk: Inhalt vor
-        // Bottom-Nav enden lassen (Bottom-Nav ist 57 px + Safe-Area).
-        pb={flexDirection === "row" ? "72px" : 2}
+        pb={2}
         // Im Sidebar-Modus nur so breit wie NumberPad/Aktionen (nicht den
         // Restplatz füllen) — das Brett bekommt den übrigen Platz via
         // flexGrow, damit rechts kein Leerraum bleibt.
@@ -609,7 +615,8 @@ export const Board: React.FC<BoardProps> = ({
           <NumberPad
             onNumberSelect={handleNumberSelect}
             onClear={handleClear}
-            disabledNumbers={isGameOver ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
+            isDisabled={isTerminal}
+            disabledNumbers={isTerminal ? [1, 2, 3, 4, 5, 6, 7, 8, 9] : []}
             remainingDigits={remainingDigits}
           />
         </Box>
@@ -653,6 +660,7 @@ export const Board: React.FC<BoardProps> = ({
             aria-pressed={pencilMode}
             boxShadow={pencilMode ? 'outline' : undefined}
             data-testid="pencil-toggle"
+            isDisabled={isTerminal}
             width="100%"
           >
             <EditIcon />
@@ -660,8 +668,8 @@ export const Board: React.FC<BoardProps> = ({
           {/* Strategischer Tipp: dezent, nicht im Vordergrund. */}
           <RippleButton
             variant="outline"
-            onClick={requestStrategicHintToast}
-            isDisabled={!gameState || isGameOver || cages.length === 0}
+            onClick={requestStrategicHint}
+            isDisabled={!gameState || isTerminal || cages.length === 0}
             aria-label="Tipp"
             width="100%"
           >
@@ -671,7 +679,7 @@ export const Board: React.FC<BoardProps> = ({
           <RippleButton
             variant="solid"
             onClick={handleRevealHint}
-            isDisabled={!gameState || isGameOver || (gameState.hintsUsed || 0) >= MAX_HINTS}
+            isDisabled={!gameState || isTerminal || (gameState.hintsUsed || 0) >= MAX_HINTS}
             aria-label={`Hinweis (${MAX_HINTS - (gameState?.hintsUsed || 0)})`}
             width="100%"
           >
@@ -680,7 +688,7 @@ export const Board: React.FC<BoardProps> = ({
           {/* Reset: tonal, nicht akzent. */}
           <RippleButton
             variant="ghost"
-            onClick={handleReset}
+            onClick={requestReset}
             isDisabled={!gameState}
             aria-label="Reset"
             width="100%"
@@ -690,7 +698,7 @@ export const Board: React.FC<BoardProps> = ({
           <RippleButton
             variant="ghost"
             onClick={() => { void undo(); }}
-            isDisabled={!gameState || isGameOver || !canUndo}
+            isDisabled={!gameState || isTerminal || !canUndo}
             aria-label="Rückgängig"
             width="100%"
           >
@@ -699,7 +707,7 @@ export const Board: React.FC<BoardProps> = ({
           <RippleButton
             variant="ghost"
             onClick={() => { void redo(); }}
-            isDisabled={!gameState || isGameOver || !canRedo}
+            isDisabled={!gameState || isTerminal || !canRedo}
             aria-label="Wiederherstellen"
             width="100%"
           >
@@ -721,6 +729,16 @@ export const Board: React.FC<BoardProps> = ({
           </Box>
         )}
       </Box>
+      <AlertDialog isOpen={resetOpen} leastDestructiveRef={cancelResetRef} onClose={() => setResetOpen(false)} isCentered>
+        <AlertDialogOverlay><AlertDialogContent>
+          <AlertDialogHeader>Rätsel zurücksetzen?</AlertDialogHeader>
+          <AlertDialogBody>Deine Eingaben und Notiz-Kandidaten werden gelöscht. Das lässt sich nicht rückgängig machen.</AlertDialogBody>
+          <AlertDialogFooter gap={3}>
+            <Button ref={cancelResetRef} onClick={() => setResetOpen(false)}>Abbrechen</Button>
+            <Button onClick={resetGame}>Zurücksetzen</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent></AlertDialogOverlay>
+      </AlertDialog>
     </Flex>
   );
 };

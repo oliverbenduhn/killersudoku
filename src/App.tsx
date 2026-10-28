@@ -9,6 +9,7 @@ import {
   IconButton,
   useBreakpointValue,
   useColorModeValue,
+  useToast,
 } from '@chakra-ui/react';
 
 import InstallPrompt from './components/common/InstallPrompt';
@@ -20,19 +21,20 @@ import HelpDialog from './components/common/HelpDialog';
 import { useTutorial } from './hooks/useTutorial';
 import { theme } from './theme';
 import { ColorSchemeProvider } from './contexts/ColorSchemeContext';
-import { loadLevelByNumber } from './services/levelService';
+import { loadLevelByNumber, TOTAL_LEVELS } from './services/levelService';
 import { GameLevel } from './types/gameTypes';
 
 type TabName = 'home' | 'levels';
 
 function App() {
+  const toast = useToast();
   // Zuletzt gespieltes Level in localStorage persistieren, damit ein Reload
   // (z. B. versehentliches Aktualisieren im Browser) nicht auf Level 1
   // zurückspringt, sondern dort weitermacht, wo man war.
   const [currentLevel, setCurrentLevel] = useState<number>(() => {
     try {
       const stored = Number(localStorage.getItem('killersudoku_current_level'));
-      return Number.isInteger(stored) && stored > 0 ? stored : 1;
+      return Number.isInteger(stored) && stored > 0 && stored <= TOTAL_LEVELS ? stored : 1;
     } catch {
       return 1;
     }
@@ -58,11 +60,8 @@ function App() {
   // der ?-Shortcut (über useKeyboardShortcuts in Board) ihn öffnen.
   const [isHelpOpen, setIsHelpOpen] = useState<boolean>(false);
 
-  const headerHeight = useBreakpointValue({ base: '52px', md: '60px' });
-  // Device-Layout:
-  //   mobile  (base/md)  — Kopfzeile mit Titel + HomeActions, kein Sidebar.
-  //   desktop (lg+ bzw. Tablet-Quer ab md) — Sidebar-Layout, keine Kopfzeile.
-  const isSidebarLayout = useBreakpointValue({ base: false, md: true }) || false;
+  const supportsFullscreen = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled && typeof document.documentElement.requestFullscreen === 'function' && typeof document.exitFullscreen === 'function');
+  // The header wraps into two rows on narrow screens.
   const containerMaxWidth = useBreakpointValue({ base: '100%', xl: 'container.xl' });
   const headerBg = useColorModeValue('surface.header', 'surface.header');
   const headerTextColor = useColorModeValue('surface.header.text', 'surface.header.text');
@@ -95,17 +94,17 @@ function App() {
 
   // Fullscreen-Toggle: requestFullscreen() / exitFullscreen() der Browser
   // API. Browser verlangt einen User-Gesture — der Button-Click ist einer.
-  const handleToggleFullscreen = () => {
-    if (typeof document === 'undefined') return;
-    if (!document.fullscreenElement) {
-      void document.documentElement.requestFullscreen().catch(() => {
-        // Browser kann Vollbild verweigern (z. B. bei <iframe> oder ohne
-        // User-Gesture); still ignorieren.
-      });
-    } else {
-      void document.exitFullscreen();
+  const handleToggleFullscreen = async () => {
+    if (!supportsFullscreen) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await document.documentElement.requestFullscreen();
+    } catch (error) {
+      console.error('Vollbild nicht verfügbar:', error);
+      toast({ title: 'Vollbild nicht verfügbar', description: 'Du kannst ohne Vollbild weiterspielen.', status: 'info', isClosable: true });
     }
   };
+
   useEffect(() => {
     if (typeof document === 'undefined') return;
     const onChange = () => setIsFullscreen(!!document.fullscreenElement);
@@ -143,32 +142,12 @@ function App() {
         >
         <Container
           maxW={containerMaxWidth}
-          h={headerHeight}
+          minH="52px"
+          py={1}
           px={4}
-          // Phone-Landscape (md..xl, height < 500): Header rotiert 90° nach
-          // links und dockt links an. So bleibt der gesamte vertikale Raum
-          // fürs Brett verfügbar, und Titel + Aktionen liegen am linken
-          // Rand als schmale Spalte. Desktop/Portrait sind unberührt.
-          sx={{
-            '@media (orientation: landscape) and (max-height: 499px) and (min-width: 768px)': {
-              position: 'fixed',
-              top: '50%',
-              left: 0,
-              transform: 'translateY(-50%) rotate(-90deg)',
-              transformOrigin: 'center',
-              height: '52px',
-              width: '240px',
-              whiteSpace: 'nowrap',
-              paddingLeft: '12px',
-              paddingRight: '12px',
-              borderRadius: '0 8px 8px 0',
-              boxShadow: 'sm',
-              background: 'var(--chakra-colors-surface-raised)',
-              zIndex: 999,
-            },
-          }}
+
         >
-          <Flex direction="row" align="center" justify="space-between" h="100%" gap={3}>
+          <Flex direction={{ base: "column", sm: "row" }} align="center" justify="space-between" gap={{ base: 0, sm: 3 }}>
             <Flex align="baseline" gap={2}>
               <Heading
                 as="h1"
@@ -181,12 +160,13 @@ function App() {
                 Killer Sudoku
               </Heading>
             </Flex>
-            <Flex align="center" gap={1}>
+            <Flex align="center" justify="space-between" w={{ base: "100%", sm: "auto" }} gap={1}>
               <HomeActions
                 onOpenLevels={() => handleTabChange(activeTab === 'levels' ? 'home' : 'levels')}
                 blackAndWhiteMode={blackAndWhiteMode}
                 currentLevel={currentLevel}
                 isFullscreen={isFullscreen}
+                supportsFullscreen={supportsFullscreen}
                 onToggleFullscreen={handleToggleFullscreen}
                 onToggleBlackAndWhite={() => setBlackAndWhiteMode((v) => {
                   const next = !v;
@@ -236,6 +216,7 @@ function App() {
               blackAndWhiteMode={blackAndWhiteMode}
               transitionDirection={tabTransition}
               onOpenHelp={() => setIsHelpOpen(true)}
+              shortcutsEnabled={!isHelpOpen && !tutorial.active}
             />
           )}
           {activeTab === 'levels' && (

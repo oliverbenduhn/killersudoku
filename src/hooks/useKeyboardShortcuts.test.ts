@@ -129,3 +129,32 @@ describe('matchesKey', () => {
     expect(matchesKey({ key: 'Escape' } as KeyboardEvent, 'Esc', false)).toBe(true);
   });
 });
+
+
+test('modified R/H and disabled shortcut contexts never mutate the game', () => {
+  const handlers = makeHandlers();
+  const { rerender } = renderHook(({ enabled }) => useKeyboardShortcuts(handlers, enabled), { initialProps: { enabled: true } });
+  fireEvent.keyDown(window, { key: 'r', ctrlKey: true });
+  fireEvent.keyDown(window, { key: 'h', altKey: true });
+  expect(handlers.onRevealHint).not.toHaveBeenCalled();
+  expect(handlers.onHint).not.toHaveBeenCalled();
+  rerender({ enabled: false });
+  fireEvent.keyDown(window, { key: 'r' });
+  fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+  expect(handlers.onRevealHint).not.toHaveBeenCalled();
+  expect(handlers.onUndo).not.toHaveBeenCalled();
+});
+
+test('menu keyboard navigation cannot trigger game actions', () => {
+  const handlers = makeHandlers();
+  const menu = document.createElement('div');
+  menu.setAttribute('role', 'menu');
+  const item = document.createElement('button');
+  menu.appendChild(item);
+  document.body.appendChild(menu);
+  item.focus();
+  renderHook(() => useKeyboardShortcuts(handlers));
+  fireEvent.keyDown(item, { key: 'h' });
+  expect(handlers.onHint).not.toHaveBeenCalled();
+  menu.remove();
+});

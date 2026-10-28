@@ -21,10 +21,11 @@ export interface ShortcutHandlers {
   onOpenHelp: () => void;
 }
 
-const isInputFocused = (): boolean => {
+const hasExternalKeyboardFocus = (): boolean => {
   if (typeof document === 'undefined') return false;
   const a = document.activeElement as HTMLElement | null;
   if (!a) return false;
+  if (a.closest('[role="menu"], [role="dialog"], [role="alertdialog"]')) return true;
   const tag = a.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
   if (a.isContentEditable) return true;
@@ -52,13 +53,16 @@ const matchesKey = (e: KeyboardEvent, spec: string, mod: boolean): boolean => {
   return e.key === key || e.key === 'Escape' && key === 'Esc' || key === 'Tab' && e.key === 'Tab';
 };
 
-export const useKeyboardShortcuts = (handlers: ShortcutHandlers): void => {
+export const useKeyboardShortcuts = (handlers: ShortcutHandlers, enabled = true): void => {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       // Doppel-Trigger bei Halten unterdrücken.
-      if (e.repeat) return;
-      const inInput = isInputFocused();
+      if (!enabled || e.repeat || e.defaultPrevented) return;
+      const inInput = hasExternalKeyboardFocus();
       const mod = e.ctrlKey || e.metaKey;
+
+      if (e.altKey) return;
+      if (mod && !['z', 'y'].includes(e.key.toLowerCase())) return;
 
       // Hilfs-Routing: jeder Branch prüft seine Input-Feld-Regel selbst,
       // damit "?" und Esc auch im Level-Input (Header) wirken.
@@ -117,7 +121,7 @@ export const useKeyboardShortcuts = (handlers: ShortcutHandlers): void => {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handlers]);
+  }, [handlers, enabled]);
 };
 
 // matchesKey bleibt exportiert für Unit-Tests, falls jemand die

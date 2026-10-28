@@ -18,6 +18,8 @@ Drei Speicherkanäle mit unterschiedlichen Aufgaben. Neue Keys hier eintragen.
 | `killersudoku_bw` | `"0"` \| `"1"` | `App.tsx` | Schwarz-Weiß-Modus-Toggle |
 | `killersudoku_solved_levels` | `number[]` | `progressService.ts` | Set gelöster Level für Levelübersicht |
 | `killersudoku_started_levels` | `number[]` | `progressService.ts` | Set angefangener Level (für Punkt-Markierung) |
+| `colorScheme` | `warm` / `warmDark` / `ocean` / `forest` | `ColorSchemeProvider` | Farbschema |
+| `installPromptDismissed` | Zeitstempel als String | `InstallPrompt` | Installationshinweis eine Woche unterdrücken |
 | `killersudoku_tutorial_seen` | `"1"` | `useTutorial.ts` | Tutorial nur beim ersten Besuch zeigen |
 
 Alle Schreibzugriffe laufen durch `try { ... } catch {}` — Safari-Private-Mode
@@ -36,27 +38,29 @@ und Quota-Fehler werfen beim Schreiben.
 Ein einziger Key-Pfad: `${STORAGE_PREFIX}${puzzleId}`. Inhalt: vollständige
 `GameState`-Struktur als JSON.
 
-### Save-Queue
+### Save-Queue und Schreibbesitz
 
-`storageService.enqueueGameStateSave(key, state)` ist die einzige
-Schreib-Stelle für Spielstände. Sie serialisiert Schreibvorgänge pro
-Schlüssel:
+`enqueueGameStateSave` ist der gemeinsame Schreibpfad; `saveGameState` delegiert
+darauf. `runStorageOperation` serialisiert auch statistische Read-modify-write-
+Operationen und schützt sie mit einem kurzen Web Lock. Fehler werden weitergegeben
+und im Hook als sichtbarer, wiederholbarer Speicherfehler behandelt.
 
-- `tail: Promise<void>` wird mit jedem Aufruf verkettet.
-- Zwei schnelle Saves laufen nicht mehr parallel — Race-Bedingung
-  "Spielstand 15s zurück" (Timer-Auto-Save vs. User-Save) wurde damit
-  behoben.
-- Errors werden `console.error`'d, nicht geworfen — Aufrufer sind
-  fehlertolerant.
+`acquireGameSession` hält pro Puzzle einen exklusiven Web Lock für die Lebensdauer
+der aktiven Hook-Instanz. Erst nach Abschluss ausstehender Saves wird er freigegeben.
+Ein zweites Fenster darf nicht schreiben und zeigt eine Wiederholungsaktion.
+Web Locks sind flüchtige Browserkoordination, kein neuer persistenter Kanal.
+Browser ohne diese Fähigkeit zeigen eine Fehlermeldung. HTTPS bzw. localhost ist
+erforderlich. Siehe ADR 0004.
 
-`ponytail:` globale Single-File-Queue, nicht pro Hook-Instanz. Reicht für
-eine Hook-Instanz pro puzzleId. Bei mehreren parallelen Spielständen
-müsste die Queue per Key segmentiert werden — derzeit nicht nötig.
+Die History speichert nur Zellwerte und Notiz-Kandidaten. Verbrauchszähler und
+Zeit bleiben beim Undo erhalten. `statisticsRecorded` im Spielstand kennzeichnet
+eine erfolgreiche Statistikbuchung; fehlende Buchungen werden nach Reload
+idempotent wiederholt. Reset erstellt eine neue Spielinstanz.
 
 ### Lesevorgang
 
 `storageService.loadGameState<T>(key)` lädt ein einzelnes Item, gibt
-`null` bei Miss zurück.
+`null` bei Miss zurück. Ein Lesefehler erzeugt keinen leeren Ersatzstand; die Oberfläche bietet Wiederholen an.
 
 `storageService.clearAllGameStates()` löscht **nur** Spielstände (Keys mit
 Prefix `GAME_STATE_PREFIX`). Statistik und Progress bleiben unberührt.

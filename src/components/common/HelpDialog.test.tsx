@@ -12,9 +12,9 @@ describe('HelpDialog', () => {
     render(<HelpDialog isOpen={true} onClose={jest.fn()} />);
     expect(screen.getByText('Tastenkombinationen')).toBeInTheDocument();
     // Anzeige-Beispiele aus keyboardShortcuts.ts:
-    expect(screen.getByText('Notizmodus an/aus')).toBeInTheDocument();
+    expect(screen.getByText('Bleistiftmodus an/aus')).toBeInTheDocument();
     expect(screen.getByText('Rückgängig')).toBeInTheDocument();
-    expect(screen.getByText('Strategischer Tipp (zeigt Toast)')).toBeInTheDocument();
+    expect(screen.getByText('Strategischer Tipp (zeigt Erklärung)')).toBeInTheDocument();
     expect(screen.getByText('Diese Hilfe anzeigen')).toBeInTheDocument();
   });
 

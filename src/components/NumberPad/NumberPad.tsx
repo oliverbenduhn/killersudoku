@@ -5,6 +5,7 @@ import RippleButton from '../common/RippleButton';
 interface NumberPadProps {
   onNumberSelect: (number: number) => void;
   onClear: () => void;
+  isDisabled?: boolean;
   disabledNumbers?: number[];
   remainingDigits?: { [key: number]: number };
   /** Verbrauchte Fehlversuche. Wenn gesetzt, erscheint rechts
@@ -20,6 +21,7 @@ const MIN_TOUCH = '44px';
 export const NumberPad: React.FC<NumberPadProps> = ({
   onNumberSelect,
   onClear,
+  isDisabled = false,
   disabledNumbers = [],
   remainingDigits = {},
   mistakesUsed,
@@ -120,6 +122,7 @@ export const NumberPad: React.FC<NumberPadProps> = ({
       >
         <RippleButton
           onClick={onClear}
+          isDisabled={isDisabled}
           bg="brand.primary"
           color="brand.onPrimary"
           size="md"
