@@ -297,6 +297,21 @@ describe('Bleistiftmodus (#4)', () => {
     expect(btn).toHaveAttribute('aria-pressed', 'false');
   });
 
+  test('keeps keyboard input on the selected cell when pencil mode is switched off', () => {
+    const { container } = render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
+    const cell = screen.getByTestId('cell-0-0');
+    const board = container.querySelector('[data-board-root="true"]');
+    const button = screen.getByRole('button', { name: /Bleistiftmodus/ });
+    fireEvent.pointerDown(cell);
+    button.focus();
+    fireEvent.click(button);
+    expect(board).toHaveFocus();
+    button.focus();
+    fireEvent.click(button);
+    expect(cell).toHaveAttribute('aria-selected', 'true');
+    expect(board).toHaveFocus();
+  });
+
   test('P-Taste togglet den Modus ohne selektierte Zelle und nach Button-Klick', () => {
     render(<Board levelData={mockLevelData} onOpenHelp={jest.fn()} />);
     // Erst einen anderen Button klicken (Fokus verschieben).

@@ -97,6 +97,8 @@ export interface BoardSurfaceProps {
   /** Reines Doppelklick-Event (Maus). Auf Touch wird Doppel-Tipp
    *  intern im Hook via handlePointerDown-Zeitfenster erkannt. */
   onCellDoubleClick: (row: number, col: number) => void;
+  /** Highlights the outer frame while pencil input is active. */
+  pencilMode?: boolean;
   /** Schwarz-Weiß-Modus aktiv (siehe CONTEXT.md). */
   blackAndWhiteMode: boolean;
 }
@@ -147,6 +149,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
   onCellPointerEnd,
   onCellDoubleClick,
   blackAndWhiteMode,
+  pencilMode = false,
 }) => {
   // ── Flächen-Schicht (unten): Zell-Hintergrund + Interaktion ──────────────
   const renderBgCell = (row: number, col: number) => {
@@ -452,7 +455,16 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
 
   const boardPx = size * cellSize;
   return (
-    <Box position="relative" w={`${boardPx}px`} h={`${boardPx}px`}>
+    <Box
+      position="relative"
+      w={`${boardPx}px`}
+      h={`${boardPx}px`}
+      boxShadow={pencilMode
+        ? `0 0 0 2px ${cssVar('cell.selected.border')}, 0 0 14px 3px ${cssVar('cell.selected.border')}`
+        : 'none'}
+      transition="box-shadow 0.2s ease"
+      sx={{ '@media (prefers-reduced-motion: reduce)': { transition: 'none' } }}
+    >
       {/* Flächen + Interaktion */}
       <Box position="absolute" top={0} left={0}>{renderCellGrid(renderBgCell)}</Box>
       {/* Linien */}

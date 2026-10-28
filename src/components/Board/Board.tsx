@@ -232,16 +232,11 @@ export const Board: React.FC<BoardProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [puzzleId]);
 
-  // Pencil-Toggle-Klick verschiebt den DOM-Fokus auf den Button (Browser-
-  // Default). Danach laufen Tastatur-Eingaben (Ziffern/Pfeile) ins Leere,
-  // weil der Keyboard-Handler an der Brett-Box hängt. Fokus direkt zurück
-  // aufs Brett holen, damit Ziffern unmittelbar Notizen setzen.
-  // ponytail: nur falls eine Auswahl existiert — sonst kein Brett-Kontext,
-  // und der User hat bewusst geklickt, ohne zu selektieren.
+  // Restore keyboard input after either direction of the pencil toggle.
+  // Keep focus on the control when there is no selected cell.
   useEffect(() => {
-    if (pencilMode && selectedCell) {
-      const boardEl = document.querySelector<HTMLElement>('[data-board-root="true"]');
-      boardEl?.focus();
+    if (selectedCell) {
+      boardFocusRef.current?.focus();
     }
   }, [pencilMode, selectedCell]);
 
@@ -471,6 +466,7 @@ export const Board: React.FC<BoardProps> = ({
       >
         {gameState && levelData && gameState.levelId === puzzleId && (
           <BoardSurface
+            pencilMode={pencilMode}
             selectedCell={selectedCell}
             selectedCells={selectedCells}
             size={size}
