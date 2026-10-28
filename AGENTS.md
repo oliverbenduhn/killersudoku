@@ -12,7 +12,7 @@ Skill-level contracts: `docs/agents/`.
 ## 1. Project identity
 
 Killer Sudoku is a single-page Progressive Web App — 9×9 Sudoku + cages with
-mandatory sums. Pure client-side React 18 + TypeScript + Chakra UI v2 + Vite 5.
+mandatory sums. Pure client-side React 19 + TypeScript + Chakra UI v2 + Vite 8.
 No server, no API, no database, no auth. Static build (`build/`) is the entire
 deployable artifact.
 

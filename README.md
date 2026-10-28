@@ -12,20 +12,20 @@ Domain-Glossar: [`CONTEXT.md`](./CONTEXT.md).
 
 | Schicht | Technologie |
 |---|---|
-| UI-Framework | React 18.2 |
+| UI-Framework | React 19.2 |
 | Sprache | TypeScript 5.5 (strict) |
 | Komponenten-Bibliothek | Chakra UI 2.8 + Emotion 11 |
-| Animationen | framer-motion 11 |
+| Animationen | framer-motion 13 |
 | Persistenz | localforage 1.10 (IndexedDB) + `localStorage` (kleine Flags) |
-| Build / Dev-Server | Vite 5 + `@vitejs/plugin-react` |
-| PWA | `vite-plugin-pwa` 0.21 (Workbox, `autoUpdate`) |
-| Tests | Jest 29 + ts-jest + `@testing-library/react` 16 (jsdom) |
+| Build / Dev-Server | Vite 8 + `@vitejs/plugin-react` |
+| PWA | `vite-plugin-pwa` 1.3 (Workbox, `autoUpdate`) |
+| Tests | Jest 30 + ts-jest + `@testing-library/react` 16 (jsdom) |
 | E2E (optional) | Playwright |
-| Container (Fallback) | Multi-stage Dockerfile, nginx 1.27-alpine |
+| Container (Fallback) | Multi-stage Dockerfile, nginx 1.30.4-alpine |
 
 ## Voraussetzungen
 
-- Node.js 20+
+- Node.js 24 (wie im Docker-Build)
 - npm 10+
 - Für Container-Deployment: Docker + Compose v2
 
