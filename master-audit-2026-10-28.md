@@ -290,3 +290,21 @@ Realgeräte und eine Screenreader-Sitzung sind weiterhin nicht behauptet.
 
 Die Chunk-Warnung für den UI-Vendor bleibt dokumentiert; der Build funktioniert.
 Eine weitere Aufteilung ohne gemessenen Nutzen wurde nicht vorgenommen.
+
+
+## Abschlussprüfung für 0.3.8
+
+- Vollständige Jest-Suite: **40 Suites, 411 Tests bestanden**.
+- `npm run validate`: Typecheck, fokussierte Standards und alle neun
+  Level-Validator-Tests bestanden; 100 Bestandsrätsel geprüft.
+- Produktionsbuild, echter Smoke-Test sowie Browserabläufe auf 1280×900,
+  375×568, 320×800, 414×800, 768×414 und 667×375 bestanden.
+- Offline-Reload und Levelwechsel, zweites Fenster, Abschluss-/Reset-Timer,
+  unveränderliches gelöstes Brett und zugängliche Levelnamen geprüft.
+- Docker-Image mit Node 24 / nginx 1.30.4 gebaut; Smoke-Test gegen einen
+  temporären nginx-Container bestanden. Der Prüfcontainer wurde beendet.
+- Paket-/UI-Version werden gemeinsam auf **0.3.8** erhöht; `package-lock.json`
+  wird synchron aktualisiert. Release verwendet einen annotierten Git-Tag.
+- Abschließender Browserlauf mit Version 0.3.8: alle sechs Größen bestanden;
+  gemessener Layout Shift in jedem Ablauf gerundet **0,000**. Die Brettgröße wird
+  vor dem ersten sichtbaren Layout gemessen, statt nach einer 300-ms-Verzögerung.
