@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type RefObject } from 'react';
 import { loadGameState, enqueueGameStateSave, acquireGameSession } from '../services/storageService';
 import { GameState as GlobalGameState, GameLevel } from '../types/gameTypes';
 import { loadLevelByNumber } from '../services/levelService';
@@ -16,7 +16,9 @@ interface GameState extends GlobalGameState {
 
 type BoardSnapshot = Pick<GameState, 'cellValues' | 'notes'>;
 
-export const useGameState = (puzzleId: string, size: number = 9, providedLevel?: GameLevel | null) => {
+export type SaveStatus = 'saved' | 'pending' | 'failed';
+
+export const useGameState = (puzzleId: string, size: number = 9, providedLevel?: GameLevel | null, saveStatus?: RefObject<SaveStatus>) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -24,6 +26,7 @@ export const useGameState = (puzzleId: string, size: number = 9, providedLevel?:
   const [loadAttempt, setLoadAttempt] = useState(0);
   const gameStateRef = useRef<GameState | null>(null);
   const currentPuzzleIdRef = useRef(puzzleId);
+  const latestSaveRef = useRef<Promise<void> | null>(null);
   const lastAutoSaveRef = useRef(0);
   const sessionActiveRef = useRef(false);
   const sessionLeaseRef = useRef<Promise<(() => Promise<void>) | null>>(Promise.resolve(null));
@@ -34,16 +37,23 @@ export const useGameState = (puzzleId: string, size: number = 9, providedLevel?:
     if (!sessionActiveRef.current || state.levelId !== currentPuzzleIdRef.current) return;
     const targetId = currentPuzzleIdRef.current;
     lastAutoSaveRef.current = Date.now();
+    const save = enqueueGameStateSave(targetId, state);
+    latestSaveRef.current = save;
+    if (saveStatus) saveStatus.current = 'pending';
     try {
-      await enqueueGameStateSave(targetId, state);
-      if (sessionActiveRef.current && gameStateRef.current === state) setStorageError(null);
+      await save;
+      if (sessionActiveRef.current && latestSaveRef.current === save) {
+        if (saveStatus) saveStatus.current = 'saved';
+        setStorageError(null);
+      }
     } catch (error) {
       console.error('Spielstand konnte nicht gespeichert werden:', error);
-      if (sessionActiveRef.current && currentPuzzleIdRef.current === targetId) {
+      if (sessionActiveRef.current && latestSaveRef.current === save) {
+        if (saveStatus) saveStatus.current = 'failed';
         setStorageError('Dein Spielstand konnte nicht gespeichert werden. Lass dieses Fenster geöffnet und versuche es erneut.');
       }
     }
-  }, []);
+  }, [saveStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,6 +67,8 @@ export const useGameState = (puzzleId: string, size: number = 9, providedLevel?:
     currentPuzzleIdRef.current = puzzleId;
     sessionActiveRef.current = false;
     gameStateRef.current = null;
+    latestSaveRef.current = null;
+    if (saveStatus) saveStatus.current = 'saved';
     setGameState(null);
     setIsLoading(true);
     setLoadError(null);
@@ -124,7 +136,7 @@ export const useGameState = (puzzleId: string, size: number = 9, providedLevel?:
       // Acquisition failures are reported by loadState; cleanup has no user action.
       void lease.then(release => release?.(), () => undefined);
     };
-  }, [puzzleId, size, providedLevel, loadAttempt, persist, resetHistory]);
+  }, [puzzleId, size, providedLevel, loadAttempt, persist, resetHistory, saveStatus]);
 
   useEffect(() => {
     const interval = window.setInterval(() => {

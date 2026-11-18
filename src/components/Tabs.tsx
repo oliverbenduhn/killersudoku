@@ -8,8 +8,10 @@ import { Board } from './Board/Board';
 import FadeInView from './common/FadeInView';
 import RippleButton from './common/RippleButton';
 import { TOTAL_LEVELS } from '../services/levelService';
-import { getSolvedLevels, getStartedLevels } from '../services/progressService';
+import { readProgress } from '../services/progressService';
 import { GameLevel } from '../types/gameTypes';
+import type { RefObject } from 'react';
+import type { SaveStatus } from '../hooks/useGameState';
 import { APP_VERSION } from '../version';
 
 interface TabPanelProps {
@@ -23,6 +25,8 @@ interface HomeTabProps {
   levelData: GameLevel | null;
   isLoading: boolean;
   error: string | null;
+  onRetryLevel: () => void;
+  saveStatus: RefObject<SaveStatus>;
   blackAndWhiteMode: boolean;
   transitionDirection: 'left' | 'right' | null;
   /** Überschreibt die Storage-Id (z. B. für generierte Zufallslevel). */
@@ -38,6 +42,8 @@ export function HomeTab({
   levelData,
   isLoading,
   error,
+  onRetryLevel,
+  saveStatus,
   blackAndWhiteMode,
   transitionDirection,
   puzzleId,
@@ -62,6 +68,8 @@ export function HomeTab({
           levelData={levelData?.levelNumber === currentLevel || puzzleId ? levelData : null}
           isLoading={isLoading}
           error={error}
+          onRetryLevel={onRetryLevel}
+          saveStatus={saveStatus}
           blackAndWhiteMode={blackAndWhiteMode}
           onOpenHelp={onOpenHelp}
           shortcutsEnabled={shortcutsEnabled}
@@ -88,8 +96,7 @@ interface LevelsTabProps extends TabPanelProps {
 }
 
 export function LevelsTab({ currentLevel, onLevelChange, onBack, transitionDirection }: LevelsTabProps) {
-  const solvedLevels = getSolvedLevels();
-  const startedLevels = getStartedLevels();
+  const { solved: solvedLevels, started: startedLevels } = readProgress();
   const solvedCount = solvedLevels.size;
   const progress = Math.round((solvedCount / TOTAL_LEVELS) * 100);
 

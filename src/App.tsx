@@ -1,5 +1,5 @@
 // App.tsx — Layout & State. Tab-Inhalte sind in components/Tabs.tsx.
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   ChakraProvider,
   Box,
@@ -12,6 +12,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 
+import type { SaveStatus } from './hooks/useGameState';
 import InstallPrompt from './components/common/InstallPrompt';
 import { HomeActions } from './components/common/HomeActions';
 
@@ -42,6 +43,8 @@ function App() {
   const [levelData, setLevelData] = useState<GameLevel | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const saveStatus = useRef<SaveStatus>('saved');
   const [activeTab, setActiveTab] = useState<TabName>('home');
   const [tabTransition, setTabTransition] = useState<'left' | 'right' | null>(null);
   // Fullscreen-Status wird mit document.fullscreenElement synchron gehalten,
@@ -86,7 +89,7 @@ function App() {
     };
     fetchLevel();
     return () => { cancelled = true; };
-  }, [currentLevel]);
+  }, [currentLevel, loadAttempt]);
 
   useEffect(() => {
     try { localStorage.setItem('killersudoku_current_level', String(currentLevel)); } catch {}
@@ -114,6 +117,14 @@ function App() {
 
   const handleTabChange = (tabName: TabName) => {
     if (tabName === activeTab) return;
+    if (tabName === 'levels') {
+      if (saveStatus.current === 'pending') {
+        toast({ title: 'Spielstand wird gespeichert', description: 'Versuche es gleich noch einmal.', status: 'info' });
+        return;
+      }
+      if (saveStatus.current === 'failed' && !window.confirm('Dein Spielstand ist nicht gespeichert. Ungespeicherte Änderungen verwerfen und die Levelübersicht öffnen?')) return;
+      saveStatus.current = 'saved';
+    }
     setTabTransition(tabName === 'levels' ? 'left' : 'right');
     setActiveTab(tabName);
   };
@@ -213,6 +224,8 @@ function App() {
               levelData={levelData}
               isLoading={isLoading}
               error={error}
+              onRetryLevel={() => setLoadAttempt(attempt => attempt + 1)}
+              saveStatus={saveStatus}
               blackAndWhiteMode={blackAndWhiteMode}
               transitionDirection={tabTransition}
               onOpenHelp={() => setIsHelpOpen(true)}

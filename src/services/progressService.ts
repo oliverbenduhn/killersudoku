@@ -4,54 +4,57 @@
 // Ladevorgänge markieren kann. Bleibt außerdem erhalten, wenn Spielstände
 // über clearAllGameStates() zurückgesetzt werden (siehe storageService.ts).
 
+import { TOTAL_LEVELS } from './levelService';
+
 const SOLVED_KEY = 'killersudoku_solved_levels';
 const STARTED_KEY = 'killersudoku_started_levels';
+const progressKey = (level: number) => `killersudoku_progress:${level}`;
+const isLevel = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= TOTAL_LEVELS;
 
 const readSet = (key: string): Set<number> => {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
-    return new Set(Array.isArray(parsed) ? parsed.filter((n) => typeof n === 'number' && Number.isInteger(n) && n >= 1 && n <= 100) : []);
+    return new Set(Array.isArray(parsed) ? parsed.filter(isLevel) : []);
   } catch {
     return new Set();
   }
 };
 
-const writeSet = (key: string, values: Set<number>) => {
+export const readProgress = () => {
+  const solved = readSet(SOLVED_KEY);
+  const started = readSet(STARTED_KEY);
   try {
-    localStorage.setItem(key, JSON.stringify(Array.from(values)));
+    for (let level = 1; level <= TOTAL_LEVELS; level++) {
+      const status = localStorage.getItem(progressKey(level));
+      if (status === 'solved') solved.add(level);
+      if (status === 'started') started.add(level);
+    }
   } catch {
-    // localStorage kann in Private-Mode/Quota-Fällen fehlschlagen — Markierung
-    // ist rein kosmetisch, ein stiller Fehlschlag ist unkritisch.
+    // Progress markers are cosmetic; the game save has its own error UI.
+  }
+  for (const level of solved) started.delete(level);
+  return { solved, started };
+};
+
+// Writers already hold the per-puzzle lease. Separate keys avoid a shared
+// read-modify-write across puzzles; legacy sets are only read.
+const markLevel = (level: number, status: 'started' | 'solved') => {
+  if (!isLevel(level)) return;
+  try {
+    const key = progressKey(level);
+    const current = localStorage.getItem(key);
+    if (current === status || current === 'solved') return;
+    if (status === 'started' && readSet(SOLVED_KEY).has(level)) return;
+    localStorage.setItem(key, status);
+  } catch {
+    // Progress markers are cosmetic; the game save has its own error UI.
   }
 };
 
-export const getSolvedLevels = (): Set<number> => readSet(SOLVED_KEY);
-export const getStartedLevels = (): Set<number> => readSet(STARTED_KEY);
-
-export const markLevelSolved = (level: number): void => {
-  const solved = readSet(SOLVED_KEY);
-  if (!solved.has(level)) {
-    solved.add(level);
-    writeSet(SOLVED_KEY, solved);
-  }
-  const started = readSet(STARTED_KEY);
-  if (started.has(level)) {
-    started.delete(level);
-    writeSet(STARTED_KEY, started);
-  }
-};
-
-export const markLevelStarted = (level: number): void => {
-  const solved = readSet(SOLVED_KEY);
-  if (solved.has(level)) return;
-  const started = readSet(STARTED_KEY);
-  if (!started.has(level)) {
-    started.add(level);
-    writeSet(STARTED_KEY, started);
-  }
-};
+export const markLevelSolved = (level: number): void => markLevel(level, 'solved');
+export const markLevelStarted = (level: number): void => markLevel(level, 'started');
 
 // Extrahiert die Levelnummer aus puzzleId-Strings wie "level-3". Generierte
 // Zufallslevel ("generated-...") liefern null, da sie nicht Teil der

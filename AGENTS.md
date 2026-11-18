@@ -150,8 +150,8 @@ Three storage channels, each with one job:
 - Never read or write localStorage without `try { ... } catch {}` — Safari
   private mode and quota errors throw on access.
 - Game-state writes are **serialized** through `enqueueGameStateSave`.
-  `useGameState` holds a Web Lock lease per puzzle; a competing window is read-only
-  until its explicit retry acquires the lease. Statistics use `runStorageOperation`
+  `useGameState` holds a Web Lock lease per puzzle; a competing window shows a
+  lock message and retry, not a board, until it acquires the lease. Statistics use `runStorageOperation`
   for cross-window read-modify-write. Save errors must reach a visible retry UI.
   Direct `localforage.setItem` calls race with the auto-save timer and
   produce "15-second rewinds" — that's the bug this function exists to fix.

@@ -48,6 +48,7 @@ const fadeInAnimation = keyframes`
 
 export interface BoardSurfaceProps {
   /** Aktuelle Zellauswahl. */
+  cellIdPrefix?: string;
   selectedCell: CellPosition | null;
   /** Mehrfachauswahl (Drag-Operationen). */
   selectedCells: CellPosition[];
@@ -127,6 +128,7 @@ function hasSameValue(
 }
 
 export const BoardSurface: React.FC<BoardSurfaceProps> = ({
+  cellIdPrefix,
   selectedCell,
   selectedCells,
   size,
@@ -212,8 +214,9 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       <Box
         key={`bg-${row}-${col}`}
         data-testid={`cell-${row}-${col}`}
+        id={cellIdPrefix ? `${cellIdPrefix}-${row}-${col}` : undefined}
         role="gridcell"
-        aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}${noteCandidates.length > 0 ? `, Notizen ${noteCandidates.join(', ')}` : ''}`}
+        aria-label={`Zeile ${row + 1} Spalte ${col + 1}${value ? `, Wert ${value}` : ', leer'}${isInitialValue ? ', vorgegeben' : ''}${!valid && value !== 0 ? ', ungültig' : ''}${noteCandidates.length > 0 ? `, Notizen ${noteCandidates.join(', ')}` : ''}${cage ? `, Käfigsumme ${cage.sum}, Käfigfelder: ${cage.cells.map(cell => `Zeile ${cell.row + 1} Spalte ${cell.col + 1}`).join('; ')}` : ''}`}
         aria-selected={isSelected}
         position="relative"
         w={`${cellSize}px`}
@@ -396,7 +399,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       const cells = [];
       for (let j = 0; j < size; j++) cells.push(renderFn(i, j));
       rows.push(
-        <Grid key={i} templateColumns={`repeat(${size}, 1fr)`}>{cells}</Grid>
+        <Grid key={i} role={renderFn === renderBgCell ? 'row' : undefined} templateColumns={`repeat(${size}, 1fr)`}>{cells}</Grid>
       );
     }
     return rows;
@@ -474,7 +477,7 @@ export const BoardSurface: React.FC<BoardSurfaceProps> = ({
       {/* Linien */}
       {lineSvg}
       {/* Zahlen */}
-      <Box position="absolute" top={0} left={0} pointerEvents="none">
+      <Box aria-hidden="true" position="absolute" top={0} left={0} pointerEvents="none">
         {renderCellGrid(renderNumCell)}
       </Box>
     </Box>

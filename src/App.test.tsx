@@ -1,5 +1,10 @@
 import React from 'react';
-import { fireEvent, render, screen } from './test-utils';
+import { act } from '@testing-library/react';
+import localforage from 'localforage';
+import fixture from '../public/assets/levels/level_1.json';
+import * as levels from './services/levelService';
+import { parseLevel } from './utils/parseLevel';
+import { fireEvent, render, screen, waitFor, within } from './test-utils';
 import App from './App';
 import { APP_VERSION } from './version';
 
@@ -68,3 +73,51 @@ test('HomeActions-Buttons sind auch im Levels-Tab sichtbar (#24)', async () => {
   expect(screen.getByRole('button', { name: /Schwarzweiß|Farbmodus/ })).toBeVisible();
   expect(screen.getByRole('button', { name: /Tastenkombinationen anzeigen/ })).toBeVisible();
 });
+
+
+test('retries loading and protects an unsaved move during level navigation', async () => {
+  await localforage.clear();
+  const level = parseLevel(fixture, 1);
+  jest.spyOn(levels, 'loadLevelByNumber').mockRejectedValueOnce(new Error('503')).mockResolvedValue(level);
+  const confirm = jest.spyOn(window, 'confirm').mockReturnValue(false);
+  try {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /^Überspringen$/ }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Erneut versuchen' }));
+    const grid = await screen.findByRole('grid');
+    fireEvent.focus(grid);
+    fireEvent.keyDown(grid, { key: 'ArrowRight' });
+    const row = within(grid).getAllByRole('row')[0];
+    const active = within(row).getAllByRole('gridcell')[1];
+    expect(grid).toHaveAttribute('aria-activedescendant', active.id);
+    expect(active).toHaveAccessibleName(/Käfigsumme \d+, Käfigfelder: Zeile/);
+
+    const cells = level.initialValues.flatMap((values, row) => values.flatMap((value, col) => value ? [] : [{ row, col }]));
+    const [entry, note] = cells;
+    const digit = level.solution[entry.row][entry.col];
+    const save = jest.spyOn(localforage, 'setItem').mockRejectedValueOnce(new Error('write failed'));
+    fireEvent.pointerDown(screen.getByTestId(`cell-${entry.row}-${entry.col}`));
+    fireEvent.keyDown(grid, { key: String(digit) });
+    await screen.findByRole('button', { name: 'Speichern wiederholen' });
+    fireEvent.click(screen.getByRole('button', { name: 'Level' }));
+    expect(confirm).toHaveBeenCalledTimes(1);
+    expect(grid).toBeVisible();
+    expect(screen.getByTestId(`cell-${entry.row}-${entry.col}`)).toHaveAccessibleName(new RegExp(`Wert ${digit}`));
+    save.mockRejectedValueOnce(new Error('retry failed'));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Speichern wiederholen' })); });
+    fireEvent.click(screen.getByRole('button', { name: 'Level' }));
+    expect(confirm).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern wiederholen' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Speichern wiederholen' })).not.toBeInTheDocument());
+    fireEvent.click(screen.getByRole('button', { name: 'Bleistiftmodus' }));
+    fireEvent.pointerDown(screen.getByTestId(`cell-${note.row}-${note.col}`));
+    fireEvent.keyDown(grid, { key: '2' });
+    await waitFor(async () => expect((await localforage.getItem<{ notes: number[][][] }>('killersudoku_level-1'))?.notes[note.row][note.col]).toEqual([2]));
+    fireEvent.click(screen.getByRole('button', { name: 'Level' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Zurück' }));
+    expect(await screen.findByTestId(`cell-${entry.row}-${entry.col}`)).toHaveAccessibleName(new RegExp(`Wert ${digit}`));
+    expect(screen.getByTestId(`cell-${note.row}-${note.col}`)).toHaveAccessibleName(/Notizen 2/);
+  } finally {
+    jest.restoreAllMocks();
+  }
+}, 15000);

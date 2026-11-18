@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useId } from 'react';
 import {
   Box,
   Grid,
@@ -18,7 +18,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon, ArrowBackIcon, ArrowForwardIcon, BellIcon, EditIcon, InfoIcon, RepeatClockIcon, WarningIcon } from '@chakra-ui/icons';
 
-import { useGameState } from '../../hooks/useGameState';
+import { useGameState, type SaveStatus } from '../../hooks/useGameState';
 import { useStrategicHint } from '../../hooks/useStrategicHint';
 import type { HintTechnique } from '../../services/hintEngine';
 import { useCellSelection } from '../../hooks/useCellSelection';
@@ -43,6 +43,8 @@ interface BoardProps {
   levelData?: GameLevel | null;
   isLoading?: boolean;
   error?: string | null;
+  onRetryLevel?: () => void;
+  saveStatus?: React.RefObject<SaveStatus>;
   blackAndWhiteMode?: boolean;
   /** Wird nur im Sidebar-Layout (flexDirection "row") unten in der
    *  Sidebar-Spalte gerendert, unterhalb der Aktions-Buttons. */
@@ -61,13 +63,16 @@ export const Board: React.FC<BoardProps> = ({
   levelData = null,
   isLoading: externalLoading = false,
   error: externalError = null,
+  onRetryLevel,
+  saveStatus,
   blackAndWhiteMode = false,
   sidebarFooter = null,
   onOpenHelp,
   shortcutsEnabled = true,
 }) => {
   const toast = useToast();
-  const { gameState, isLoading: stateLoading, loadError, storageError, retryLoad, retrySave, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size, levelData);
+  const { gameState, isLoading: stateLoading, loadError, storageError, retryLoad, retrySave, updateGameState, applyMove, undo, redo, canUndo, canRedo, clearHistory } = useGameState(puzzleId, size, levelData, saveStatus);
+  const cellIdPrefix = useId();
   const [resetOpen, setResetOpen] = useState(false);
   const cancelResetRef = useRef<HTMLButtonElement>(null!);
   const [statisticsError, setStatisticsError] = useState(false);
@@ -403,6 +408,7 @@ export const Board: React.FC<BoardProps> = ({
           <AlertDescription>
             {externalError || "Das Level konnte nicht geladen werden. Bitte versuchen Sie ein anderes Level."}
           </AlertDescription>
+          {externalError && onRetryLevel && <Button mt={2} onClick={onRetryLevel}>Erneut versuchen</Button>}
         </Box>
       </Alert>
     );
@@ -468,6 +474,7 @@ export const Board: React.FC<BoardProps> = ({
         role="grid"
         aria-label="Sudoku-Brett – mit Pfeiltasten navigieren, mit Tab verlassen"
         aria-readonly={isTerminal}
+        aria-activedescendant={gameState && selectedCell ? `${cellIdPrefix}-${selectedCell.row}-${selectedCell.col}` : undefined}
         p={flexDirection === "column" ? 2 : [1, 2, 4]}
         display="flex"
         justifyContent="center"
@@ -498,6 +505,7 @@ export const Board: React.FC<BoardProps> = ({
       >
         {gameState && levelData && gameState.levelId === puzzleId && (
           <BoardSurface
+            cellIdPrefix={cellIdPrefix}
             pencilMode={pencilMode}
             selectedCell={selectedCell}
             selectedCells={selectedCells}

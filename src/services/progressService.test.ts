@@ -2,8 +2,7 @@
 // nötig. Wir putzen einfach vor jedem Test auf.
 
 import {
-  getSolvedLevels,
-  getStartedLevels,
+  readProgress,
   markLevelSolved,
   markLevelStarted,
   parseLevelNumber,
@@ -56,81 +55,44 @@ describe('progressService', () => {
 
   describe('getSolvedLevels / getStartedLevels', () => {
     test('leeres localStorage → leerer Set', () => {
-      expect(getSolvedLevels().size).toBe(0);
-      expect(getStartedLevels().size).toBe(0);
+      expect(readProgress().solved.size).toBe(0);
+      expect(readProgress().started.size).toBe(0);
     });
 
     test('liest vorhandene Zahlen', () => {
       setJSON(SOLVED_KEY, [1, 2, 3]);
-      expect(Array.from(getSolvedLevels())).toEqual([1, 2, 3]);
+      expect(Array.from(readProgress().solved)).toEqual([1, 2, 3]);
     });
 
     test('ignoriert Nicht-Zahlen im Array', () => {
       setJSON(SOLVED_KEY, [1, 'foo', 2, null, 3]);
-      expect(Array.from(getSolvedLevels()).sort((a, b) => a - b)).toEqual([1, 2, 3]);
+      expect(Array.from(readProgress().solved).sort((a, b) => a - b)).toEqual([1, 2, 3]);
     });
 
     test('verwirft kaputtes JSON und liefert leeren Set', () => {
       window.localStorage.setItem(SOLVED_KEY, 'kein JSON');
-      expect(getSolvedLevels().size).toBe(0);
+      expect(readProgress().solved.size).toBe(0);
     });
 
     test('verwirft Strukturen, die kein Array sind', () => {
       setJSON(SOLVED_KEY, { 1: true });
-      expect(getSolvedLevels().size).toBe(0);
+      expect(readProgress().solved.size).toBe(0);
     });
   });
 
-  describe('markLevelSolved', () => {
-    test('fügt Level hinzu, wenn nicht vorhanden', () => {
-      setJSON(STARTED_KEY, [5]);
-      markLevelSolved(5);
-      expect(JSON.parse(window.localStorage.getItem(SOLVED_KEY) ?? '[]')).toEqual([5]);
-      expect(JSON.parse(window.localStorage.getItem(STARTED_KEY) ?? '[]')).toEqual([]);
-    });
-
-    test('idempotent: zweiter Aufruf schreibt solved nicht erneut', () => {
-      setJSON(SOLVED_KEY, [5]);
-      setJSON(STARTED_KEY, []);
-      const solvedBefore = window.localStorage.getItem(SOLVED_KEY);
-      markLevelSolved(5);
-      expect(window.localStorage.getItem(SOLVED_KEY)).toBe(solvedBefore);
-    });
-
-    test('level aus started entfernen, wenn vorhanden', () => {
-      setJSON(SOLVED_KEY, []);
-      setJSON(STARTED_KEY, [3, 5, 7]);
-      markLevelSolved(5);
-      expect(JSON.parse(window.localStorage.getItem(STARTED_KEY) ?? '[]')).toEqual([3, 7]);
-    });
-
-    test('mehrere Markierungen sammeln sich aufsteigend', () => {
-      markLevelSolved(2);
-      markLevelSolved(5);
-      markLevelSolved(1);
-      expect(JSON.parse(window.localStorage.getItem(SOLVED_KEY) ?? '[]').sort((a: number, b: number) => a - b)).toEqual([1, 2, 5]);
-    });
-  });
-
-  describe('markLevelStarted', () => {
-    test('fügt Level hinzu, wenn weder solved noch started', () => {
-      markLevelStarted(8);
-      expect(JSON.parse(window.localStorage.getItem(STARTED_KEY) ?? '[]')).toEqual([8]);
-    });
-
-    test('solved-Level wird NICHT als started markiert', () => {
-      setJSON(SOLVED_KEY, [4]);
-      setJSON(STARTED_KEY, []);
-      markLevelStarted(4);
-      // 4 darf nicht in der started-Liste landen — die Liste bleibt leer.
-      expect(JSON.parse(window.localStorage.getItem(STARTED_KEY) ?? '[]')).toEqual([]);
-    });
-
-    test('bereits started → kein erneuter Write', () => {
-      setJSON(STARTED_KEY, [4]);
-      markLevelStarted(4);
-      expect(JSON.parse(window.localStorage.getItem(STARTED_KEY) ?? '[]')).toEqual([4]);
-    });
+  test('preserves legacy markers and updates each level independently', () => {
+    setJSON(SOLVED_KEY, [1]);
+    setJSON(STARTED_KEY, [2, 3]);
+    markLevelStarted(4);
+    markLevelSolved(2);
+    markLevelSolved(5);
+    markLevelStarted(2);
+    markLevelStarted(1);
+    expect(readProgress()).toEqual({ solved: new Set([1, 2, 5]), started: new Set([3, 4]) });
+    expect(localStorage.getItem(SOLVED_KEY)).toBe('[1]');
+    expect(localStorage.getItem(STARTED_KEY)).toBe('[2,3]');
+    expect(localStorage.getItem('killersudoku_progress:2')).toBe('solved');
+    expect(localStorage.getItem('killersudoku_progress:4')).toBe('started');
   });
 
   describe('write-Fehler werden verschluckt', () => {
@@ -153,8 +115,8 @@ describe('progressService', () => {
         throw new Error('blocked');
       });
       try {
-        expect(getSolvedLevels().size).toBe(0);
-        expect(getStartedLevels().size).toBe(0);
+        expect(readProgress().solved.size).toBe(0);
+        expect(readProgress().started.size).toBe(0);
       } finally {
         spy.mockRestore();
       }
