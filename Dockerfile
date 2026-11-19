@@ -7,7 +7,7 @@ COPY . .
 RUN npm run build
 
 # Runtime stage
-FROM nginx:1.30.4-alpine
+FROM nginx:1.30.7-alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/build /usr/share/nginx/html
 EXPOSE 80
